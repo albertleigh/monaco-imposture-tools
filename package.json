@@ -1,0 +1,15 @@
+{
+  "name": "monaco-tm-root",
+  "private": "true",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

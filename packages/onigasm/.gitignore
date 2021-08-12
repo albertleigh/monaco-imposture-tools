@@ -1,0 +1,5 @@
+node_modules/
+emsdk/
+oniguruma/
+cmake-build-debug/
+cmake-build-release/
