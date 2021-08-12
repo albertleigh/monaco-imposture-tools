@@ -1,0 +1,1536 @@
+{
+    "name": "Azure logic apps expression language",
+    "scopeName": "source.azLgcAppExp",
+    "patterns": [
+        {
+            "include": "#statements",
+            "$impostureLang": {
+                "namespaces": [
+                    "patterns",
+                    0
+                ]
+            }
+        }
+    ],
+    "repository": {
+        "statements": {
+            "patterns": [
+                {
+                    "include": "#atTemplateSubstitutionElement",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "statements",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#atExpression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "statements",
+                            "patterns",
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#dualAtSymbol",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "statements",
+                            "patterns",
+                            2
+                        ]
+                    }
+                },
+                {
+                    "include": "#atSymbol",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "statements",
+                            "patterns",
+                            3
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "statements"
+                ]
+            }
+        },
+        "atTemplateSubstitutionElement": {
+            "patterns": [
+                {
+                    "$impostureLang": {
+                        "type": "atTemplateSubstitutionElement-p0",
+                        "dataType": "atTemplateSubstitutionElement",
+                        "namespaces": [
+                            "repository",
+                            "atTemplateSubstitutionElement",
+                            "patterns",
+                            0
+                        ]
+                    },
+                    "name": "meta.template.expression.js",
+                    "begin": "(?<=(@))(\\{)",
+                    "beginCaptures": {
+                        "2": {
+                            "name": "punctuation.definition.string.template.begin.js",
+                            "$impostureLang": {
+                                "namespaces": [
+                                    "repository",
+                                    "atTemplateSubstitutionElement",
+                                    "patterns",
+                                    0,
+                                    "beginCaptures",
+                                    "2"
+                                ]
+                            }
+                        }
+                    },
+                    "end": "\\}",
+                    "endCaptures": {
+                        "0": {
+                            "name": "punctuation.definition.string.template.end.js",
+                            "$impostureLang": {
+                                "namespaces": [
+                                    "repository",
+                                    "atTemplateSubstitutionElement",
+                                    "patterns",
+                                    0,
+                                    "endCaptures",
+                                    "0"
+                                ]
+                            }
+                        }
+                    },
+                    "patterns": [
+                        {
+                            "include": "#atExpression",
+                            "$impostureLang": {
+                                "namespaces": [
+                                    "repository",
+                                    "atTemplateSubstitutionElement",
+                                    "patterns",
+                                    0,
+                                    "patterns",
+                                    0
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "atTemplateSubstitutionElement"
+                ]
+            }
+        },
+        "staringAtSymbol": {
+            "name": "punctuation.accessor.js",
+            "match": "\\A(@)(?!\\{)",
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "staringAtSymbol"
+                ]
+            }
+        },
+        "dualAtSymbol": {
+            "$impostureLang": {
+                "type": "dualAtSymbol",
+                "dataType": "dualAtSymbol",
+                "namespaces": [
+                    "repository",
+                    "dualAtSymbol"
+                ]
+            },
+            "name": "constant.character.escape",
+            "match": "[@]{2}"
+        },
+        "atSymbol": {
+            "$impostureLang": {
+                "type": "atSymbol",
+                "dataType": "atSymbol",
+                "namespaces": [
+                    "repository",
+                    "atSymbol"
+                ]
+            },
+            "name": "keyword.symbol.at",
+            "match": "[@]{1}"
+        },
+        "atExpression": {
+            "patterns": [
+                {
+                    "include": "#expressionWithoutIdentifiers",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "atExpression",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#identifiers",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "atExpression",
+                            "patterns",
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#expressionPunctuations",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "atExpression",
+                            "patterns",
+                            2
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "atExpression"
+                ]
+            }
+        },
+        "expressionWithoutIdentifiers": {
+            "patterns": [
+                {
+                    "include": "#string",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionWithoutIdentifiers",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#function-call",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionWithoutIdentifiers",
+                            "patterns",
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#literal",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionWithoutIdentifiers",
+                            "patterns",
+                            2
+                        ]
+                    }
+                },
+                {
+                    "include": "#paren-expression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionWithoutIdentifiers",
+                            "patterns",
+                            3
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "expressionWithoutIdentifiers"
+                ]
+            }
+        },
+        "expressionPunctuations": {
+            "patterns": [
+                {
+                    "include": "#punctuation-comma",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionPunctuations",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#punctuation-accessor",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionPunctuations",
+                            "patterns",
+                            1
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "expressionPunctuations"
+                ]
+            }
+        },
+        "function-call": {
+            "patterns": [
+                {
+                    "$impostureLang": {
+                        "type": "function-call-complete",
+                        "dataType": "function-call-complete",
+                        "namespaces": [
+                            "repository",
+                            "function-call",
+                            "patterns",
+                            0
+                        ]
+                    },
+                    "begin": "(?=(((([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
+                    "end": "(?<=\\))(?!(((([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
+                    "patterns": [
+                        {
+                            "$impostureLang": {
+                                "type": "function-call-full-name",
+                                "dataType": "function-call",
+                                "namespaces": [
+                                    "repository",
+                                    "function-call",
+                                    "patterns",
+                                    0,
+                                    "patterns",
+                                    0
+                                ]
+                            },
+                            "name": "meta.function-call.js",
+                            "begin": "(?=(([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))",
+                            "end": "(?=\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
+                            "patterns": [
+                                {
+                                    "include": "#function-call-target",
+                                    "$impostureLang": {
+                                        "namespaces": [
+                                            "repository",
+                                            "function-call",
+                                            "patterns",
+                                            0,
+                                            "patterns",
+                                            0,
+                                            "patterns",
+                                            0
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "include": "#paren-expression",
+                            "$impostureLang": {
+                                "namespaces": [
+                                    "repository",
+                                    "function-call",
+                                    "patterns",
+                                    0,
+                                    "patterns",
+                                    1
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "function-call"
+                ]
+            }
+        },
+        "function-call-target": {
+            "patterns": [
+                {
+                    "include": "#support-function-call-identifiers",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "function-call-target",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "function-call-target-name",
+                        "dataType": "function-call-target",
+                        "namespaces": [
+                            "repository",
+                            "function-call-target",
+                            "patterns",
+                            1
+                        ]
+                    },
+                    "name": "entity.name.function.js",
+                    "match": "([_$[:alpha:]][_$[:alnum:]]*)"
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "function-call-target"
+                ]
+            }
+        },
+        "support-function-call-identifiers": {
+            "patterns": [
+                {
+                    "include": "#literal",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "support-function-call-identifiers",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#object-identifiers",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "support-function-call-identifiers",
+                            "patterns",
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#punctuation-accessor",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "support-function-call-identifiers",
+                            "patterns",
+                            2
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "support-function-call-identifiers"
+                ]
+            }
+        },
+        "paren-expression": {
+            "$impostureLang": {
+                "type": "paren-expression",
+                "dataType": "parentheses",
+                "namespaces": [
+                    "repository",
+                    "paren-expression"
+                ]
+            },
+            "begin": "\\(",
+            "beginCaptures": {
+                "0": {
+                    "name": "meta.brace.round.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "paren-expression",
+                            "beginCaptures",
+                            "0"
+                        ]
+                    }
+                }
+            },
+            "end": "\\)",
+            "endCaptures": {
+                "0": {
+                    "name": "meta.brace.round.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "paren-expression",
+                            "endCaptures",
+                            "0"
+                        ]
+                    }
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#atExpression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "paren-expression",
+                            "patterns",
+                            0
+                        ]
+                    }
+                }
+            ]
+        },
+        "literal": {
+            "patterns": [
+                {
+                    "include": "#numeric-literal",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "literal",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#boolean-literal",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "literal",
+                            "patterns",
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#null-literal",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "literal",
+                            "patterns",
+                            2
+                        ]
+                    }
+                },
+                {
+                    "include": "#array-literal",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "literal",
+                            "patterns",
+                            3
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "literal"
+                ]
+            }
+        },
+        "array-literal": {
+            "$impostureLang": {
+                "type": "array-literal",
+                "dataType": "array-literal",
+                "namespaces": [
+                    "repository",
+                    "array-literal"
+                ]
+            },
+            "name": "meta.array.literal.js",
+            "begin": "\\s*(\\[)",
+            "beginCaptures": {
+                "1": {
+                    "name": "meta.brace.square.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "array-literal",
+                            "beginCaptures",
+                            "1"
+                        ]
+                    }
+                }
+            },
+            "end": "\\]",
+            "endCaptures": {
+                "0": {
+                    "name": "meta.brace.square.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "array-literal",
+                            "endCaptures",
+                            "0"
+                        ]
+                    }
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#atExpression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "array-literal",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#punctuation-comma",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "array-literal",
+                            "patterns",
+                            1
+                        ]
+                    }
+                }
+            ]
+        },
+        "numeric-literal": {
+            "patterns": [
+                {
+                    "$impostureLang": {
+                        "type": "numeric-literal",
+                        "dataType": "number",
+                        "namespaces": [
+                            "repository",
+                            "numeric-literal",
+                            "patterns",
+                            0
+                        ]
+                    },
+                    "name": "constant.numeric.hex.js",
+                    "match": "\\b(?<!\\$)0(?:x|X)[0-9a-fA-F][0-9a-fA-F_]*(n)?\\b(?!\\$)",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    0,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        }
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "numeric-literal",
+                        "dataType": "number",
+                        "namespaces": [
+                            "repository",
+                            "numeric-literal",
+                            "patterns",
+                            1
+                        ]
+                    },
+                    "name": "constant.numeric.binary.js",
+                    "match": "\\b(?<!\\$)0(?:b|B)[01][01_]*(n)?\\b(?!\\$)",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    1,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        }
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "numeric-literal",
+                        "dataType": "number",
+                        "namespaces": [
+                            "repository",
+                            "numeric-literal",
+                            "patterns",
+                            2
+                        ]
+                    },
+                    "name": "constant.numeric.octal.js",
+                    "match": "\\b(?<!\\$)0(?:o|O)?[0-7][0-7_]*(n)?\\b(?!\\$)",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    2,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        }
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "numeric-literal",
+                        "dataType": "number",
+                        "namespaces": [
+                            "repository",
+                            "numeric-literal",
+                            "patterns",
+                            3
+                        ]
+                    },
+                    "match": "(?x)\n(?<!\\$)(?:\n  (?:\\b[0-9][0-9_]*(\\.)[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*(n)?\\b)| # 1.1E+3\n  (?:\\b[0-9][0-9_]*(\\.)[eE][+-]?[0-9][0-9_]*(n)?\\b)|             # 1.E+3\n  (?:\\B(\\.)[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*(n)?\\b)|             # .1E+3\n  (?:\\b[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*(n)?\\b)|                 # 1E+3\n  (?:\\b[0-9][0-9_]*(\\.)[0-9][0-9_]*(n)?\\b)|                      # 1.1\n  (?:\\b[0-9][0-9_]*(\\.)(n)?\\B)|                                  # 1.\n  (?:\\B(\\.)[0-9][0-9_]*(n)?\\b)|                                  # .1\n  (?:\\b[0-9][0-9_]*(n)?\\b(?!\\.))                                 # 1\n)(?!\\$)",
+                    "captures": {
+                        "0": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "0"
+                                ]
+                            },
+                            "name": "constant.numeric.decimal.js"
+                        },
+                        "1": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "meta.delimiter.decimal.period.js"
+                        },
+                        "2": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "2"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "3": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "3"
+                                ]
+                            },
+                            "name": "meta.delimiter.decimal.period.js"
+                        },
+                        "4": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "4"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "5": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "5"
+                                ]
+                            },
+                            "name": "meta.delimiter.decimal.period.js"
+                        },
+                        "6": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "6"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "7": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "7"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "8": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "8"
+                                ]
+                            },
+                            "name": "meta.delimiter.decimal.period.js"
+                        },
+                        "9": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "9"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "10": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "10"
+                                ]
+                            },
+                            "name": "meta.delimiter.decimal.period.js"
+                        },
+                        "11": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "11"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "12": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "12"
+                                ]
+                            },
+                            "name": "meta.delimiter.decimal.period.js"
+                        },
+                        "13": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "13"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        },
+                        "14": {
+                            "$impostureLang": {
+                                "type": "numeric-literal",
+                                "dataType": "number",
+                                "namespaces": [
+                                    "repository",
+                                    "numeric-literal",
+                                    "patterns",
+                                    3,
+                                    "captures",
+                                    "14"
+                                ]
+                            },
+                            "name": "storage.type.numeric.bigint.js"
+                        }
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "numeric-literal"
+                ]
+            }
+        },
+        "boolean-literal": {
+            "patterns": [
+                {
+                    "$impostureLang": {
+                        "type": "boolean-literal",
+                        "dataType": "boolean",
+                        "namespaces": [
+                            "repository",
+                            "boolean-literal",
+                            "patterns",
+                            0
+                        ]
+                    },
+                    "name": "constant.language.boolean.true.js",
+                    "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))true(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
+                },
+                {
+                    "$impostureLang": {
+                        "type": "boolean-literal",
+                        "dataType": "boolean",
+                        "namespaces": [
+                            "repository",
+                            "boolean-literal",
+                            "patterns",
+                            1
+                        ]
+                    },
+                    "name": "constant.language.boolean.false.js",
+                    "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))false(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "boolean-literal"
+                ]
+            }
+        },
+        "null-literal": {
+            "$impostureLang": {
+                "type": "null-literal",
+                "dataType": "null",
+                "namespaces": [
+                    "repository",
+                    "null-literal"
+                ]
+            },
+            "name": "constant.language.null.js",
+            "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))null(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
+        },
+        "punctuation-accessor": {
+            "$impostureLang": {
+                "type": "punctuation-accessor",
+                "dataType": "punctuation",
+                "namespaces": [
+                    "repository",
+                    "punctuation-accessor"
+                ]
+            },
+            "match": "(?:(\\.)|(\\?\\.(?!\\s*[[:digit:]])))",
+            "captures": {
+                "1": {
+                    "$impostureLang": {
+                        "type": "punctuation-accessor-c1",
+                        "dataType": "punctuation-capture",
+                        "namespaces": [
+                            "repository",
+                            "punctuation-accessor",
+                            "captures",
+                            "1"
+                        ]
+                    },
+                    "name": "punctuation.accessor.js"
+                },
+                "2": {
+                    "$impostureLang": {
+                        "type": "punctuation-accessor-c2",
+                        "dataType": "punctuation-capture",
+                        "namespaces": [
+                            "repository",
+                            "punctuation-accessor",
+                            "captures",
+                            "2"
+                        ]
+                    },
+                    "name": "punctuation.accessor.optional.js"
+                }
+            }
+        },
+        "identifiers": {
+            "patterns": [
+                {
+                    "include": "#object-identifiers",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "identifiers",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "identifiers-p1",
+                        "dataType": "identifiers:wPunctuation",
+                        "namespaces": [
+                            "repository",
+                            "identifiers",
+                            "patterns",
+                            1
+                        ]
+                    },
+                    "match": "(?:(\\.)|(\\?\\.(?!\\s*[[:digit:]])))\\s*([[:upper:]][_$[:digit:][:upper:]]*)(?![_$[:alnum:]])",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "identifiers-p1-c1",
+                                "dataType": "identifiers-capture",
+                                "namespaces": [
+                                    "repository",
+                                    "identifiers",
+                                    "patterns",
+                                    1,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "punctuation.accessor.js"
+                        },
+                        "2": {
+                            "$impostureLang": {
+                                "type": "identifiers-p1-c2",
+                                "dataType": "identifiers-capture",
+                                "namespaces": [
+                                    "repository",
+                                    "identifiers",
+                                    "patterns",
+                                    1,
+                                    "captures",
+                                    "2"
+                                ]
+                            },
+                            "name": "punctuation.accessor.optional.js"
+                        },
+                        "3": {
+                            "$impostureLang": {
+                                "type": "identifiers-p1-c3",
+                                "dataType": "identifiers-capture",
+                                "namespaces": [
+                                    "repository",
+                                    "identifiers",
+                                    "patterns",
+                                    1,
+                                    "captures",
+                                    "3"
+                                ]
+                            },
+                            "name": "variable.other.constant.property.js"
+                        }
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "identifiers-p2",
+                        "dataType": "identifiers:wPunctuation",
+                        "namespaces": [
+                            "repository",
+                            "identifiers",
+                            "patterns",
+                            2
+                        ]
+                    },
+                    "match": "(?:(\\.)|(\\?\\.(?!\\s*[[:digit:]])))\\s*([_$[:alpha:]][_$[:alnum:]]*)",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "identifiers-p2-c1",
+                                "dataType": "identifiers-capture",
+                                "namespaces": [
+                                    "repository",
+                                    "identifiers",
+                                    "patterns",
+                                    2,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "punctuation.accessor.js"
+                        },
+                        "2": {
+                            "$impostureLang": {
+                                "type": "identifiers-p2-c2",
+                                "dataType": "identifiers-capture",
+                                "namespaces": [
+                                    "repository",
+                                    "identifiers",
+                                    "patterns",
+                                    2,
+                                    "captures",
+                                    "2"
+                                ]
+                            },
+                            "name": "punctuation.accessor.optional.js"
+                        },
+                        "3": {
+                            "$impostureLang": {
+                                "type": "identifiers-p2-c3",
+                                "dataType": "identifiers-capture",
+                                "namespaces": [
+                                    "repository",
+                                    "identifiers",
+                                    "patterns",
+                                    2,
+                                    "captures",
+                                    "3"
+                                ]
+                            },
+                            "name": "variable.other.property.js"
+                        }
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "identifiers-p3",
+                        "dataType": "identifiers",
+                        "namespaces": [
+                            "repository",
+                            "identifiers",
+                            "patterns",
+                            3
+                        ]
+                    },
+                    "name": "variable.other.constant.js",
+                    "match": "([[:upper:]][_$[:digit:][:upper:]]*)(?![_$[:alnum:]])"
+                },
+                {
+                    "$impostureLang": {
+                        "type": "identifiers-p4",
+                        "dataType": "identifiers",
+                        "namespaces": [
+                            "repository",
+                            "identifiers",
+                            "patterns",
+                            4
+                        ]
+                    },
+                    "name": "variable.other.readwrite.js",
+                    "match": "[_$[:alpha:]][_$[:alnum:]]*"
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "identifiers"
+                ]
+            }
+        },
+        "object-identifiers": {
+            "patterns": [
+                {
+                    "$impostureLang": {
+                        "type": "object-identifiers-p0",
+                        "dataType": "object-identifiers:wPunctuation",
+                        "namespaces": [
+                            "repository",
+                            "object-identifiers",
+                            "patterns",
+                            0
+                        ]
+                    },
+                    "match": "(?x)(?:(\\.)|(\\?\\.(?!\\s*[[:digit:]])))\\s*(?:\n  ([[:upper:]][_$[:digit:][:upper:]]*) |\n  ([_$[:alpha:]][_$[:alnum:]]*)\n)(?=\\s*\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*)",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "object-identifiers-p0-c1",
+                                "dataType": "object-identifiers-captures",
+                                "namespaces": [
+                                    "repository",
+                                    "object-identifiers",
+                                    "patterns",
+                                    0,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "punctuation.accessor.js"
+                        },
+                        "2": {
+                            "$impostureLang": {
+                                "type": "object-identifiers-p0-c2",
+                                "dataType": "object-identifiers-captures",
+                                "namespaces": [
+                                    "repository",
+                                    "object-identifiers",
+                                    "patterns",
+                                    0,
+                                    "captures",
+                                    "2"
+                                ]
+                            },
+                            "name": "punctuation.accessor.optional.js"
+                        },
+                        "3": {
+                            "$impostureLang": {
+                                "type": "object-identifiers-p0-c3",
+                                "dataType": "object-identifiers-captures",
+                                "namespaces": [
+                                    "repository",
+                                    "object-identifiers",
+                                    "patterns",
+                                    0,
+                                    "captures",
+                                    "3"
+                                ]
+                            },
+                            "name": "variable.other.constant.object.property.js"
+                        },
+                        "4": {
+                            "$impostureLang": {
+                                "type": "object-identifiers-p0-c4",
+                                "dataType": "object-identifiers-captures",
+                                "namespaces": [
+                                    "repository",
+                                    "object-identifiers",
+                                    "patterns",
+                                    0,
+                                    "captures",
+                                    "4"
+                                ]
+                            },
+                            "name": "variable.other.object.property.js"
+                        }
+                    }
+                },
+                {
+                    "$impostureLang": {
+                        "type": "object-identifiers-p1",
+                        "dataType": "object-identifiers",
+                        "namespaces": [
+                            "repository",
+                            "object-identifiers",
+                            "patterns",
+                            1
+                        ]
+                    },
+                    "match": "(?x)(?:\n  ([[:upper:]][_$[:digit:][:upper:]]*) |\n  ([_$[:alpha:]][_$[:alnum:]]*)\n)(?=\\s*\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*)",
+                    "captures": {
+                        "1": {
+                            "$impostureLang": {
+                                "type": "object-identifiers-p1-c1",
+                                "dataType": "object-identifiers-captures",
+                                "namespaces": [
+                                    "repository",
+                                    "object-identifiers",
+                                    "patterns",
+                                    1,
+                                    "captures",
+                                    "1"
+                                ]
+                            },
+                            "name": "variable.other.constant.object.js"
+                        },
+                        "2": {
+                            "$impostureLang": {
+                                "type": "object-identifiers-p1-c1",
+                                "dataType": "object-identifiers-captures",
+                                "namespaces": [
+                                    "repository",
+                                    "object-identifiers",
+                                    "patterns",
+                                    1,
+                                    "captures",
+                                    "2"
+                                ]
+                            },
+                            "name": "variable.other.object.js"
+                        }
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "object-identifiers"
+                ]
+            }
+        },
+        "string": {
+            "patterns": [
+                {
+                    "include": "#qstring-single",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "string",
+                            "patterns",
+                            0
+                        ]
+                    }
+                },
+                {
+                    "include": "#qstring-double",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "string",
+                            "patterns",
+                            1
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "string"
+                ]
+            }
+        },
+        "punctuation-comma": {
+            "$impostureLang": {
+                "type": "punctuation-comma",
+                "dataType": "comma",
+                "namespaces": [
+                    "repository",
+                    "punctuation-comma"
+                ]
+            },
+            "name": "punctuation.separator.comma.js",
+            "match": ","
+        },
+        "qstring-double": {
+            "$impostureLang": {
+                "type": "qstring-double",
+                "dataType": "string",
+                "namespaces": [
+                    "repository",
+                    "qstring-double"
+                ]
+            },
+            "name": "string.quoted.double.js",
+            "begin": "\"",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-double",
+                            "beginCaptures",
+                            "0"
+                        ]
+                    }
+                }
+            },
+            "end": "(\")|((?:[^\\\\\\n])$)",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.string.end.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-double",
+                            "endCaptures",
+                            "1"
+                        ]
+                    }
+                },
+                "2": {
+                    "name": "invalid.illegal.newline.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-double",
+                            "endCaptures",
+                            "2"
+                        ]
+                    }
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#string-character-escape",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-double",
+                            "patterns",
+                            0
+                        ]
+                    }
+                }
+            ]
+        },
+        "qstring-single": {
+            "$impostureLang": {
+                "type": "qstring-single",
+                "dataType": "string",
+                "namespaces": [
+                    "repository",
+                    "qstring-single"
+                ]
+            },
+            "name": "string.quoted.single.js",
+            "begin": "'",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-single",
+                            "beginCaptures",
+                            "0"
+                        ]
+                    }
+                }
+            },
+            "end": "(\\')|((?:[^\\\\\\n])$)",
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.string.end.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-single",
+                            "endCaptures",
+                            "1"
+                        ]
+                    }
+                },
+                "2": {
+                    "name": "invalid.illegal.newline.js",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-single",
+                            "endCaptures",
+                            "2"
+                        ]
+                    }
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#string-character-escape",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "qstring-single",
+                            "patterns",
+                            0
+                        ]
+                    }
+                }
+            ]
+        },
+        "string-character-escape": {
+            "$impostureLang": {
+                "type": "string-character-escape",
+                "dataType": "string",
+                "namespaces": [
+                    "repository",
+                    "string-character-escape"
+                ]
+            },
+            "name": "constant.character.escape.js",
+            "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+        }
+    }
+}

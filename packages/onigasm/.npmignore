@@ -1,0 +1,7 @@
+cmake-build-debug/
+cmake-build-release/
+emsdk/
+oniguruma/
+scripts/
+src/
+test/

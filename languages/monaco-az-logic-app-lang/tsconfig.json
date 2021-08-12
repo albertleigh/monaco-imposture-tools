@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "esnext",
+    "outDir": "lib",
+    "declarationDir": "lib/typings",
+    "downlevelIteration": true,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
+  "exclude": [
+    "node_modules",
+    "lib",
+    "scripts",
+  ]
+}

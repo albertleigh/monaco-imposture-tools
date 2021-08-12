@@ -1,0 +1,20 @@
+{
+  "name": "@monaco-imposture-tools/grammars",
+  "version": "0.0.4",
+  "description": "Textmate grammars for monaco imposture tools.",
+  "main": "index.js",
+  "scripts": {
+    "postpublish": "node ./scripts/post-publish.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:albertleigh/monaco-imposture-tools.git"
+  },
+  "keywords": [],
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Wentao LI <liwentao90@yahoo.com>",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "gitHead": "fbea0c56db4e7b358687c48d75a7e8a45aedc674"
+}
