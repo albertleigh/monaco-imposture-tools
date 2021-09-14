@@ -13,9 +13,5 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["dom", "dom.iterable", "esnext"]
   },
-  "exclude": [
-    "node_modules",
-    "lib",
-    "scripts",
-  ]
+  "exclude": ["node_modules", "lib", "scripts"]
 }

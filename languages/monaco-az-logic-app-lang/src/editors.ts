@@ -1,20 +1,24 @@
-import {CodeDocument, IGrammar, INITIAL, Registry, StackElement, ValueEventEmitter} from "@monaco-imposture-tools/core";
-import {loadWASM} from "@monaco-imposture-tools/oniguruma-asm";
-import {CancellationToken, IDisposable, editor, languages, Position} from "./editor.api";
-import {default as monaco} from "./editor.api";
-import {DiagnosticSeverity, validateCodeDocument, ValidateResult} from "./validateHelper";
-import {debounce} from "./debounce";
-import {TMToMonacoToken} from "./tm-to-monaco-token";
-import {generateHover} from "./hoverProviderHelper";
-import {generateCompletion} from "./completionProviderHelper";
-class TokenizerState implements languages.IState {
+import {CodeDocument, INITIAL, Registry, StackElement, ValueEventEmitter, IRawTheme, Position as TmPosition} from '@monaco-imposture-tools/core';
+import {loadWASM} from '@monaco-imposture-tools/oniguruma-asm';
+import {CancellationToken, IDisposable, editor, languages, Position, Range} from './editor.api';
+import {default as monaco} from './editor.api';
+import {ValidateResult} from './validateHelper';
+import {debounce} from './debounce';
+import {TMToMonacoToken} from './tm-to-monaco-token';
+import {generateHover} from './hoverProviderHelper';
+import {generateCompletion} from './completionProviderHelper';
+import {language, conf} from './languageConfiguration';
+import {generateCodeActions} from './codeActionProviderHelper';
+import {themes} from './themes';
+import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
+import {SymbolTable, ValueDescriptionDictionary, AzLogicAppLangConstants} from "./base";
+import {generateValueDescriptionDictionary} from "./utils";
 
-  constructor(
-    private _ruleStack: StackElement
-  ) { }
+class TokenizerState implements languages.IState {
+  constructor(private _ruleStack: StackElement) {}
 
   public get ruleStack(): StackElement {
-    return this._ruleStack
+    return this._ruleStack;
   }
 
   public clone(): TokenizerState {
@@ -22,310 +26,462 @@ class TokenizerState implements languages.IState {
   }
 
   public equals(other: languages.IState): boolean {
-    return !(!other ||
-      !(other instanceof TokenizerState) ||
-      other !== this ||
-      other._ruleStack !== this._ruleStack);
+    return !(!other || !(other instanceof TokenizerState) || other !== this || other._ruleStack !== this._ruleStack);
   }
 }
 
 export class AzLogicAppExpressionLangMonacoEditor {
 
-  static readonly SCOPE_NAME = 'source.azLgcAppExp';                     // source.js      ->    source.azLgcAppExp
-  static readonly LANGUAGE_ID = 'azureLogicAppExpression';               // javascript     ->    azureLogicAppExpression
-  static readonly DEFAULT_EDITOR_ID = 'az-lg-app-exp-default-editor'
-
-  static inDebugMode: boolean = false;
-
-  public static _init:Promise<any> | undefined = undefined;
-  public static get init(){
-    return this._init;
+  public static get inLexicalDebugMode(){
+    return AzLogicAppLangConstants.inLexicalDebugMode;
   }
-  public static _grammar:  IGrammar | undefined = undefined;
-  public static get grammar(){
-    return this._grammar
+  public static set inLexicalDebugMode(val:boolean){
+    AzLogicAppLangConstants.inLexicalDebugMode = val;
   }
+
+  public static get inSyntaxDebugMode(){
+    return AzLogicAppLangConstants.inSyntaxDebugMode;
+  }
+  public static set inSyntaxDebugMode(val:boolean){
+    AzLogicAppLangConstants.inSyntaxDebugMode = val;
+  }
+
+  public static get inSemanticDebugMode(){
+    return AzLogicAppLangConstants.inSemanticDebugMode;
+  }
+  public static set inSemanticDebugMode(val:boolean){
+    AzLogicAppLangConstants.inSemanticDebugMode = val;
+  }
+
+  public static get init() {
+    return AzLogicAppLangConstants._init;
+  }
+  public static get grammar() {
+    return AzLogicAppLangConstants._grammar;
+  }
+
+  static get theme():IRawTheme{
+    return AzLogicAppLangConstants._theme;
+
+  }
+  static set theme(nextTheme){
+    AzLogicAppLangConstants._usingBuiltInTheme = false;
+    AzLogicAppLangConstants._theme = nextTheme;
+    if (AzLogicAppLangConstants._registry){
+      AzLogicAppLangConstants._registry.setTheme(nextTheme);
+    }
+  }
+
   private static _tokenProvider: IDisposable | undefined;
   private static _hoverProvider: IDisposable | undefined;
-  private static _completionProvider: IDisposable| undefined;
+  private static _completionProvider: IDisposable | undefined;
+  private static _codeActionsProvider: IDisposable | undefined;
 
-  private static _curEditorsMap: Map<string, editor.IStandaloneCodeEditor> = new Map();
-  private static _codeDocsEvtEmitterMap: Map<string, ValueEventEmitter<CodeDocument|undefined>> = new Map();
-  private static _validationResultEvtEmitterMap: Map<string, ValueEventEmitter<ValidateResult|undefined>> = new Map();
+  private static _curEditorsMap: Map<string, AzLogicAppExpressionLangMonacoEditor> = new Map();
 
-  private static _curCodeDocsMap: Map<string, { versionId:number, codeDoc:CodeDocument }> = new Map();
-  private static _curDeferredCodeDocMap: Map<string, Promise<CodeDocument>> = new Map();
-  private static _curCodeDocResolverMap: Map<string, (val: any)=>any> = new Map();
+  private static _curAzLgcExpDocsMap: WeakMap<editor.IStandaloneCodeEditor, {versionId: number; azLgcExpDoc: AzLgcExpDocument}> = new WeakMap();
 
-  static get defaultEditor (){
-    return this._curEditorsMap.get(this.DEFAULT_EDITOR_ID);
+  private static _curDeferredAzLgcExpDocMap: WeakMap<editor.IStandaloneCodeEditor, Promise<AzLgcExpDocument>> = new WeakMap();
+  private static _curCodeDocResolverMap: WeakMap<editor.IStandaloneCodeEditor, (azLgcExpDoc: AzLgcExpDocument | undefined| PromiseLike<AzLgcExpDocument>) => void> = new WeakMap();
+
+
+  static getCodeEditorById(editorId?:string){
+    return this._curEditorsMap.get(editorId || AzLogicAppLangConstants.DEFAULT_EDITOR_ID)
   }
 
-  private static _doParseSync(text:string, versionId:number, editorId:string = this.DEFAULT_EDITOR_ID):CodeDocument|undefined{
-    if (this.grammar){
-      let _cur = this._curCodeDocsMap.get(editorId);
-      const codeDocResult = this._codeDocsEvtEmitterMap.get(editorId)!;
-      const validateResult = this._validationResultEvtEmitterMap.get(editorId)!;
-      if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId){
-        const codeDoc = this.grammar!.parse(text || " ");
-        codeDocResult.emit(codeDoc);
-        validateResult.emit(validateCodeDocument(codeDoc));
-        this._curCodeDocsMap.set(editorId, {versionId, codeDoc});
-        return codeDoc;
+  static get defaultEditor() {
+    return this._curEditorsMap.get(AzLogicAppLangConstants.DEFAULT_EDITOR_ID);
+  }
+
+  private static _doParseSync(
+    text: string,
+    versionId: number,
+    azLgcExpEditor: AzLogicAppExpressionLangMonacoEditor
+  ): AzLgcExpDocument | undefined {
+    if (this.grammar && azLgcExpEditor) {
+      const itsGlobalSymbolTable = azLgcExpEditor.rootSymbolTable;
+      const _cur = this._curAzLgcExpDocsMap.get(azLgcExpEditor.standaloneCodeEditor);
+      const azLgcExpDocResult = azLgcExpEditor.azLgcExpDocEventEmitter;
+      const validateResult = azLgcExpEditor.validationResultEventEmitter;
+      if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
+        const codeDoc = this.grammar!.parse(text || ' ');
+
+        const azLgcExpDoc = parseAzLgcExpDocument(codeDoc, itsGlobalSymbolTable);
+        azLgcExpDocResult.emit(azLgcExpDoc);
+
+        AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
+          console.log("[azLgcLang::parseAzLgcExpDocument]", azLgcExpDoc.entries, azLgcExpDoc.validateResult, azLgcExpDoc);
+        AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
+          azLgcExpDoc.consoleLogSyntaxNodes();
+
+        const vr = azLgcExpDoc.validateResult;
+
+        AzLogicAppExpressionLangMonacoEditor.monaco.editor.setModelMarkers(
+          azLgcExpEditor.standaloneCodeEditor.getModel(),
+          AzLogicAppLangConstants.LANGUAGE_ID,
+          vr.problems.map((one) => ({
+            severity: one.severity as any,
+            code: '' + one.code,
+            message: one.message,
+            startLineNumber: one.startPos.line + 1,
+            startColumn: one.startPos.character + 1,
+            endColumn: one.endPos.character + 1,
+            endLineNumber: one.endPos.line + 1,
+          }))
+        );
+
+        validateResult.emit(vr);
+        this._curAzLgcExpDocsMap.set(azLgcExpEditor.standaloneCodeEditor, {versionId, azLgcExpDoc});
+        return azLgcExpDoc;
       }
     }
-    return this._curCodeDocsMap.get(editorId)?.codeDoc;
+    return this._curAzLgcExpDocsMap.get(azLgcExpEditor.standaloneCodeEditor)?.azLgcExpDoc;
   }
-  private static _debouncedDoParseSync = debounce(function (text:string, versionId:number, editorId:string = AzLogicAppExpressionLangMonacoEditor.DEFAULT_EDITOR_ID, cb:any) {
-    cb && cb(AzLogicAppExpressionLangMonacoEditor._doParseSync(
-      text, versionId, editorId
-    ))
-  }, 250)
+  private static _debouncedDoParseSync = debounce(function (
+    text: string,
+    versionId: number,
+    azLgcExpEditor: AzLogicAppExpressionLangMonacoEditor,
+    cb: (azLgcExpDoc: AzLgcExpDocument | undefined )=>void
+  ) {
+    cb && cb(AzLogicAppExpressionLangMonacoEditor._doParseSync(text, versionId, azLgcExpEditor));
+  },
+  250);
 
-  private static _doParse(text:string, versionId:number, editorId:string = this.DEFAULT_EDITOR_ID){
-    let curResolver = this._curCodeDocResolverMap.get(editorId);
-    if (!curResolver){
-      const deferredCodeDoc = new Promise<CodeDocument>((resolve, reject) => {
+  private static _doParse(text: string, versionId: number, azLgcExpEditor: AzLogicAppExpressionLangMonacoEditor) {
+    let curResolver = this._curCodeDocResolverMap.get(azLgcExpEditor.standaloneCodeEditor);
+    if (!curResolver) {
+      const deferredCodeDoc = new Promise<AzLgcExpDocument>((resolve, _reject) => {
         curResolver = resolve;
-      })
-      this._curCodeDocResolverMap.set(editorId, curResolver!);
-      this._curDeferredCodeDocMap.set(editorId, deferredCodeDoc);
+      });
+      this._curCodeDocResolverMap.set(azLgcExpEditor.standaloneCodeEditor, curResolver);
+      this._curDeferredAzLgcExpDocMap.set(azLgcExpEditor.standaloneCodeEditor, deferredCodeDoc);
     }
-    this._debouncedDoParseSync(text, versionId, editorId, (codeDoc: CodeDocument|undefined)=>{
-      curResolver!(codeDoc);
-      this._curCodeDocResolverMap.delete(editorId);
+    this._debouncedDoParseSync(text, versionId, azLgcExpEditor, (azLgcExpDoc: AzLgcExpDocument | undefined) => {
+      curResolver!(azLgcExpDoc);
+      this._curCodeDocResolverMap.delete(azLgcExpEditor.standaloneCodeEditor);
     });
-    return this._curDeferredCodeDocMap.get(editorId)!;
+    return this._curDeferredAzLgcExpDocMap.get(azLgcExpEditor.standaloneCodeEditor)!;
   }
 
   private static _scannerOrItsPath: string | ArrayBuffer;
-  static set scannerOrItsPath(scannerOrItsPath: string | ArrayBuffer){
+  static set scannerOrItsPath(scannerOrItsPath: string | ArrayBuffer) {
     this._scannerOrItsPath = scannerOrItsPath;
   }
-  //enhance it to support string val
-  private static _grammarContent: Promise<string| object>|string|object = require('../grammar/LogicApps.tmLanguage.json');
-  static set grammarContent(grammarContent: Promise<string| object>|string|object){
+
+  private static _grammarContent:
+    | Promise<string | object>
+    | string
+    | object = require('../grammar/LogicApps.tmLanguage.json');
+  static set grammarContent(grammarContent: Promise<string | object> | string | object) {
     this._grammarContent = grammarContent;
   }
 
-  private static _monaco: typeof monaco| undefined;
-  static get monaco(){
-    if (!this._monaco){
+  // todo support json format
+  // private static _extJsonGrammar:
+  //   | Promise<string | object>
+  //   | string
+  //   | object = require('../grammar/LogicAppsExtJson.tmLanguage.json');
+
+  static emitBinaryTokens = true;
+
+  static get monaco() {
+    if (!AzLogicAppLangConstants._monaco) {
       throw new Error(`Azure logic app expression editor failed to retrieve monaco api`);
     }
-    return this._monaco;
+    return AzLogicAppLangConstants._monaco;
   }
-  static set monaco(_monaco: typeof monaco| undefined){
-    this._monaco = _monaco;
+  static set monaco(_monaco: typeof monaco | undefined) {
+    AzLogicAppLangConstants._monaco = _monaco;
   }
 
   public static activate(
     scannerOrItsPath: string | ArrayBuffer = this._scannerOrItsPath,
-    realMonaco: typeof monaco = this._monaco,
-    grammarContent: Promise<string| object>|string|object = this._grammarContent
-  ){
+    realMonaco: typeof monaco = AzLogicAppLangConstants._monaco,
+    grammarContent: Promise<string | object> | string | object = this._grammarContent
+  ) {
     if (this.init) return this.init;
 
     this._scannerOrItsPath = scannerOrItsPath;
-    this._monaco = realMonaco;
+    AzLogicAppLangConstants._monaco = realMonaco;
     this._grammarContent = grammarContent;
 
     if (
-      (
-        typeof scannerOrItsPath !== 'string' &&
-        !(scannerOrItsPath instanceof ArrayBuffer)
-      ) || (
-        !(grammarContent instanceof Promise) &&
+      (typeof scannerOrItsPath !== 'string' && !(scannerOrItsPath instanceof ArrayBuffer)) ||
+      (!(grammarContent instanceof Promise) &&
         typeof grammarContent !== 'string' &&
-        typeof grammarContent !== 'object'
-      ) || !realMonaco
-    ){
-      throw Error(`Failed to activate Az logic app exp language: Invalid scannerOrItsPath, grammarContent or monaco language module`);
+        typeof grammarContent !== 'object') ||
+      !realMonaco
+    ) {
+      throw Error(
+        `Failed to activate Az logic app exp language: Invalid scannerOrItsPath, grammarContent or monaco language module`
+      );
     }
 
-    this._init = (async ()=>{
+    AzLogicAppLangConstants._init = (async () => {
       await loadWASM(scannerOrItsPath);
-      const registry = new Registry({
+      AzLogicAppLangConstants._registry = new Registry({
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        debug: AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode,
+        theme: AzLogicAppLangConstants._theme,
         getGrammarDefinition: async (scopeName) => {
-          return {
-            format: 'json',
-            // todo might not need to await
-            content: grammarContent instanceof Promise ?
-              await grammarContent:
-              grammarContent
+          if (scopeName === AzLogicAppLangConstants.SCOPE_NAME){
+            return {
+              format: 'json',
+              content: grammarContent instanceof Promise ? await grammarContent : grammarContent,
+            };
+          }else{
+            throw new Error(`Unsupported grammar request of scope name ${scopeName}`);
           }
-        }
-      })
-      const grammar = await registry.loadGrammar(AzLogicAppExpressionLangMonacoEditor.SCOPE_NAME);
-      this._grammar = grammar
-
-      realMonaco.languages.register({id: this.LANGUAGE_ID})
-      this._tokenProvider = realMonaco.languages.setTokensProvider(this.LANGUAGE_ID, {
-        getInitialState(): languages.IState {
-          return new TokenizerState(INITIAL);
         },
-        tokenize(line: string, state: TokenizerState): languages.ILineTokens {
-          // todo remove this _curEditorForTknSvc once we switch to tokens in binary
-          const _curEditorForTknSvc = AzLogicAppExpressionLangMonacoEditor.defaultEditor;
+      });
 
-          const res = grammar?.tokenizeLine(line, state.ruleStack)
+      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME);
+      AzLogicAppLangConstants._grammar = grammar;
 
-          AzLogicAppExpressionLangMonacoEditor.inDebugMode &&
+      realMonaco.languages.register({id: AzLogicAppLangConstants.LANGUAGE_ID});
+      realMonaco.languages.setLanguageConfiguration(AzLogicAppLangConstants.LANGUAGE_ID, conf);
+      realMonaco.languages.setMonarchTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, language);
+
+      if (this.emitBinaryTokens){
+        realMonaco.languages.setColorMap(AzLogicAppLangConstants._registry.getColorMap());
+        this._tokenProvider = realMonaco.languages.setTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
+          getInitialState(): languages.IState {
+            return new TokenizerState(INITIAL);
+          },
+          tokenizeEncoded(line: string, state: TokenizerState): languages.IEncodedLineTokens {
+            const res = grammar?.tokenizeLine2(line, state.ruleStack);
+            AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
+            console.log(`grammar::tokenize2 ${line} ||`, res.tokens, res);
+            return {
+              endState: new TokenizerState(res.ruleStack),
+              tokens: res.tokens
+            }
+          }
+        })
+      }else{
+        this._tokenProvider = realMonaco.languages.setTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
+          getInitialState(): languages.IState {
+            return new TokenizerState(INITIAL);
+          },
+          tokenize(line: string, state: TokenizerState): languages.ILineTokens {
+            const _curEditorForTknSvc = AzLogicAppExpressionLangMonacoEditor.defaultEditor.standaloneCodeEditor;
+
+            const res = grammar?.tokenizeLine(line, state.ruleStack);
+
+            AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
             console.log(`grammar::tokenize ${line} ||`, res.tokens, res);
 
-          return {
-            endState: new TokenizerState(res.ruleStack),
-            tokens: res.tokens.map(token => ({
-              ...token,
-              // todo: At the moment, monaco-editor doesn't seem to accept array of scopes
-              scopes: _curEditorForTknSvc ? TMToMonacoToken(_curEditorForTknSvc!, token.scopes) : token.scopes[token.scopes.length - 1]
-            })),
-          }
-        }
-      });
+            return {
+              endState: new TokenizerState(res.ruleStack),
+              tokens: res.tokens.map((token) => ({
+                ...token,
+                // at the moment, monaco-editor doesn't seem to accept array of scopes
+                scopes: _curEditorForTknSvc
+                  ? TMToMonacoToken(_curEditorForTknSvc!, token.scopes)
+                  : token.scopes[token.scopes.length - 1],
+              })),
+            };
+          },
+        });
+      }
 
-      this._hoverProvider = realMonaco.languages.registerHoverProvider(this.LANGUAGE_ID, {
+      this._hoverProvider = realMonaco.languages.registerHoverProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
         provideHover: (model, position) => {
-          const _curCodeDocEntry = this._curCodeDocsMap.get(model.id || this.DEFAULT_EDITOR_ID);
-          if (_curCodeDocEntry){
-            const offset = _curCodeDocEntry.codeDoc.offsetAt({
-              line: position.lineNumber-1,
-              character: position.column-1
-            })
-            const theNode = _curCodeDocEntry.codeDoc.getNodeByOffset(offset);
-            return generateHover(theNode, _curCodeDocEntry.codeDoc);
+          const thAzLgcEditor = this.getCodeEditorById(model.id);
+          const _curCodeDocEntry = this._curAzLgcExpDocsMap.get(thAzLgcEditor.standaloneCodeEditor);
+          if (_curCodeDocEntry) {
+            const offset = _curCodeDocEntry.azLgcExpDoc.codeDocument.offsetAt({
+              line: position.lineNumber - 1,
+              character: position.column - 1,
+            });
+            const theNode = _curCodeDocEntry.azLgcExpDoc.getSyntaxNodeByOffset(offset);
+            return generateHover(theNode, _curCodeDocEntry.azLgcExpDoc);
           }
         },
       });
 
-      this._completionProvider = realMonaco.languages.registerCompletionItemProvider(this.LANGUAGE_ID, {
-        triggerCharacters: [".", ",", "@"],
-        provideCompletionItems: async (model: editor.ITextModel, position: Position, context: languages.CompletionContext, token: CancellationToken) => {
-          const _curCodeDoc = this._curCodeDocsMap.get(model.id || this.DEFAULT_EDITOR_ID);
-          if (_curCodeDoc){
+      this._completionProvider = realMonaco.languages.registerCompletionItemProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
+        triggerCharacters: ['.', ',', '@'],
+        provideCompletionItems: async (
+          model: editor.ITextModel,
+          position: Position,
+          context: languages.CompletionContext,
+          token: CancellationToken
+        ) => {
+          const theLgcExpDocEditor = this.getCodeEditorById(model.id);
+          const _curCodeDoc = this._curAzLgcExpDocsMap.get(theLgcExpDocEditor.standaloneCodeEditor);
+          if (_curCodeDoc) {
             const modelLines = model.getLinesContent();
-            let theCodeDoc = _curCodeDoc.codeDoc;
+            let theAzLgcExpDoc = _curCodeDoc.azLgcExpDoc;
             if (
-              modelLines.length!== theCodeDoc.lines.length ||
-              !theCodeDoc ||
-              modelLines.some((value, index) => (value !== theCodeDoc.lines[index]))
-            ){
-              theCodeDoc = (await this._doParse(
+              !theAzLgcExpDoc ||
+              modelLines.length !== theAzLgcExpDoc.codeDocument.lines.length ||
+              modelLines.some((value, index) => value !== theAzLgcExpDoc.codeDocument.lines[index])
+            ) {
+              theAzLgcExpDoc =
+                (await this._doParse(
                   modelLines.join(CodeDocument.DEFAULT_SEPARATOR),
                   model.getVersionId(),
-                  model.id
-                )) ||
-                theCodeDoc
+                  theLgcExpDocEditor
+                )) || theAzLgcExpDoc;
             }
-            return generateCompletion(theCodeDoc, model, position, context, token);
+            return generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
           }
           return {
-            suggestions: []
-          }
+            suggestions: [],
+          };
         },
-        resolveCompletionItem(item: languages.CompletionItem, token: CancellationToken): languages.ProviderResult<languages.CompletionItem> {
-          AzLogicAppExpressionLangMonacoEditor.inDebugMode &&
-            console.log("[CompletionItemProvider::resolveCompletionItem]", item, token);
+        resolveCompletionItem(
+          item: languages.CompletionItem,
+          token: CancellationToken
+        ): languages.ProviderResult<languages.CompletionItem> {
+          AzLogicAppExpressionLangMonacoEditor.inSemanticDebugMode &&
+            console.log('[CompletionItemProvider::resolveCompletionItem]', item, token);
           return item;
-        }
+        },
       });
 
-      AzLogicAppExpressionLangMonacoEditor.inDebugMode &&
-        console.log('[AzLogicAppExpressionLangMonacoEditor init]', this._hoverProvider, this._completionProvider);
+      this._codeActionsProvider = realMonaco.languages.registerCodeActionProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
+        provideCodeActions: (
+          model: editor.ITextModel,
+          range: Range,
+          context: languages.CodeActionContext,
+          token: CancellationToken
+        ): languages.ProviderResult<languages.CodeActionList> => {
+          return generateCodeActions(model, range, context, token);
+        },
+      });
 
+      AzLogicAppExpressionLangMonacoEditor.inSemanticDebugMode &&
+        console.log('[AzLogicAppExpressionLangMonacoEditor init]', this._hoverProvider, this._completionProvider);
     })();
     return this.init;
   }
 
+  public standaloneCodeEditor?: editor.IStandaloneCodeEditor;
+  public azLgcExpDocEventEmitter?: ValueEventEmitter<AzLgcExpDocument | undefined>;
+  public validationResultEventEmitter?: ValueEventEmitter<ValidateResult | undefined>;
 
-  standaloneCodeEditor?:editor.IStandaloneCodeEditor;
-  codeDocEventEmitter?:ValueEventEmitter<CodeDocument|undefined>;
-  validationResultEventEmitter?:ValueEventEmitter<ValidateResult|undefined>;
+  private _rootSymbolTable: SymbolTable;
+  private _valueDescriptionDict: ValueDescriptionDictionary;
 
-  editorDecoration: string[] = [];
-  private _onVrChanged(vr?:ValidateResult){
-    const problems = vr?.problems || [];
-    if (this.standaloneCodeEditor){
-      this.editorDecoration = this.standaloneCodeEditor.deltaDecorations(
-        this.editorDecoration,
-        problems.filter(one=> one.severity === DiagnosticSeverity.Error).map(one=>({
-          range: {
-            startColumn: one.startPos.character+1,
-            startLineNumber: one.startPos.line+1,
-            endColumn: one.endPos.character+1,
-            endLineNumber: one.endPos.line+1,
-          },
-          options:{
-            inlineClassName:'errorDecorator',
-            hoverMessage: [{
-              isTrusted: true,
-              value:one.message
-            }]
-          }
-        }))
-      ) || [];
+
+  public get rootSymbolTable(): SymbolTable{
+    return this._rootSymbolTable;
+  }
+  public set rootSymbolTable(symbolTable:SymbolTable){
+    this._rootSymbolTable = symbolTable;
+    if (this._rootSymbolTable === AzLogicAppLangConstants.globalSymbolTable){
+      this._valueDescriptionDict = AzLogicAppLangConstants.globalValueDescriptionDict;
+    }else {
+      this._valueDescriptionDict = generateValueDescriptionDictionary(symbolTable);
     }
+    // force re-parsing if the editor existed
+    if(this.standaloneCodeEditor){
+      const theValStr = this.standaloneCodeEditor!.getValue();
+      if (theValStr) {
+        AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, -1, this);
+      }
+    }
+  }
+  public get valueDescriptionDict(): ValueDescriptionDictionary{
+    return  this._valueDescriptionDict;
   }
 
   constructor(
-    public readonly domeElement:HTMLDivElement,
-    standaloneEditorConstructionOptions?:Omit<editor.IStandaloneEditorConstructionOptions, 'language'|'model'>,
-    public readonly editorId:string = AzLogicAppExpressionLangMonacoEditor.DEFAULT_EDITOR_ID,
+    public readonly domeElement: HTMLDivElement,
+    standaloneEditorConstructionOptions?: Omit<editor.IStandaloneEditorConstructionOptions, 'language' | 'model'>,
+    public readonly editorId: string = AzLogicAppLangConstants.DEFAULT_EDITOR_ID,
+    _rootSymbolTable: SymbolTable = AzLogicAppLangConstants.globalSymbolTable
   ) {
-    AzLogicAppExpressionLangMonacoEditor.activate().then(
-      ()=>{
-        this.standaloneCodeEditor = AzLogicAppExpressionLangMonacoEditor._monaco.editor.create(domeElement, {
-          language: AzLogicAppExpressionLangMonacoEditor.LANGUAGE_ID,
-          model: Object.assign(AzLogicAppExpressionLangMonacoEditor._monaco.editor.createModel(
-            standaloneEditorConstructionOptions?.value || ' '
-            , AzLogicAppExpressionLangMonacoEditor.LANGUAGE_ID
-          ),{
-            id: editorId
-          }),
-          ...standaloneEditorConstructionOptions
-        });
-        this.codeDocEventEmitter = new ValueEventEmitter<CodeDocument|undefined>(undefined);
-        this.validationResultEventEmitter = new ValueEventEmitter<ValidateResult|undefined>(undefined);
-        AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(editorId, this.standaloneCodeEditor);
-        AzLogicAppExpressionLangMonacoEditor._codeDocsEvtEmitterMap.set(editorId, this.codeDocEventEmitter);
-        AzLogicAppExpressionLangMonacoEditor._validationResultEvtEmitterMap.set(editorId, this.validationResultEventEmitter);
 
-        this.validationResultEventEmitter.subscribe(this._onVrChanged.bind(this));
+    this.rootSymbolTable = _rootSymbolTable;
 
-        // setup default editor if needed
-        if (!AzLogicAppExpressionLangMonacoEditor._curEditorsMap.has(AzLogicAppExpressionLangMonacoEditor.DEFAULT_EDITOR_ID)){
-          AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(AzLogicAppExpressionLangMonacoEditor.DEFAULT_EDITOR_ID, this.standaloneCodeEditor);
-          AzLogicAppExpressionLangMonacoEditor._validationResultEvtEmitterMap.set(AzLogicAppExpressionLangMonacoEditor.DEFAULT_EDITOR_ID, this.validationResultEventEmitter);
-        }
+    if (
+      AzLogicAppLangConstants._usingBuiltInTheme &&
+      standaloneEditorConstructionOptions.theme &&
+      standaloneEditorConstructionOptions.theme in themes
+    ){
+      AzLogicAppLangConstants._theme = themes[standaloneEditorConstructionOptions.theme];
+    }
 
-        const theValStr = this.standaloneCodeEditor.getValue();
-        if (theValStr){
-          AzLogicAppExpressionLangMonacoEditor._doParse(
-            theValStr,
-            -1,
-            this.editorId
-          )
-        }
-        this.standaloneCodeEditor.getModel()?.onDidChangeContent(evt => {
-          const theValStr = this.standaloneCodeEditor!.getValue();
-          if (theValStr){
-            AzLogicAppExpressionLangMonacoEditor._doParse(
-              theValStr,
-              evt.versionId,
-              this.editorId
-            )
+    AzLogicAppExpressionLangMonacoEditor.activate().then(() => {
+      this.standaloneCodeEditor = AzLogicAppLangConstants._monaco.editor.create(domeElement, {
+        language: AzLogicAppLangConstants.LANGUAGE_ID,
+        model: Object.assign(
+          AzLogicAppLangConstants._monaco.editor.createModel(
+            standaloneEditorConstructionOptions?.value || ' ',
+            AzLogicAppLangConstants.LANGUAGE_ID
+          ),
+          {
+            id: editorId,
           }
-        })
+        ),
+        ...standaloneEditorConstructionOptions,
+      });
+
+      this.azLgcExpDocEventEmitter = new ValueEventEmitter<AzLgcExpDocument | undefined>(undefined);
+      this.validationResultEventEmitter = new ValueEventEmitter<ValidateResult | undefined>(undefined);
+
+      AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(editorId, this);
+
+      // setup default editor if needed
+      if (
+        !AzLogicAppExpressionLangMonacoEditor._curEditorsMap.has(AzLogicAppLangConstants.DEFAULT_EDITOR_ID)
+      ) {
+        AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(
+          AzLogicAppLangConstants.DEFAULT_EDITOR_ID,
+          this
+        );
       }
-    )
+
+      const theValStr = this.standaloneCodeEditor.getValue();
+      if (theValStr) {
+        AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, -1, this);
+      }
+      this.standaloneCodeEditor.getModel()?.onDidChangeContent((evt) => {
+        const theValStr = this.standaloneCodeEditor!.getValue();
+        if (theValStr) {
+          AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, evt.versionId, this);
+        }
+      });
+    });
   }
 
-  get codeDocument (){
-    return AzLogicAppExpressionLangMonacoEditor._curCodeDocsMap.get(this.editorId)?.codeDoc;
+  get azLgcExpDocument() {
+    return AzLogicAppExpressionLangMonacoEditor._curAzLgcExpDocsMap.get(this.standaloneCodeEditor)?.azLgcExpDoc;
   }
 
-  get parsedCodeDocument (){
-    return AzLogicAppExpressionLangMonacoEditor._curDeferredCodeDocMap.get(this.editorId);
+  get deferredAzLgcExpDocument() {
+    return AzLogicAppExpressionLangMonacoEditor._curDeferredAzLgcExpDocMap.get(this.standaloneCodeEditor);
+  }
+
+  get currentPosition(){
+    return this.standaloneCodeEditor?.getPosition();
+  }
+
+  get currentOffset(){
+    const curPos = this.currentPosition;
+    const curDoc = this.azLgcExpDocument;
+    if (curDoc && curPos){
+      return curDoc.codeDocument.offsetAt(TmPosition.create(curPos.lineNumber-1, curPos.column-1));
+    }
+    return 0;
+  }
+
+  get currentSelection(){
+    return this.standaloneCodeEditor?.getSelection();
+  }
+
+  get currentSelectionOffsetArray(){
+    const result:number[] = [];
+    const curSel = this.currentSelection;
+    const curDoc = this.azLgcExpDocument;
+    if(curDoc && curSel){
+      result.push(curDoc.codeDocument.offsetAt(TmPosition.create(curSel.startLineNumber-1, curSel.startColumn-1)));
+      result.push(curDoc.codeDocument.offsetAt(TmPosition.create(curSel.endLineNumber-1, curSel.endColumn-1)));
+    }
+    return result;
   }
 
 }

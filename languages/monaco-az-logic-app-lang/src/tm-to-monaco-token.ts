@@ -1,11 +1,11 @@
-import {editor} from "./editor.api";
+import {editor} from './editor.api';
 
 export const TMToMonacoToken = (editor: editor.ICodeEditor, scopes: string[]) => {
-  let scopeName = "";
+  let scopeName = '';
   // get the scope name. Example: cpp , java, haskell
   for (let i = scopes[0].length - 1; i >= 0; i -= 1) {
     const char = scopes[0][i];
-    if (char === ".") {
+    if (char === '.') {
       break;
     }
     scopeName = char + scopeName;
@@ -33,13 +33,12 @@ export const TMToMonacoToken = (editor: editor.ICodeEditor, scopes: string[]) =>
      */
     for (let i = scope.length - 1; i >= 0; i -= 1) {
       const char = scope[i];
-      if (char === ".") {
+      if (char === '.') {
         const token = scope.slice(0, i);
         if (
-          (editor as any)['_themeService'].getColorTheme()._tokenTheme._match(token + "." + scopeName)._foreground >
-          1
+          (editor as any)['_themeService'].getColorTheme()._tokenTheme._match(token + '.' + scopeName)._foreground > 1
         ) {
-          return token + "." + scopeName;
+          return token + '.' + scopeName;
         }
         if ((editor as any)['_themeService'].getColorTheme()._tokenTheme._match(token)._foreground > 1) {
           return token;
@@ -48,5 +47,5 @@ export const TMToMonacoToken = (editor: editor.ICodeEditor, scopes: string[]) =>
     }
   }
 
-  return "";
+  return '';
 };

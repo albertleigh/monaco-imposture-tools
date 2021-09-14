@@ -3,7 +3,7 @@
     "scopeName": "source.azLgcAppExp",
     "patterns": [
         {
-            "include": "#statements",
+            "include": "#expressionString",
             "$impostureLang": {
                 "namespaces": [
                     "patterns",
@@ -13,27 +13,16 @@
         }
     ],
     "repository": {
-        "statements": {
+        "expressionString": {
             "patterns": [
                 {
                     "include": "#atTemplateSubstitutionElement",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
-                            "statements",
+                            "expressionString",
                             "patterns",
                             0
-                        ]
-                    }
-                },
-                {
-                    "include": "#atExpression",
-                    "$impostureLang": {
-                        "namespaces": [
-                            "repository",
-                            "statements",
-                            "patterns",
-                            1
                         ]
                     }
                 },
@@ -42,9 +31,52 @@
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
-                            "statements",
+                            "expressionString",
+                            "patterns",
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#atRootFunctionCallExpression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "expressionString",
                             "patterns",
                             2
+                        ]
+                    }
+                }
+            ],
+            "$impostureLang": {
+                "namespaces": [
+                    "repository",
+                    "expressionString"
+                ]
+            }
+        },
+        "atRootFunctionCallExpression": {
+            "$impostureLang": {
+                "type": "root-function-call-expression",
+                "dataType": "root-function-call-expression",
+                "namespaces": [
+                    "repository",
+                    "atRootFunctionCallExpression"
+                ]
+            },
+            "applyEndPatternLast": true,
+            "begin": "(?=((@([_$[:alpha:]][_$[:alnum:]]*)?(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\()?)",
+            "end": "((?<=\\))(?!(((@([_$[:alpha:]][_$[:alnum:]]*)?(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\()))|\\Z",
+            "patterns": [
+                {
+                    "include": "#atTemplateSubstitutionElement",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "atRootFunctionCallExpression",
+                            "patterns",
+                            0
                         ]
                     }
                 },
@@ -53,19 +85,24 @@
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
-                            "statements",
+                            "atRootFunctionCallExpression",
                             "patterns",
-                            3
+                            1
+                        ]
+                    }
+                },
+                {
+                    "include": "#atExpression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "atRootFunctionCallExpression",
+                            "patterns",
+                            2
                         ]
                     }
                 }
-            ],
-            "$impostureLang": {
-                "namespaces": [
-                    "repository",
-                    "statements"
-                ]
-            }
+            ]
         },
         "atTemplateSubstitutionElement": {
             "patterns": [
@@ -80,11 +117,11 @@
                             0
                         ]
                     },
-                    "name": "meta.template.expression.js",
-                    "begin": "(?<=(@))(\\{)",
+                    "name": "meta.template.expression.azLgcAppExp",
+                    "begin": "(?=(@)(\\{))",
                     "beginCaptures": {
-                        "2": {
-                            "name": "punctuation.definition.string.template.begin.js",
+                        "0": {
+                            "name": "punctuation.definition.template.expression.begin.azLgcAppExp",
                             "$impostureLang": {
                                 "namespaces": [
                                     "repository",
@@ -92,7 +129,20 @@
                                     "patterns",
                                     0,
                                     "beginCaptures",
-                                    "2"
+                                    "0"
+                                ]
+                            }
+                        },
+                        "1": {
+                            "name": "keyword.symbol.at.azLgcAppExp",
+                            "$impostureLang": {
+                                "namespaces": [
+                                    "repository",
+                                    "atTemplateSubstitutionElement",
+                                    "patterns",
+                                    0,
+                                    "beginCaptures",
+                                    "1"
                                 ]
                             }
                         }
@@ -100,7 +150,7 @@
                     "end": "\\}",
                     "endCaptures": {
                         "0": {
-                            "name": "punctuation.definition.string.template.end.js",
+                            "name": "punctuation.definition.template.expression.end.azLgcAppExp",
                             "$impostureLang": {
                                 "namespaces": [
                                     "repository",
@@ -137,16 +187,6 @@
                 ]
             }
         },
-        "staringAtSymbol": {
-            "name": "punctuation.accessor.js",
-            "match": "\\A(@)(?!\\{)",
-            "$impostureLang": {
-                "namespaces": [
-                    "repository",
-                    "staringAtSymbol"
-                ]
-            }
-        },
         "dualAtSymbol": {
             "$impostureLang": {
                 "type": "dualAtSymbol",
@@ -156,7 +196,7 @@
                     "dualAtSymbol"
                 ]
             },
-            "name": "constant.character.escape",
+            "name": "constant.character.escape.azLgcAppExp",
             "match": "[@]{2}"
         },
         "atSymbol": {
@@ -168,7 +208,7 @@
                     "atSymbol"
                 ]
             },
-            "name": "keyword.symbol.at",
+            "name": "keyword.symbol.at.azLgcAppExp",
             "match": "[@]{1}"
         },
         "atExpression": {
@@ -301,11 +341,21 @@
             }
         },
         "function-call": {
+            "$impostureLang": {
+                "type": "function-call-complete",
+                "dataType": "function-call-complete",
+                "namespaces": [
+                    "repository",
+                    "function-call"
+                ]
+            },
+            "begin": "(?=(((([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
+            "end": "(?<=\\))(?!(((([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
             "patterns": [
                 {
                     "$impostureLang": {
-                        "type": "function-call-complete",
-                        "dataType": "function-call-complete",
+                        "type": "function-call-full-name",
+                        "dataType": "function-call",
                         "namespaces": [
                             "repository",
                             "function-call",
@@ -313,13 +363,13 @@
                             0
                         ]
                     },
-                    "begin": "(?=(((([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
-                    "end": "(?<=\\))(?!(((([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
+                    "name": "meta.function-call.azLgcAppExp",
+                    "begin": "(?=(([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))",
+                    "end": "(?=\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
                     "patterns": [
                         {
+                            "include": "#function-call-target",
                             "$impostureLang": {
-                                "type": "function-call-full-name",
-                                "dataType": "function-call",
                                 "namespaces": [
                                     "repository",
                                     "function-call",
@@ -328,50 +378,22 @@
                                     "patterns",
                                     0
                                 ]
-                            },
-                            "name": "meta.function-call.js",
-                            "begin": "(?=(([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))",
-                            "end": "(?=\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
-                            "patterns": [
-                                {
-                                    "include": "#function-call-target",
-                                    "$impostureLang": {
-                                        "namespaces": [
-                                            "repository",
-                                            "function-call",
-                                            "patterns",
-                                            0,
-                                            "patterns",
-                                            0,
-                                            "patterns",
-                                            0
-                                        ]
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "include": "#paren-expression",
-                            "$impostureLang": {
-                                "namespaces": [
-                                    "repository",
-                                    "function-call",
-                                    "patterns",
-                                    0,
-                                    "patterns",
-                                    1
-                                ]
                             }
                         }
                     ]
+                },
+                {
+                    "include": "#paren-expression",
+                    "$impostureLang": {
+                        "namespaces": [
+                            "repository",
+                            "function-call",
+                            "patterns",
+                            1
+                        ]
+                    }
                 }
-            ],
-            "$impostureLang": {
-                "namespaces": [
-                    "repository",
-                    "function-call"
-                ]
-            }
+            ]
         },
         "function-call-target": {
             "patterns": [
@@ -397,7 +419,7 @@
                             1
                         ]
                     },
-                    "name": "entity.name.function.js",
+                    "name": "entity.name.function.azLgcAppExp",
                     "match": "([_$[:alpha:]][_$[:alnum:]]*)"
                 }
             ],
@@ -463,7 +485,7 @@
             "begin": "\\(",
             "beginCaptures": {
                 "0": {
-                    "name": "meta.brace.round.js",
+                    "name": "meta.brace.round.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -477,7 +499,7 @@
             "end": "\\)",
             "endCaptures": {
                 "0": {
-                    "name": "meta.brace.round.js",
+                    "name": "meta.brace.round.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -565,11 +587,11 @@
                     "array-literal"
                 ]
             },
-            "name": "meta.array.literal.js",
+            "name": "meta.array.literal.azLgcAppExp",
             "begin": "\\s*(\\[)",
             "beginCaptures": {
                 "1": {
-                    "name": "meta.brace.square.js",
+                    "name": "meta.brace.square.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -583,7 +605,7 @@
             "end": "\\]",
             "endCaptures": {
                 "0": {
-                    "name": "meta.brace.square.js",
+                    "name": "meta.brace.square.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -632,7 +654,7 @@
                             0
                         ]
                     },
-                    "name": "constant.numeric.hex.js",
+                    "name": "constant.numeric.hex.azLgcAppExp",
                     "match": "\\b(?<!\\$)0(?:x|X)[0-9a-fA-F][0-9a-fA-F_]*(n)?\\b(?!\\$)",
                     "captures": {
                         "1": {
@@ -648,7 +670,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         }
                     }
                 },
@@ -663,7 +685,7 @@
                             1
                         ]
                     },
-                    "name": "constant.numeric.binary.js",
+                    "name": "constant.numeric.binary.azLgcAppExp",
                     "match": "\\b(?<!\\$)0(?:b|B)[01][01_]*(n)?\\b(?!\\$)",
                     "captures": {
                         "1": {
@@ -679,7 +701,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         }
                     }
                 },
@@ -694,7 +716,7 @@
                             2
                         ]
                     },
-                    "name": "constant.numeric.octal.js",
+                    "name": "constant.numeric.octal.azLgcAppExp",
                     "match": "\\b(?<!\\$)0(?:o|O)?[0-7][0-7_]*(n)?\\b(?!\\$)",
                     "captures": {
                         "1": {
@@ -710,7 +732,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         }
                     }
                 },
@@ -740,7 +762,7 @@
                                     "0"
                                 ]
                             },
-                            "name": "constant.numeric.decimal.js"
+                            "name": "constant.numeric.decimal.azLgcAppExp"
                         },
                         "1": {
                             "$impostureLang": {
@@ -755,7 +777,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "meta.delimiter.decimal.period.js"
+                            "name": "meta.delimiter.decimal.period.azLgcAppExp"
                         },
                         "2": {
                             "$impostureLang": {
@@ -770,7 +792,7 @@
                                     "2"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "3": {
                             "$impostureLang": {
@@ -785,7 +807,7 @@
                                     "3"
                                 ]
                             },
-                            "name": "meta.delimiter.decimal.period.js"
+                            "name": "meta.delimiter.decimal.period.azLgcAppExp"
                         },
                         "4": {
                             "$impostureLang": {
@@ -800,7 +822,7 @@
                                     "4"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "5": {
                             "$impostureLang": {
@@ -815,7 +837,7 @@
                                     "5"
                                 ]
                             },
-                            "name": "meta.delimiter.decimal.period.js"
+                            "name": "meta.delimiter.decimal.period.azLgcAppExp"
                         },
                         "6": {
                             "$impostureLang": {
@@ -830,7 +852,7 @@
                                     "6"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "7": {
                             "$impostureLang": {
@@ -845,7 +867,7 @@
                                     "7"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "8": {
                             "$impostureLang": {
@@ -860,7 +882,7 @@
                                     "8"
                                 ]
                             },
-                            "name": "meta.delimiter.decimal.period.js"
+                            "name": "meta.delimiter.decimal.period.azLgcAppExp"
                         },
                         "9": {
                             "$impostureLang": {
@@ -875,7 +897,7 @@
                                     "9"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "10": {
                             "$impostureLang": {
@@ -890,7 +912,7 @@
                                     "10"
                                 ]
                             },
-                            "name": "meta.delimiter.decimal.period.js"
+                            "name": "meta.delimiter.decimal.period.azLgcAppExp"
                         },
                         "11": {
                             "$impostureLang": {
@@ -905,7 +927,7 @@
                                     "11"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "12": {
                             "$impostureLang": {
@@ -920,7 +942,7 @@
                                     "12"
                                 ]
                             },
-                            "name": "meta.delimiter.decimal.period.js"
+                            "name": "meta.delimiter.decimal.period.azLgcAppExp"
                         },
                         "13": {
                             "$impostureLang": {
@@ -935,7 +957,7 @@
                                     "13"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         },
                         "14": {
                             "$impostureLang": {
@@ -950,7 +972,7 @@
                                     "14"
                                 ]
                             },
-                            "name": "storage.type.numeric.bigint.js"
+                            "name": "storage.type.numeric.bigint.azLgcAppExp"
                         }
                     }
                 }
@@ -975,7 +997,7 @@
                             0
                         ]
                     },
-                    "name": "constant.language.boolean.true.js",
+                    "name": "constant.language.boolean.true.azLgcAppExp",
                     "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))true(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
                 },
                 {
@@ -989,7 +1011,7 @@
                             1
                         ]
                     },
-                    "name": "constant.language.boolean.false.js",
+                    "name": "constant.language.boolean.false.azLgcAppExp",
                     "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))false(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
                 }
             ],
@@ -1009,7 +1031,7 @@
                     "null-literal"
                 ]
             },
-            "name": "constant.language.null.js",
+            "name": "constant.language.null.azLgcAppExp",
             "match": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))null(?![_$[:alnum:]])(?:(?=\\.\\.\\.)|(?!\\.))"
         },
         "punctuation-accessor": {
@@ -1034,7 +1056,7 @@
                             "1"
                         ]
                     },
-                    "name": "punctuation.accessor.js"
+                    "name": "punctuation.accessor.azLgcAppExp"
                 },
                 "2": {
                     "$impostureLang": {
@@ -1047,7 +1069,7 @@
                             "2"
                         ]
                     },
-                    "name": "punctuation.accessor.optional.js"
+                    "name": "punctuation.accessor.optional.azLgcAppExp"
                 }
             }
         },
@@ -1090,7 +1112,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "punctuation.accessor.js"
+                            "name": "punctuation.accessor.azLgcAppExp"
                         },
                         "2": {
                             "$impostureLang": {
@@ -1105,7 +1127,7 @@
                                     "2"
                                 ]
                             },
-                            "name": "punctuation.accessor.optional.js"
+                            "name": "punctuation.accessor.optional.azLgcAppExp"
                         },
                         "3": {
                             "$impostureLang": {
@@ -1120,7 +1142,7 @@
                                     "3"
                                 ]
                             },
-                            "name": "variable.other.constant.property.js"
+                            "name": "variable.other.constant.property.azLgcAppExp"
                         }
                     }
                 },
@@ -1150,7 +1172,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "punctuation.accessor.js"
+                            "name": "punctuation.accessor.azLgcAppExp"
                         },
                         "2": {
                             "$impostureLang": {
@@ -1165,7 +1187,7 @@
                                     "2"
                                 ]
                             },
-                            "name": "punctuation.accessor.optional.js"
+                            "name": "punctuation.accessor.optional.azLgcAppExp"
                         },
                         "3": {
                             "$impostureLang": {
@@ -1180,7 +1202,7 @@
                                     "3"
                                 ]
                             },
-                            "name": "variable.other.property.js"
+                            "name": "variable.other.property.azLgcAppExp"
                         }
                     }
                 },
@@ -1195,7 +1217,7 @@
                             3
                         ]
                     },
-                    "name": "variable.other.constant.js",
+                    "name": "variable.other.constant.azLgcAppExp",
                     "match": "([[:upper:]][_$[:digit:][:upper:]]*)(?![_$[:alnum:]])"
                 },
                 {
@@ -1209,7 +1231,7 @@
                             4
                         ]
                     },
-                    "name": "variable.other.readwrite.js",
+                    "name": "variable.other.readwrite.azLgcAppExp",
                     "match": "[_$[:alpha:]][_$[:alnum:]]*"
                 }
             ],
@@ -1248,7 +1270,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "punctuation.accessor.js"
+                            "name": "punctuation.accessor.azLgcAppExp"
                         },
                         "2": {
                             "$impostureLang": {
@@ -1263,7 +1285,7 @@
                                     "2"
                                 ]
                             },
-                            "name": "punctuation.accessor.optional.js"
+                            "name": "punctuation.accessor.optional.azLgcAppExp"
                         },
                         "3": {
                             "$impostureLang": {
@@ -1278,7 +1300,7 @@
                                     "3"
                                 ]
                             },
-                            "name": "variable.other.constant.object.property.js"
+                            "name": "variable.other.constant.object.property.azLgcAppExp"
                         },
                         "4": {
                             "$impostureLang": {
@@ -1293,7 +1315,7 @@
                                     "4"
                                 ]
                             },
-                            "name": "variable.other.object.property.js"
+                            "name": "variable.other.object.property.azLgcAppExp"
                         }
                     }
                 },
@@ -1323,7 +1345,7 @@
                                     "1"
                                 ]
                             },
-                            "name": "variable.other.constant.object.js"
+                            "name": "variable.other.constant.object.azLgcAppExp"
                         },
                         "2": {
                             "$impostureLang": {
@@ -1338,7 +1360,7 @@
                                     "2"
                                 ]
                             },
-                            "name": "variable.other.object.js"
+                            "name": "variable.other.object.azLgcAppExp"
                         }
                     }
                 }
@@ -1391,7 +1413,7 @@
                     "punctuation-comma"
                 ]
             },
-            "name": "punctuation.separator.comma.js",
+            "name": "punctuation.separator.comma.azLgcAppExp",
             "match": ","
         },
         "qstring-double": {
@@ -1403,11 +1425,11 @@
                     "qstring-double"
                 ]
             },
-            "name": "string.quoted.double.js",
+            "name": "string.quoted.double.azLgcAppExp",
             "begin": "\"",
             "beginCaptures": {
                 "0": {
-                    "name": "punctuation.definition.string.begin.js",
+                    "name": "punctuation.definition.string.begin.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -1421,7 +1443,7 @@
             "end": "(\")|((?:[^\\\\\\n])$)",
             "endCaptures": {
                 "1": {
-                    "name": "punctuation.definition.string.end.js",
+                    "name": "punctuation.definition.string.end.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -1432,7 +1454,7 @@
                     }
                 },
                 "2": {
-                    "name": "invalid.illegal.newline.js",
+                    "name": "invalid.illegal.newline.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -1466,11 +1488,11 @@
                     "qstring-single"
                 ]
             },
-            "name": "string.quoted.single.js",
+            "name": "string.quoted.single.azLgcAppExp",
             "begin": "'",
             "beginCaptures": {
                 "0": {
-                    "name": "punctuation.definition.string.begin.js",
+                    "name": "punctuation.definition.string.begin.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -1484,7 +1506,7 @@
             "end": "(\\')|((?:[^\\\\\\n])$)",
             "endCaptures": {
                 "1": {
-                    "name": "punctuation.definition.string.end.js",
+                    "name": "punctuation.definition.string.end.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -1495,7 +1517,7 @@
                     }
                 },
                 "2": {
-                    "name": "invalid.illegal.newline.js",
+                    "name": "invalid.illegal.newline.azLgcAppExp",
                     "$impostureLang": {
                         "namespaces": [
                             "repository",
@@ -1529,7 +1551,7 @@
                     "string-character-escape"
                 ]
             },
-            "name": "constant.character.escape.js",
+            "name": "constant.character.escape.azLgcAppExp",
             "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
         }
     }

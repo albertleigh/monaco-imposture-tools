@@ -27,14 +27,14 @@ export class Emitter<T> {
 
 export enum MarkerTag {
   Unnecessary = 1,
-  Deprecated = 2
+  Deprecated = 2,
 }
 
 export enum MarkerSeverity {
   Hint = 1,
   Info = 2,
   Warning = 4,
-  Error = 8
+  Error = 8,
 }
 
 export class CancellationTokenSource {
@@ -57,7 +57,11 @@ export interface CancellationToken {
    *
    * @event
    */
-  readonly onCancellationRequested: (listener: (e: any) => any, thisArgs?: any, disposables?: IDisposable[]) => IDisposable;
+  readonly onCancellationRequested: (
+    listener: (e: any) => any,
+    thisArgs?: any,
+    disposables?: IDisposable[]
+  ) => IDisposable;
 }
 /**
  * Uniform Resource Identifier (Uri) http://tools.ietf.org/html/rfc3986.
@@ -160,13 +164,7 @@ export class Uri implements UriComponents {
    * @param path A file system path (see `Uri#fsPath`)
    */
   static file(path: string): Uri;
-  static from(components: {
-    scheme: string;
-    authority?: string;
-    path?: string;
-    query?: string;
-    fragment?: string;
-  }): Uri;
+  static from(components: {scheme: string; authority?: string; path?: string; query?: string; fragment?: string}): Uri;
   /**
    * Join a Uri path with path fragments and normalizes the resulting path.
    *
@@ -381,7 +379,7 @@ export enum KeyCode {
    * Placed last to cover the length of the enum.
    * Please do not depend on this value!
    */
-  MAX_VALUE = 112
+  MAX_VALUE = 112,
 }
 export class KeyMod {
   static readonly CtrlCmd: number;
@@ -749,7 +747,12 @@ export class Selection extends Range {
    * The column on `positionLineNumber` where the selection has ended.
    */
   readonly positionColumn: number;
-  constructor(selectionStartLineNumber: number, selectionStartColumn: number, positionLineNumber: number, positionColumn: number);
+  constructor(
+    selectionStartLineNumber: number,
+    selectionStartColumn: number,
+    positionLineNumber: number,
+    positionColumn: number
+  );
   /**
    * Transform to a human-readable representation.
    */
@@ -797,7 +800,13 @@ export class Selection extends Range {
   /**
    * Create with a direction.
    */
-  static createWithDirection(startLineNumber: number, startColumn: number, endLineNumber: number, endColumn: number, direction: SelectionDirection): Selection;
+  static createWithDirection(
+    startLineNumber: number,
+    startColumn: number,
+    endLineNumber: number,
+    endColumn: number,
+    direction: SelectionDirection
+  ): Selection;
 }
 
 /**
@@ -811,7 +820,7 @@ export enum SelectionDirection {
   /**
    * The selection starts below where it ends.
    */
-  RTL = 1
+  RTL = 1,
 }
 
 export class Token {
@@ -824,7 +833,6 @@ export class Token {
 }
 
 export namespace editor {
-
   export interface IDiffNavigator {
     canNavigate(): boolean;
     next(): void;
@@ -837,7 +845,11 @@ export namespace editor {
    * `domElement` should be empty (not contain other dom nodes).
    * The editor will read the size of `domElement`.
    */
-  export function create(domElement: HTMLElement, options?: IStandaloneEditorConstructionOptions, override?: IEditorOverrideServices): IStandaloneCodeEditor;
+  export function create(
+    domElement: HTMLElement,
+    options?: IStandaloneEditorConstructionOptions,
+    override?: IEditorOverrideServices
+  ): IStandaloneCodeEditor;
 
   /**
    * Emitted when an editor is created.
@@ -851,7 +863,11 @@ export namespace editor {
    * `domElement` should be empty (not contain other dom nodes).
    * The editor will read the size of `domElement`.
    */
-  export function createDiffEditor(domElement: HTMLElement, options?: IDiffEditorConstructionOptions, override?: IEditorOverrideServices): IStandaloneDiffEditor;
+  export function createDiffEditor(
+    domElement: HTMLElement,
+    options?: IDiffEditorConstructionOptions,
+    override?: IEditorOverrideServices
+  ): IStandaloneDiffEditor;
 
   export interface IDiffNavigatorOptions {
     readonly followsCaret?: boolean;
@@ -882,11 +898,7 @@ export namespace editor {
    *
    * @returns list of markers
    */
-  export function getModelMarkers(filter: {
-    owner?: string;
-    resource?: Uri;
-    take?: number;
-  }): IMarker[];
+  export function getModelMarkers(filter: {owner?: string; resource?: Uri; take?: number}): IMarker[];
 
   /**
    * Emitted when markers change for a model.
@@ -920,10 +932,9 @@ export namespace editor {
    * Emitted when a different language is set to a model.
    * @event
    */
-  export function onDidChangeModelLanguage(listener: (e: {
-    readonly model: ITextModel;
-    readonly oldLanguage: string;
-  }) => void): IDisposable;
+  export function onDidChangeModelLanguage(
+    listener: (e: {readonly model: ITextModel; readonly oldLanguage: string}) => void
+  ): IDisposable;
 
   /**
    * Create a new web worker that has model syncing capabilities built in.
@@ -1245,10 +1256,12 @@ export namespace editor {
     owner: string;
     resource: Uri;
     severity: MarkerSeverity;
-    code?: string | {
-      value: string;
-      target: Uri;
-    };
+    code?:
+      | string
+      | {
+          value: string;
+          target: Uri;
+        };
     message: string;
     source?: string;
     startLineNumber: number;
@@ -1263,10 +1276,12 @@ export namespace editor {
    * A structure defining a problem/warning/etc.
    */
   export interface IMarkerData {
-    code?: string | {
-      value: string;
-      target: Uri;
-    };
+    code?:
+      | string
+      | {
+          value: string;
+          target: Uri;
+        };
     severity: MarkerSeverity;
     message: string;
     source?: string;
@@ -1302,7 +1317,7 @@ export namespace editor {
   export enum ScrollbarVisibility {
     Auto = 1,
     Hidden = 2,
-    Visible = 3
+    Visible = 3,
   }
 
   export interface ThemeColor {
@@ -1316,7 +1331,7 @@ export namespace editor {
     Left = 1,
     Center = 2,
     Right = 4,
-    Full = 7
+    Full = 7,
   }
 
   /**
@@ -1324,7 +1339,7 @@ export namespace editor {
    */
   export enum MinimapPosition {
     Inline = 1,
-    Gutter = 2
+    Gutter = 2,
   }
 
   export interface IDecorationOptions {
@@ -1529,7 +1544,7 @@ export namespace editor {
     /**
      * Use carriage return and line feed (\r\n) as the end of line character.
      */
-    CRLF = 2
+    CRLF = 2,
   }
 
   /**
@@ -1543,7 +1558,7 @@ export namespace editor {
     /**
      * Use carriage return and line feed (\r\n) as the end of line character.
      */
-    CRLF = 2
+    CRLF = 2,
   }
 
   /**
@@ -1557,7 +1572,7 @@ export namespace editor {
     /**
      * Use carriage return and line feed (\r\n) as the end of line character.
      */
-    CRLF = 1
+    CRLF = 1,
   }
 
   /**
@@ -1650,7 +1665,7 @@ export namespace editor {
     AlwaysGrowsWhenTypingAtEdges = 0,
     NeverGrowsWhenTypingAtEdges = 1,
     GrowsOnlyWhenTypingBefore = 2,
-    GrowsOnlyWhenTypingAfter = 3
+    GrowsOnlyWhenTypingAfter = 3,
   }
 
   /**
@@ -1811,7 +1826,15 @@ export namespace editor {
      * @param limitResultCount Limit the number of results
      * @return The ranges where the matches are. It is empty if not matches have been found.
      */
-    findMatches(searchString: string, searchOnlyEditableRange: boolean, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean, limitResultCount?: number): FindMatch[];
+    findMatches(
+      searchString: string,
+      searchOnlyEditableRange: boolean,
+      isRegex: boolean,
+      matchCase: boolean,
+      wordSeparators: string | null,
+      captureMatches: boolean,
+      limitResultCount?: number
+    ): FindMatch[];
     /**
      * Search the model.
      * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
@@ -1823,7 +1846,15 @@ export namespace editor {
      * @param limitResultCount Limit the number of results
      * @return The ranges where the matches are. It is empty if no matches have been found.
      */
-    findMatches(searchString: string, searchScope: IRange | IRange[], isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean, limitResultCount?: number): FindMatch[];
+    findMatches(
+      searchString: string,
+      searchScope: IRange | IRange[],
+      isRegex: boolean,
+      matchCase: boolean,
+      wordSeparators: string | null,
+      captureMatches: boolean,
+      limitResultCount?: number
+    ): FindMatch[];
     /**
      * Search the model for the next match. Loops to the beginning of the model if needed.
      * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
@@ -1834,7 +1865,14 @@ export namespace editor {
      * @param captureMatches The result will contain the captured groups.
      * @return The range where the next match is. It is null if no next match has been found.
      */
-    findNextMatch(searchString: string, searchStart: IPosition, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean): FindMatch | null;
+    findNextMatch(
+      searchString: string,
+      searchStart: IPosition,
+      isRegex: boolean,
+      matchCase: boolean,
+      wordSeparators: string | null,
+      captureMatches: boolean
+    ): FindMatch | null;
     /**
      * Search the model for the previous match. Loops to the end of the model if needed.
      * @param searchString The string used to search. If it is a regular expression, set `isRegex` to true.
@@ -1845,7 +1883,14 @@ export namespace editor {
      * @param captureMatches The result will contain the captured groups.
      * @return The range where the previous match is. It is null if no previous match has been found.
      */
-    findPreviousMatch(searchString: string, searchStart: IPosition, isRegex: boolean, matchCase: boolean, wordSeparators: string | null, captureMatches: boolean): FindMatch | null;
+    findPreviousMatch(
+      searchString: string,
+      searchStart: IPosition,
+      isRegex: boolean,
+      matchCase: boolean,
+      wordSeparators: string | null,
+      captureMatches: boolean
+    ): FindMatch | null;
     /**
      * Get the language associated with this model.
      */
@@ -1901,7 +1946,12 @@ export namespace editor {
      * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
      * @return An array with the decorations
      */
-    getLinesDecorations(startLineNumber: number, endLineNumber: number, ownerId?: number, filterOutValidation?: boolean): IModelDecoration[];
+    getLinesDecorations(
+      startLineNumber: number,
+      endLineNumber: number,
+      ownerId?: number,
+      filterOutValidation?: boolean
+    ): IModelDecoration[];
     /**
      * Gets all the decorations in a range as an array. Only `startLineNumber` and `endLineNumber` from `range` are used for filtering.
      * So for now it returns all the decorations on the same line as `range`.
@@ -1958,7 +2008,11 @@ export namespace editor {
      * @param cursorStateComputer A callback that can compute the resulting cursors state after the edit operations have been executed.
      * @return The cursor state returned by the `cursorStateComputer`.
      */
-    pushEditOperations(beforeCursorState: Selection[] | null, editOperations: IIdentifiedSingleEditOperation[], cursorStateComputer: ICursorStateComputer): Selection[] | null;
+    pushEditOperations(
+      beforeCursorState: Selection[] | null,
+      editOperations: IIdentifiedSingleEditOperation[],
+      cursorStateComputer: ICursorStateComputer
+    ): Selection[] | null;
     /**
      * Change the end of line sequence. This is the preferred way of
      * changing the eol sequence. This will land on the undo stack.
@@ -2218,7 +2272,7 @@ export namespace editor {
 
   export enum ScrollType {
     Smooth = 0,
-    Immediate = 1
+    Immediate = 1,
   }
 
   /**
@@ -2462,8 +2516,7 @@ export namespace editor {
   /**
    * An event describing that the language configuration associated with a model has changed.
    */
-  export interface IModelLanguageConfigurationChangedEvent {
-  }
+  export interface IModelLanguageConfigurationChangedEvent {}
 
   export interface IModelContentChange {
     /**
@@ -2558,7 +2611,7 @@ export namespace editor {
     /**
      * There was a Redo.
      */
-    Redo = 6
+    Redo = 6,
   }
 
   /**
@@ -2623,7 +2676,7 @@ export namespace editor {
      */
     Unknown = 0,
     Disabled = 1,
-    Enabled = 2
+    Enabled = 2,
   }
 
   /**
@@ -2649,7 +2702,7 @@ export namespace editor {
     Keep = 1,
     Brackets = 2,
     Advanced = 3,
-    Full = 4
+    Full = 4,
   }
 
   /**
@@ -3389,7 +3442,7 @@ export namespace editor {
     /**
      * No-Blinking
      */
-    Solid = 5
+    Solid = 5,
   }
 
   /**
@@ -3419,7 +3472,7 @@ export namespace editor {
     /**
      * As a thin horizontal line (sitting under a character).
      */
-    UnderlineThin = 6
+    UnderlineThin = 6,
   }
 
   /**
@@ -3516,7 +3569,7 @@ export namespace editor {
   export enum RenderMinimap {
     None = 0,
     Text = 1,
-    Blocks = 2
+    Blocks = 2,
   }
 
   /**
@@ -3738,7 +3791,7 @@ export namespace editor {
     On = 1,
     Relative = 2,
     Interval = 3,
-    Custom = 4
+    Custom = 4,
   }
 
   export interface InternalEditorRenderLineNumbersOptions {
@@ -4047,7 +4100,7 @@ export namespace editor {
     /**
      * DeepIndent => wrapped lines get +2 indentation toward the parent.
      */
-    DeepIndent = 3
+    DeepIndent = 3,
   }
 
   export interface EditorWrappingInfo {
@@ -4188,7 +4241,7 @@ export namespace editor {
     pixelRatio = 127,
     tabFocusMode = 128,
     layoutInfo = 129,
-    wrappingInfo = 130
+    wrappingInfo = 130,
   }
   export const EditorOptions: {
     acceptSuggestionOnCommitCharacter: IEditorOption<EditorOption.acceptSuggestionOnCommitCharacter, boolean>;
@@ -4196,10 +4249,16 @@ export namespace editor {
     accessibilitySupport: IEditorOption<EditorOption.accessibilitySupport, AccessibilitySupport>;
     accessibilityPageSize: IEditorOption<EditorOption.accessibilityPageSize, number>;
     ariaLabel: IEditorOption<EditorOption.ariaLabel, string>;
-    autoClosingBrackets: IEditorOption<EditorOption.autoClosingBrackets, 'always' | 'languageDefined' | 'beforeWhitespace' | 'never'>;
+    autoClosingBrackets: IEditorOption<
+      EditorOption.autoClosingBrackets,
+      'always' | 'languageDefined' | 'beforeWhitespace' | 'never'
+    >;
     autoClosingDelete: IEditorOption<EditorOption.autoClosingDelete, 'always' | 'never' | 'auto'>;
     autoClosingOvertype: IEditorOption<EditorOption.autoClosingOvertype, 'always' | 'never' | 'auto'>;
-    autoClosingQuotes: IEditorOption<EditorOption.autoClosingQuotes, 'always' | 'languageDefined' | 'beforeWhitespace' | 'never'>;
+    autoClosingQuotes: IEditorOption<
+      EditorOption.autoClosingQuotes,
+      'always' | 'languageDefined' | 'beforeWhitespace' | 'never'
+    >;
     autoIndent: IEditorOption<EditorOption.autoIndent, EditorAutoIndentStrategy>;
     automaticLayout: IEditorOption<EditorOption.automaticLayout, boolean>;
     autoSurround: IEditorOption<EditorOption.autoSurround, 'languageDefined' | 'never' | 'quotes' | 'brackets'>;
@@ -4278,7 +4337,10 @@ export namespace editor {
     renderLineHighlight: IEditorOption<EditorOption.renderLineHighlight, 'all' | 'line' | 'none' | 'gutter'>;
     renderLineHighlightOnlyWhenFocus: IEditorOption<EditorOption.renderLineHighlightOnlyWhenFocus, boolean>;
     renderValidationDecorations: IEditorOption<EditorOption.renderValidationDecorations, 'on' | 'off' | 'editable'>;
-    renderWhitespace: IEditorOption<EditorOption.renderWhitespace, 'all' | 'none' | 'boundary' | 'selection' | 'trailing'>;
+    renderWhitespace: IEditorOption<
+      EditorOption.renderWhitespace,
+      'all' | 'none' | 'boundary' | 'selection' | 'trailing'
+    >;
     revealHorizontalRightPadding: IEditorOption<EditorOption.revealHorizontalRightPadding, number>;
     roundedSelection: IEditorOption<EditorOption.roundedSelection, boolean>;
     rulers: IEditorOption<EditorOption.rulers, {}>;
@@ -4332,7 +4394,9 @@ export namespace editor {
 
   type ComputedEditorOptionValue<T extends IEditorOption<any, any>> = T extends IEditorOption<any, infer R> ? R : never;
 
-  export type FindComputedEditorOptionValueById<T extends EditorOption> = NonNullable<ComputedEditorOptionValue<EditorOptionsType[FindEditorOptionsKeyById<T>]>>;
+  export type FindComputedEditorOptionValueById<T extends EditorOption> = NonNullable<
+    ComputedEditorOptionValue<EditorOptionsType[FindEditorOptionsKeyById<T>]>
+  >;
 
   /**
    * A view zone is a full horizontal rectangle that 'pushes' text down.
@@ -4427,7 +4491,7 @@ export namespace editor {
     /**
      * Place the content widget below a position
      */
-    BELOW = 2
+    BELOW = 2,
   }
 
   /**
@@ -4501,7 +4565,7 @@ export namespace editor {
     /**
      * Position the overlay widget in the top center
      */
-    TOP_CENTER = 2
+    TOP_CENTER = 2,
   }
 
   /**
@@ -4592,7 +4656,7 @@ export namespace editor {
     /**
      * Mouse is outside of the editor.
      */
-    OUTSIDE_EDITOR = 13
+    OUTSIDE_EDITOR = 13,
   }
 
   /**
@@ -4854,10 +4918,7 @@ export namespace editor {
      * Get value of the current model attached to this editor.
      * @see {@link ITextModel.getValue}
      */
-    getValue(options?: {
-      preserveBOM: boolean;
-      lineEnding: string;
-    }): string;
+    getValue(options?: {preserveBOM: boolean; lineEnding: string}): string;
     /**
      * Set the value of the current model attached to this editor.
      * @see {@link ITextModel.setValue}
@@ -4929,7 +4990,11 @@ export namespace editor {
      * @param edits The edits to execute.
      * @param endCursorState Cursor state after the edits were applied.
      */
-    executeEdits(source: string | null | undefined, edits: IIdentifiedSingleEditOperation[], endCursorState?: ICursorStateComputer | Selection[]): boolean;
+    executeEdits(
+      source: string | null | undefined,
+      edits: IIdentifiedSingleEditOperation[],
+      endCursorState?: ICursorStateComputer | Selection[]
+    ): boolean;
     /**
      * Execute multiple (concomitant) commands on the editor.
      * @param source The source of the call.
@@ -5136,7 +5201,6 @@ export namespace editor {
 }
 
 export namespace languages {
-
   /**
    * Register information about a new language.
    */
@@ -5256,12 +5320,18 @@ export namespace languages {
   /**
    * Set the tokens provider for a language (manual implementation).
    */
-  export function setTokensProvider(languageId: string, provider: TokensProvider | EncodedTokensProvider | Thenable<TokensProvider | EncodedTokensProvider>): IDisposable;
+  export function setTokensProvider(
+    languageId: string,
+    provider: TokensProvider | EncodedTokensProvider | Thenable<TokensProvider | EncodedTokensProvider>
+  ): IDisposable;
 
   /**
    * Set the tokens provider for a language (monarch implementation).
    */
-  export function setMonarchTokensProvider(languageId: string, languageDef: IMonarchLanguage | Thenable<IMonarchLanguage>): IDisposable;
+  export function setMonarchTokensProvider(
+    languageId: string,
+    languageDef: IMonarchLanguage | Thenable<IMonarchLanguage>
+  ): IDisposable;
 
   /**
    * Register a reference provider (used by e.g. reference search).
@@ -5291,12 +5361,18 @@ export namespace languages {
   /**
    * Register a document highlight provider (used by e.g. highlight occurrences).
    */
-  export function registerDocumentHighlightProvider(languageId: string, provider: DocumentHighlightProvider): IDisposable;
+  export function registerDocumentHighlightProvider(
+    languageId: string,
+    provider: DocumentHighlightProvider
+  ): IDisposable;
 
   /**
    * Register an linked editing range provider.
    */
-  export function registerLinkedEditingRangeProvider(languageId: string, provider: LinkedEditingRangeProvider): IDisposable;
+  export function registerLinkedEditingRangeProvider(
+    languageId: string,
+    provider: LinkedEditingRangeProvider
+  ): IDisposable;
 
   /**
    * Register a definition provider (used by e.g. go to definition).
@@ -5326,17 +5402,26 @@ export namespace languages {
   /**
    * Register a formatter that can handle only entire models.
    */
-  export function registerDocumentFormattingEditProvider(languageId: string, provider: DocumentFormattingEditProvider): IDisposable;
+  export function registerDocumentFormattingEditProvider(
+    languageId: string,
+    provider: DocumentFormattingEditProvider
+  ): IDisposable;
 
   /**
    * Register a formatter that can handle a range inside a model.
    */
-  export function registerDocumentRangeFormattingEditProvider(languageId: string, provider: DocumentRangeFormattingEditProvider): IDisposable;
+  export function registerDocumentRangeFormattingEditProvider(
+    languageId: string,
+    provider: DocumentRangeFormattingEditProvider
+  ): IDisposable;
 
   /**
    * Register a formatter than can do formatting as the user types.
    */
-  export function registerOnTypeFormattingEditProvider(languageId: string, provider: OnTypeFormattingEditProvider): IDisposable;
+  export function registerOnTypeFormattingEditProvider(
+    languageId: string,
+    provider: OnTypeFormattingEditProvider
+  ): IDisposable;
 
   /**
    * Register a link provider that can find links in text.
@@ -5371,17 +5456,26 @@ export namespace languages {
   /**
    * Register a document semantic tokens provider
    */
-  export function registerDocumentSemanticTokensProvider(languageId: string, provider: DocumentSemanticTokensProvider): IDisposable;
+  export function registerDocumentSemanticTokensProvider(
+    languageId: string,
+    provider: DocumentSemanticTokensProvider
+  ): IDisposable;
 
   /**
    * Register a document range semantic tokens provider
    */
-  export function registerDocumentRangeSemanticTokensProvider(languageId: string, provider: DocumentRangeSemanticTokensProvider): IDisposable;
+  export function registerDocumentRangeSemanticTokensProvider(
+    languageId: string,
+    provider: DocumentRangeSemanticTokensProvider
+  ): IDisposable;
 
   /**
    * Register an inline completions provider.
    */
-  export function registerInlineCompletionsProvider(languageId: string, provider: InlineCompletionsProvider): IDisposable;
+  export function registerInlineCompletionsProvider(
+    languageId: string,
+    provider: InlineCompletionsProvider
+  ): IDisposable;
 
   /**
    * Register an inlay hints provider.
@@ -5411,7 +5505,12 @@ export namespace languages {
     /**
      * Provide commands for the given document and range.
      */
-    provideCodeActions(model: editor.ITextModel, range: Range, context: CodeActionContext, token: CancellationToken): ProviderResult<CodeActionList>;
+    provideCodeActions(
+      model: editor.ITextModel,
+      range: Range,
+      context: CodeActionContext,
+      token: CancellationToken
+    ): ProviderResult<CodeActionList>;
   }
 
   /**
@@ -5611,7 +5710,7 @@ export namespace languages {
     /**
      * Insert new line and outdent once (relative to the previous line's indentation).
      */
-    Outdent = 3
+    Outdent = 3,
   }
 
   /**
@@ -5708,7 +5807,7 @@ export namespace languages {
     TypeParameter = 24,
     User = 25,
     Issue = 26,
-    Snippet = 27
+    Snippet = 27,
   }
 
   export interface CompletionItemLabel {
@@ -5718,7 +5817,7 @@ export namespace languages {
   }
 
   export enum CompletionItemTag {
-    Deprecated = 1
+    Deprecated = 1,
   }
 
   export enum CompletionItemInsertTextRule {
@@ -5730,7 +5829,7 @@ export namespace languages {
     /**
      * `insertText` is a snippet.
      */
-    InsertAsSnippet = 4
+    InsertAsSnippet = 4,
   }
 
   /**
@@ -5801,10 +5900,12 @@ export namespace languages {
      * *Note:* The range must be a {@link Range.isSingleLine single line} and it must
      * {@link Range.contains contain} the position at which completion has been {@link CompletionItemProvider.provideCompletionItems requested}.
      */
-    range: IRange | {
-      insert: IRange;
-      replace: IRange;
-    };
+    range:
+      | IRange
+      | {
+          insert: IRange;
+          replace: IRange;
+        };
     /**
      * An optional set of characters that when pressed while this completion is active will accept it first and
      * then type that character. *Note* that all commit characters should have `length=1` and that superfluous
@@ -5835,7 +5936,7 @@ export namespace languages {
   export enum CompletionTriggerKind {
     Invoke = 0,
     TriggerCharacter = 1,
-    TriggerForIncompleteCompletions = 2
+    TriggerForIncompleteCompletions = 2,
   }
 
   /**
@@ -5871,7 +5972,12 @@ export namespace languages {
     /**
      * Provide completion items for the given position and document.
      */
-    provideCompletionItems(model: editor.ITextModel, position: Position, context: CompletionContext, token: CancellationToken): ProviderResult<CompletionList>;
+    provideCompletionItems(
+      model: editor.ITextModel,
+      position: Position,
+      context: CompletionContext,
+      token: CancellationToken
+    ): ProviderResult<CompletionList>;
     /**
      * Given a completion item fill in more data, like {@link CompletionItem.documentation doc-comment}
      * or {@link CompletionItem.detail details}.
@@ -5894,7 +6000,7 @@ export namespace languages {
      * Completion was triggered explicitly by a user gesture.
      * Return multiple completion items to enable cycling through them.
      */
-    Explicit = 1
+    Explicit = 1,
   }
 
   export interface InlineCompletionContext {
@@ -5924,7 +6030,12 @@ export namespace languages {
   }
 
   export interface InlineCompletionsProvider<T extends InlineCompletions = InlineCompletions> {
-    provideInlineCompletions(model: editor.ITextModel, position: Position, context: InlineCompletionContext, token: CancellationToken): ProviderResult<T>;
+    provideInlineCompletions(
+      model: editor.ITextModel,
+      position: Position,
+      context: InlineCompletionContext,
+      token: CancellationToken
+    ): ProviderResult<T>;
     /**
      * Will be called when an item is shown.
      */
@@ -6021,7 +6132,7 @@ export namespace languages {
   export enum SignatureHelpTriggerKind {
     Invoke = 1,
     TriggerCharacter = 2,
-    ContentChange = 3
+    ContentChange = 3,
   }
 
   export interface SignatureHelpContext {
@@ -6041,7 +6152,12 @@ export namespace languages {
     /**
      * Provide help for the signature at the given position and document.
      */
-    provideSignatureHelp(model: editor.ITextModel, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelpResult>;
+    provideSignatureHelp(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken,
+      context: SignatureHelpContext
+    ): ProviderResult<SignatureHelpResult>;
   }
 
   /**
@@ -6059,7 +6175,7 @@ export namespace languages {
     /**
      * Write-access of a symbol, like writing to a variable.
      */
-    Write = 2
+    Write = 2,
   }
 
   /**
@@ -6087,7 +6203,11 @@ export namespace languages {
      * Provide a set of document highlights, like all occurrences of a variable or
      * all exit-points of a function.
      */
-    provideDocumentHighlights(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<DocumentHighlight[]>;
+    provideDocumentHighlights(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<DocumentHighlight[]>;
   }
 
   /**
@@ -6098,7 +6218,11 @@ export namespace languages {
     /**
      * Provide a list of ranges that can be edited together.
      */
-    provideLinkedEditingRanges(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<LinkedEditingRanges>;
+    provideLinkedEditingRanges(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<LinkedEditingRanges>;
   }
 
   /**
@@ -6136,7 +6260,12 @@ export namespace languages {
     /**
      * Provide a set of project-wide references for the given position and document.
      */
-    provideReferences(model: editor.ITextModel, position: Position, context: ReferenceContext, token: CancellationToken): ProviderResult<Location[]>;
+    provideReferences(
+      model: editor.ITextModel,
+      position: Position,
+      context: ReferenceContext,
+      token: CancellationToken
+    ): ProviderResult<Location[]>;
   }
 
   /**
@@ -6185,7 +6314,11 @@ export namespace languages {
     /**
      * Provide the definition of the symbol at the given position and document.
      */
-    provideDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+    provideDefinition(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<Definition | LocationLink[]>;
   }
 
   /**
@@ -6197,7 +6330,11 @@ export namespace languages {
     /**
      * Provide the declaration of the symbol at the given position and document.
      */
-    provideDeclaration(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+    provideDeclaration(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<Definition | LocationLink[]>;
   }
 
   /**
@@ -6208,7 +6345,11 @@ export namespace languages {
     /**
      * Provide the implementation of the symbol at the given position and document.
      */
-    provideImplementation(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+    provideImplementation(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<Definition | LocationLink[]>;
   }
 
   /**
@@ -6219,7 +6360,11 @@ export namespace languages {
     /**
      * Provide the type definition of the symbol at the given position and document.
      */
-    provideTypeDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+    provideTypeDefinition(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<Definition | LocationLink[]>;
   }
 
   /**
@@ -6251,11 +6396,11 @@ export namespace languages {
     Struct = 22,
     Event = 23,
     Operator = 24,
-    TypeParameter = 25
+    TypeParameter = 25,
   }
 
   export enum SymbolTag {
-    Deprecated = 1
+    Deprecated = 1,
   }
 
   export interface DocumentSymbol {
@@ -6310,7 +6455,11 @@ export namespace languages {
     /**
      * Provide formatting edits for a whole document.
      */
-    provideDocumentFormattingEdits(model: editor.ITextModel, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
+    provideDocumentFormattingEdits(
+      model: editor.ITextModel,
+      options: FormattingOptions,
+      token: CancellationToken
+    ): ProviderResult<TextEdit[]>;
   }
 
   /**
@@ -6326,7 +6475,12 @@ export namespace languages {
      * or larger range. Often this is done by adjusting the start and end
      * of the range to full syntax nodes.
      */
-    provideDocumentRangeFormattingEdits(model: editor.ITextModel, range: Range, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
+    provideDocumentRangeFormattingEdits(
+      model: editor.ITextModel,
+      range: Range,
+      options: FormattingOptions,
+      token: CancellationToken
+    ): ProviderResult<TextEdit[]>;
   }
 
   /**
@@ -6342,7 +6496,13 @@ export namespace languages {
      * what range the position to expand to, like find the matching `{`
      * when `}` has been entered.
      */
-    provideOnTypeFormattingEdits(model: editor.ITextModel, position: Position, ch: string, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
+    provideOnTypeFormattingEdits(
+      model: editor.ITextModel,
+      position: Position,
+      ch: string,
+      options: FormattingOptions,
+      token: CancellationToken
+    ): ProviderResult<TextEdit[]>;
   }
 
   /**
@@ -6436,7 +6596,11 @@ export namespace languages {
     /**
      * Provide the string representations for a color.
      */
-    provideColorPresentations(model: editor.ITextModel, colorInfo: IColorInformation, token: CancellationToken): ProviderResult<IColorPresentation[]>;
+    provideColorPresentations(
+      model: editor.ITextModel,
+      colorInfo: IColorInformation,
+      token: CancellationToken
+    ): ProviderResult<IColorPresentation[]>;
   }
 
   export interface SelectionRange {
@@ -6447,11 +6611,14 @@ export namespace languages {
     /**
      * Provide ranges that should be selected from the given position.
      */
-    provideSelectionRanges(model: editor.ITextModel, positions: Position[], token: CancellationToken): ProviderResult<SelectionRange[][]>;
+    provideSelectionRanges(
+      model: editor.ITextModel,
+      positions: Position[],
+      token: CancellationToken
+    ): ProviderResult<SelectionRange[][]>;
   }
 
-  export interface FoldingContext {
-  }
+  export interface FoldingContext {}
 
   /**
    * A provider of folding ranges for editor models.
@@ -6464,7 +6631,11 @@ export namespace languages {
     /**
      * Provides the folding ranges for a specific model.
      */
-    provideFoldingRanges(model: editor.ITextModel, context: FoldingContext, token: CancellationToken): ProviderResult<FoldingRange[]>;
+    provideFoldingRanges(
+      model: editor.ITextModel,
+      context: FoldingContext,
+      token: CancellationToken
+    ): ProviderResult<FoldingRange[]>;
   }
 
   export interface FoldingRange {
@@ -6553,8 +6724,17 @@ export namespace languages {
   }
 
   export interface RenameProvider {
-    provideRenameEdits(model: editor.ITextModel, position: Position, newName: string, token: CancellationToken): ProviderResult<WorkspaceEdit & Rejection>;
-    resolveRenameLocation?(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<RenameLocation & Rejection>;
+    provideRenameEdits(
+      model: editor.ITextModel,
+      position: Position,
+      newName: string,
+      token: CancellationToken
+    ): ProviderResult<WorkspaceEdit & Rejection>;
+    resolveRenameLocation?(
+      model: editor.ITextModel,
+      position: Position,
+      token: CancellationToken
+    ): ProviderResult<RenameLocation & Rejection>;
   }
 
   export interface Command {
@@ -6584,7 +6764,7 @@ export namespace languages {
   export enum InlayHintKind {
     Other = 0,
     Type = 1,
-    Parameter = 2
+    Parameter = 2,
   }
 
   export interface InlayHint {
@@ -6624,13 +6804,21 @@ export namespace languages {
   export interface DocumentSemanticTokensProvider {
     onDidChange?: IEvent<void>;
     getLegend(): SemanticTokensLegend;
-    provideDocumentSemanticTokens(model: editor.ITextModel, lastResultId: string | null, token: CancellationToken): ProviderResult<SemanticTokens | SemanticTokensEdits>;
+    provideDocumentSemanticTokens(
+      model: editor.ITextModel,
+      lastResultId: string | null,
+      token: CancellationToken
+    ): ProviderResult<SemanticTokens | SemanticTokensEdits>;
     releaseDocumentSemanticTokens(resultId: string | undefined): void;
   }
 
   export interface DocumentRangeSemanticTokensProvider {
     getLegend(): SemanticTokensLegend;
-    provideDocumentRangeSemanticTokens(model: editor.ITextModel, range: Range, token: CancellationToken): ProviderResult<SemanticTokens>;
+    provideDocumentRangeSemanticTokens(
+      model: editor.ITextModel,
+      range: Range,
+      token: CancellationToken
+    ): ProviderResult<SemanticTokens>;
   }
 
   export interface ILanguageExtensionPoint {
@@ -6712,7 +6900,10 @@ export namespace languages {
     include?: string;
   }
 
-  export type IMonarchLanguageRule = IShortMonarchLanguageRule1 | IShortMonarchLanguageRule2 | IExpandedMonarchLanguageRule;
+  export type IMonarchLanguageRule =
+    | IShortMonarchLanguageRule1
+    | IShortMonarchLanguageRule2
+    | IExpandedMonarchLanguageRule;
 
   /**
    * An action is either an array of actions...
@@ -6760,7 +6951,11 @@ export namespace languages {
     log?: string;
   }
 
-  export type IMonarchLanguageAction = IShortMonarchLanguageAction | IExpandedMonarchLanguageAction | IShortMonarchLanguageAction[] | IExpandedMonarchLanguageAction[];
+  export type IMonarchLanguageAction =
+    | IShortMonarchLanguageAction
+    | IExpandedMonarchLanguageAction
+    | IShortMonarchLanguageAction[]
+    | IExpandedMonarchLanguageAction[];
 
   /**
    * This interface can be shortened as an array, ie. ['{','}','delimiter.curly']
@@ -6779,11 +6974,9 @@ export namespace languages {
      */
     token: string;
   }
-
 }
 
 export namespace worker {
-
   export interface IMirrorTextModel {
     readonly version: number;
   }
@@ -6804,7 +6997,6 @@ export namespace worker {
      */
     getMirrorModels(): IMirrorModel[];
   }
-
 }
 
 //dtsv=3
@@ -6822,7 +7014,7 @@ export namespace languages.typescript {
     UMD = 3,
     System = 4,
     ES2015 = 5,
-    ESNext = 99
+    ESNext = 99,
   }
   export enum JsxEmit {
     None = 0,
@@ -6830,11 +7022,11 @@ export namespace languages.typescript {
     React = 2,
     ReactNative = 3,
     ReactJSX = 4,
-    ReactJSXDev = 5
+    ReactJSXDev = 5,
   }
   export enum NewLineKind {
     CarriageReturnLineFeed = 0,
-    LineFeed = 1
+    LineFeed = 1,
   }
   export enum ScriptTarget {
     ES3 = 0,
@@ -6847,11 +7039,11 @@ export namespace languages.typescript {
     ES2020 = 7,
     ESNext = 99,
     JSON = 100,
-    Latest = 99
+    Latest = 99,
   }
   export enum ModuleResolutionKind {
     Classic = 1,
-    NodeJs = 2
+    NodeJs = 2,
   }
   interface MapLike<T> {
     [index: string]: T;
@@ -6995,8 +7187,8 @@ export namespace languages.typescript {
     /** TypeScriptWorker removes all but the `fileName` property to avoid serializing circular JSON structures. */
     file:
       | {
-      fileName: string;
-    }
+          fileName: string;
+        }
       | undefined;
     start: number | undefined;
     length: number | undefined;
@@ -7115,20 +7307,12 @@ export namespace languages.typescript {
      * Get code completion details for the given file, position, and entry.
      * @returns `Promise<typescript.CompletionEntryDetails | undefined>`
      */
-    getCompletionEntryDetails(
-      fileName: string,
-      position: number,
-      entry: string
-    ): Promise<any | undefined>;
+    getCompletionEntryDetails(fileName: string, position: number, entry: string): Promise<any | undefined>;
     /**
      * Get signature help items for the item at the given file and position.
      * @returns `Promise<typescript.SignatureHelpItems | undefined>`
      */
-    getSignatureHelpItems(
-      fileName: string,
-      position: number,
-      options: any
-    ): Promise<any | undefined>;
+    getSignatureHelpItems(fileName: string, position: number, options: any): Promise<any | undefined>;
     /**
      * Get quick info for the item at the given position in the file.
      * @returns `Promise<typescript.QuickInfo | undefined>`
@@ -7138,18 +7322,12 @@ export namespace languages.typescript {
      * Get other ranges which are related to the item at the given position in the file (often used for highlighting).
      * @returns `Promise<ReadonlyArray<typescript.ReferenceEntry> | undefined>`
      */
-    getOccurrencesAtPosition(
-      fileName: string,
-      position: number
-    ): Promise<ReadonlyArray<any> | undefined>;
+    getOccurrencesAtPosition(fileName: string, position: number): Promise<ReadonlyArray<any> | undefined>;
     /**
      * Get the definition of the item at the given position in the file.
      * @returns `Promise<ReadonlyArray<typescript.DefinitionInfo> | undefined>`
      */
-    getDefinitionAtPosition(
-      fileName: string,
-      position: number
-    ): Promise<ReadonlyArray<any> | undefined>;
+    getDefinitionAtPosition(fileName: string, position: number): Promise<ReadonlyArray<any> | undefined>;
     /**
      * Get references to the item at the given position in the file.
      * @returns `Promise<typescript.ReferenceEntry[] | undefined>`
@@ -7171,23 +7349,13 @@ export namespace languages.typescript {
      * @param options `typescript.FormatCodeOptions`
      * @returns `Promise<typescript.TextChange[]>`
      */
-    getFormattingEditsForRange(
-      fileName: string,
-      start: number,
-      end: number,
-      options: any
-    ): Promise<any[]>;
+    getFormattingEditsForRange(fileName: string, start: number, end: number, options: any): Promise<any[]>;
     /**
      * Get formatting changes which should be applied after the given keystroke.
      * @param options `typescript.FormatCodeOptions`
      * @returns `Promise<typescript.TextChange[]>`
      */
-    getFormattingEditsAfterKeystroke(
-      fileName: string,
-      postion: number,
-      ch: string,
-      options: any
-    ): Promise<any[]>;
+    getFormattingEditsAfterKeystroke(fileName: string, postion: number, ch: string, options: any): Promise<any[]>;
     /**
      * Get other occurrences which should be updated when renaming the item at the given file and position.
      * @returns `Promise<readonly typescript.RenameLocation[] | undefined>`

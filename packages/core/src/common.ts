@@ -1,10 +1,7 @@
-import {ThemeTrieElementRule} from "./theme";
-import {
-  IRawGrammar,
-  IRawRepository,
-} from "./types";
-import {Rule} from "./rule";
-import {OnigScanner} from "@monaco-imposture-tools/oniguruma-asm";
+import {ThemeTrieElementRule} from './theme';
+import {IRawGrammar, IRawRepository} from './types';
+import {Rule} from './rule';
+import {OnigScanner} from '@monaco-imposture-tools/oniguruma-asm';
 
 export const SEPARATOR = '\n';
 
@@ -13,7 +10,7 @@ export const enum FontStyle {
   None = 0,
   Italic = 1,
   Bold = 2,
-  Underline = 4
+  Underline = 4,
 }
 
 export interface IScopeNameSet {
@@ -48,8 +45,7 @@ export interface IGrammarRegistry {
   getExternalGrammar(scopeName: string, repository: IRawRepository): IRawGrammar;
 }
 
-export interface IRuleFactoryHelper extends IRuleRegistry, IGrammarRegistry {
-}
+export interface IRuleFactoryHelper extends IRuleRegistry, IGrammarRegistry {}
 
 export interface ICompiledRule {
   readonly scanner: OnigScanner;

@@ -13,24 +13,27 @@ const commonConfig = require('./webpack.common');
 // const packageJson  = require('../package.json');
 
 const prodConfig = {
-  mode:'production',
-  output:{
-    filename:'[name].[contenthash:8].js'
+  mode: 'production',
+  output: {
+    filename: '[name].[contenthash:8].js',
   },
-  plugins:[
+  plugins: [
     new CopyPlugin({
-      patterns:[
+      patterns: [
         {
-          from: path.resolve(__dirname, "..", "node_modules", "@monaco-imposture-tools", "oniguruma-asm", "lib", "OnigurumaAsm.wasm"),
-          to: path.resolve(__dirname, "..", 'dist', 'assets', "OnigurumaAsm.wasm")
-        },
-        {
-          from: path.resolve(__dirname, "..", "node_modules", "@monaco-imposture-tools", "grammars", "cpp"),
-          to: path.resolve(__dirname, "..", 'dist', 'assets', "grammars", "cpp")
-        },
-      ]
-    })
-  ]
-}
+          from: path.resolve(
+            __dirname,
+            '..',
+            'node_modules',
+            'monaco-azure-logic-app-lang',
+            'scanner',
+            'scanner.wasm'
+          ),
+          to: path.resolve(__dirname, '..', 'dist', 'assets', 'scanner.wasm'),
+        }
+      ],
+    }),
+  ],
+};
 
 module.exports = merge(commonConfig, prodConfig);
