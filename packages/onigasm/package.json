@@ -1,21 +1,61 @@
 {
-  "name": "onigasm",
-  "version": "0.0.0",
+  "name": "@monaco-imposture-tools/oniguruma-asm",
+  "version": "0.0.4",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "typings": "lib/typings/index.d.ts",
   "scripts": {
+    "clean": "rimraf lib",
     "setup-emsdk": "node scripts/setup-emsdk.js 2.0.26",
-    "setup-onigasm": "node scripts/setup-onigasm.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup-oniguruma": "node scripts/setup-oniguruma.js 980fbf9828fd0112ac0d4a15735990d2f6dd6acd",
+    "setup": "npm run setup-emsdk && npm run setup-oniguruma",
+    "cmake-build:debug": "node scripts/build.js Debug",
+    "cmake-build": "node scripts/build.js",
+    "tsc-build:debug": "tsc",
+    "tsc-build": "tsc --project tsconfig.prod.json",
+    "copy-to-lib:debug": "node scripts/copy-to-lib.js debug",
+    "copy-to-lib": "node scripts/copy-to-lib.js",
+    "compile:debug": "npm run clean && npm run tsc-build:debug && npm run cmake-build:debug && npm run copy-to-lib:debug",
+    "compile": "npm run clean && npm run tsc-build && npm run cmake-build && npm run copy-to-lib",
+    "benchmark": "node benchmark.js",
+    "test": "node node_modules/mocha/bin/mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "test:coverage": "nyc --reporter=text mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "postpublish": "node ./scripts/post-publish.js",
+    "lint": "eslint --ext=js,jsx,ts,tsx src",
+    "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:albertleigh/monaco-imposture-tools.git"
+  },
+  "dependencies": {
+    "lru-cache": "^5.1.1"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.21",
+    "@types/lru-cache": "^5.1.1",
+    "@types/mocha": "^9.0.0",
     "@types/node": "^14.14.31",
     "@types/shelljs": "^0.8.9",
-    "rimraf": "^3.0.2",
+    "@types/sinon": "^10.0.2",
+    "@typescript-eslint/eslint-plugin": "^4.31.1",
+    "@typescript-eslint/parser": "^4.31.1",
+    "chai": "^4.3.4",
+    "eslint": "^7.32.0",
     "fs-extra": "^10.0.0",
-    "shelljs": "^0.8.4"
+    "mocha": "^9.0.3",
+    "rimraf": "^3.0.2",
+    "shelljs": "^0.8.4",
+    "sinon": "^11.1.2",
+    "nyc": "^15.1.0",
+    "typescript": "^4.3.5"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Wentao LI <liwentao90@yahoo.com>",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "gitHead": "fbea0c56db4e7b358687c48d75a7e8a45aedc674"
 }

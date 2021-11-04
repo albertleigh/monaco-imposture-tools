@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "lib",
+    "declarationDir": "lib/typings",
+    "downlevelIteration": true,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "declaration": true,
+    "lib": ["esnext"]
+  },
+  "exclude": ["node_modules", "lib", "scripts"]
+}

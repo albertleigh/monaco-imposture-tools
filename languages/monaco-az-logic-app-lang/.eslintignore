@@ -1,0 +1,6 @@
+lib/
+grammar/
+scanner/
+scripts/
+
+**/*.js

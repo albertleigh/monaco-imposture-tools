@@ -1,0 +1,54 @@
+{
+  "name": "@monaco-imposture-tools/core",
+  "version": "0.0.4",
+  "description": "",
+  "main": "./lib/main.js",
+  "typings": "./lib/typings/main.d.ts",
+  "scripts": {
+    "clean": "rimraf lib",
+    "compile:tsc": "tsc",
+    "compile:tsc-prod": "tsc --project tsconfig.prod.json",
+    "compile": "npm run clean && npm run compile:tsc-prod",
+    "compile:debug": "npm run clean && npm run compile:tsc",
+    "test": "node node_modules/mocha/bin/mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "test:coverage": "nyc --reporter=text mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "normalize-grammar": "ts-node scripts/normalize-grammar.ts",
+    "print-rules": "ts-node scripts/print-rules.ts",
+    "postpublish": "node ./scripts/post-publish.js",
+    "lint": "eslint --ext=js,jsx,ts,tsx src",
+    "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:albertleigh/monaco-imposture-tools.git"
+  },
+  "dependencies": {
+    "@monaco-imposture-tools/oniguruma-asm": "^0.0.4",
+    "fast-plist": "^0.1.2"
+  },
+  "devDependencies": {
+    "@monaco-imposture-tools/grammars": "^0.0.4",
+    "@types/chai": "^4.2.21",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^14.14.31",
+    "@types/sinon": "^10.0.2",
+    "@typescript-eslint/eslint-plugin": "^4.31.1",
+    "@typescript-eslint/parser": "^4.31.1",
+    "chai": "^4.3.4",
+    "eslint": "^7.32.0",
+    "mocha": "^9.0.3",
+    "rimraf": "^3.0.2",
+    "sinon": "^11.1.2",
+    "nyc": "^15.1.0",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5"
+  },
+  "keywords": [],
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Wentao LI <liwentao90@yahoo.com>",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "gitHead": "fbea0c56db4e7b358687c48d75a7e8a45aedc674"
+}

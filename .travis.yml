@@ -1,0 +1,25 @@
+language: cpp
+if: branch =~ /^(master|develop|feature\/.*)/
+sudo: required
+arch: amd64
+os: linux
+dist: focal
+compiler:
+  - gcc
+before_script:
+  - cat /etc/lsb-release
+  - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+  - source ~/.bashrc
+  - nvm install lts/fermium
+  - nvm use lts/fermium
+  - echo $(cmake --version)
+  - echo node-js $(node -v)
+script:
+  - npm ci
+  - npm run setup
+  - npm run compile
+  - npm run coverage
+after_success:
+  - npm run report-coverage:coveralls
+notifications:
+  email: false

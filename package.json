@@ -1,13 +1,41 @@
 {
-  "name": "monaco-tm-root",
+  "name": "monaco-imposture-tools-root",
   "private": "true",
   "description": "",
   "main": "index.js",
   "devDependencies": {
-    "lerna": "^4.0.0"
+    "coveralls": "^3.1.1",
+    "husky": "^7.0.2",
+    "lerna": "^4.0.0",
+    "lint-staged": "^11.1.2",
+    "nyc": "^15.1.0",
+    "prettier": "^2.4.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "lerna bootstrap --ci",
+    "setup": "lerna run setup",
+    "compile": "lerna run compile",
+    "compile:debug": "lerna run compile:debug",
+    "test": "lerna run test",
+    "coverage": "lerna run coverage",
+    "report-coverage:text": "nyc report --reporter=text",
+    "report-coverage:coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "lint:fix": "lerna run lint:fix",
+    "prettify:check": "prettier --config .prettierrc --check \"(languages|examples|packages)/**/*.{json,ts,tsx,js,jsx}\"",
+    "prettify": "prettier --config .prettierrc --write"
+  },
+  "lint-pretty-staged": {
+    "!(languages|examples|packages)/**/*.{ts,tsx,js,jsx}": [
+      "npm run lint:fix -- --"
+    ],
+    "(languages|examples|packages)/**/*.{json,ts,tsx,js,jsx}": [
+      "npm run prettify --"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-pretty-staged"
+    }
   },
   "keywords": [],
   "author": "",
