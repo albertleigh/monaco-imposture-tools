@@ -1,5 +1,5 @@
 language: cpp
-if: branch =~ /^(master|develop|feature\/.*)/
+if: branch =~ /^(main|develop|feature|release\/.*)/
 sudo: required
 arch: amd64
 os: linux
