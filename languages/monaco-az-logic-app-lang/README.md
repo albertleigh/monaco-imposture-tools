@@ -5,7 +5,7 @@
 An azure logic app language module for monaco editor.
 
 [![npm version](https://img.shields.io/npm/v/monaco-azure-logic-app-lang.svg)](https://www.npmjs.com/package/monaco-azure-logic-app-lang)
-[![Build Status](https://app.travis-ci.com/albertleigh/monaco-imposture-tools.svg?branch=main)](https://travis-ci.com/albertleigh/monaco-imposture-tools)
+[![Build Status](https://app.travis-ci.com/albertleigh/monaco-imposture-tools.svg?branch=main)](https://app.travis-ci.com/albertleigh/monaco-imposture-tools)
 [![Coverage Status](https://coveralls.io/repos/github/albertleigh/monaco-imposture-tools/badge.svg)](https://coveralls.io/github/albertleigh/monaco-imposture-tools)
 ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)
 </div>

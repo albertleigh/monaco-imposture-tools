@@ -866,7 +866,11 @@ export function findAllPathAmongOneDescriptor(descriptor: ValueDescription, path
   if (paths.length) {
     let curPath = paths.shift();
     while (cur && curPath && cur._$type === DescriptionType.PackageReference) {
-      cur = cur._$subDescriptor[curPath];
+      if (curPath === SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME && curPath in cur) {
+        cur = cur[curPath];
+      }else{
+        cur = cur._$subDescriptor[curPath];
+      }
       curPath = paths.shift();
     }
   }

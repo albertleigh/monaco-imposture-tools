@@ -49,7 +49,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
 
       allCompletionList = await collectMonacoListRowsAriaLabels(page);
       expect(allCompletionList.length>=1).ok;
-      expect(allCompletionList.some(value => value.indexOf('pipeline()') > -1)).ok;
+      expect(allCompletionList.every(value => value.match(/^\./))).ok;
 
       // await page.keyboard.press('Escape');
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, '.');
@@ -61,7 +61,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
 
       allCompletionList = await collectMonacoListRowsAriaLabels(page);
       expect(allCompletionList.length>1).ok;
-      expect(allCompletionList.some(value => value.indexOf('Trigger') > -1)).ok;
+      expect(allCompletionList.some(value => value.indexOf('DataFactory') > -1)).ok;
 
       await delay(250);
 
@@ -72,7 +72,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
 
       content = await seizeCurExpTxt(page);
       problems = await seizeCurExpProb(page);
-      expect(content).eq('@pipeline().GroupId');
+      expect(content.trim()).eq('@pipeline().globalParameters.firstGlobalStrPara');
       expect(problems.length).eq(0);
     })
 
@@ -105,11 +105,14 @@ function generateCompletionTests(openOnePage, closeOnePage) {
 
     describe('function parameters completion', ()=>{
       it('suggest completion list for non-first function call param of empty input', async ()=>{
-        const nextText = '@concat(pipeline().DataFactory, pipeline())';
+
+        let nextText, content, problems, allCompletionList;
+
+        nextText = '@concat(pipeline().DataFactory, pipeline())';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(1);
         // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
@@ -124,17 +127,11 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         await page.keyboard.press('ArrowLeft');
         // trigger ctrl + space
         await triggerCompletionOfCurrentCursor(page);
-        const allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=1).ok;
-        let pipelineNotExist = false;
-        allCompletionList.some(value => {
-          if (value.indexOf('pipeline()') === -1){
-            pipelineNotExist = true;
-            return true;
-          }
-          return false;
-        })
-        expect(pipelineNotExist).not.ok;
+        allCompletionList.every(value =>
+          value.match(/^\./)
+        )
       })
     })
 
@@ -238,6 +235,92 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=3).ok;
         expect(allCompletionList.every(value => value.indexOf('variables') > -1)).ok;
+      })
+
+    })
+
+    describe('identifier chain completion', ()=>{
+      it('multi-line post function identifiers completion v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+
+
+        nextText =
+          `@concat(
+    pipeline().DataFactory, 
+pipeline()
+`;
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        // expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(6);
+        expect(problems[0].startPos.line).eq(1);
+        expect(problems[0].startPos.character).greaterThanOrEqual(27);
+        expect(problems[0].endPos.line).eq(3);
+        expect(problems[0].endPos.character).lessThanOrEqual(4);
+
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('End');
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+        allCompletionList.every(value =>
+          value.match(/^\./)
+        )
+      })
+
+      it('one-line post function identifiers completion v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =`@pipeline().globalParameters`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(0);
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+        allCompletionList.every(value =>
+          value.match(/^\.globalParameters/)
+        )
+
+      })
+
+      it('multi-line function call of an unfinished identifier completion v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@createArray(
+    s`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('End');
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        allCompletionList.every(value =>
+          value.match(/^\.s/)
+        )
+
       })
 
     })

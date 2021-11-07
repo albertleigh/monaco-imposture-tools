@@ -31,13 +31,26 @@ describe('e2e easy test', () => {
     await clearUpMonacoEditor(page);
 
     let nextText, content, problems, allCompletionList;
-    await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, '@{add');
 
-    // await page.keyboard.press('ArrowLeft');
-    // trigger ctrl + space
+    nextText =
+`@createArray(
+    s`;
+
+    await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('End');
+
+    await delay(250);
+
     await triggerCompletionOfCurrentCursor(page);
-
     allCompletionList = await collectMonacoListRowsAriaLabels(page);
-    expect(allCompletionList.length>0).ok;
+    expect(allCompletionList.length>=1).ok;
+
+    allCompletionList.every(value =>
+      value.match(/^\.s/)
+    )
+
   });
 });

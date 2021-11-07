@@ -392,6 +392,29 @@ export function generateCompletion(
         identifiersChain = chain.chain;
         completionKind = CompletionType.PROPERTY;
       }
+    }else if (
+      // function call target must have been turned into CompletionType.FUNCTION_CALL
+      node instanceof IdentifierNode
+    ){
+      const chain = findCompleteIdentifiersChain(node.astNode as any, azLgcExpDoc.codeDocument);
+      if (chain.chain.length) {
+        identifiersChain = chain.chain;
+        completionKind = CompletionType.PROPERTY;
+      }
+    }else if (node instanceof FunctionCallNode){
+      // unhandled function call
+      functionCall = node;
+      functionFullName = node.functionFullName;
+      if (completionKind === CompletionType.UNKNOWN) {
+        // property
+        const chain = findCompleteIdentifiersChain(
+          functionCall.astNode as any, azLgcExpDoc.codeDocument
+        );
+        if (chain.chain.length) {
+          identifiersChain = chain.chain;
+          completionKind = CompletionType.PROPERTY;
+        }
+      }
     }else if(
       node instanceof ParenthesisNode &&
       node.parent instanceof FunctionCallNode &&
@@ -453,29 +476,6 @@ export function generateCompletion(
       functionCall = node.parent.parent;
       paramIndex = parenthesesNode.paramIndexByOffset(offset);
       completionKind = CompletionType.FUNCTION_PARAMETER;
-    }else if (
-      // function call target must have been turned into CompletionType.FUNCTION_CALL
-      node instanceof IdentifierNode
-    ){
-      const chain = findCompleteIdentifiersChain(node.astNode as any, azLgcExpDoc.codeDocument);
-      if (chain.chain.length) {
-        identifiersChain = chain.chain;
-        completionKind = CompletionType.PROPERTY;
-      }
-    }else if (node instanceof FunctionCallNode){
-      // unhandled function call
-      functionCall = node;
-      functionFullName = node.functionFullName;
-      if (completionKind === CompletionType.UNKNOWN) {
-        // property
-        const chain = findCompleteIdentifiersChain(
-          functionCall.astNode as any, azLgcExpDoc.codeDocument
-        );
-        if (chain.chain.length) {
-          identifiersChain = chain.chain;
-          completionKind = CompletionType.PROPERTY;
-        }
-      }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -558,6 +558,18 @@ export function generateCompletion(
               endPos.column
             );
             content = model.getValueInRange(contentRange);
+          }else if (
+            originalAstNode.$impostureLang.dataType === "identifiers"
+          ){
+            startPos = model.getPositionAt(originalAstNode.offset);
+            endPos = model.getPositionAt(originalAstNode.offset + originalAstNode.length || 0);
+            contentRange = new AzLogicAppLangConstants._monaco.Range(
+              startPos.lineNumber,
+              startPos.column,
+              endPos.lineNumber,
+              endPos.column
+            );
+            content = model.getValueInRange(contentRange);
           }
 
           if (functionCall) {
@@ -619,7 +631,7 @@ export function generateCompletion(
                     const result = generateCompletionListByNonCompositeType(
                       theParamType,
                       contentRange,
-                      (paramIndex === paramTypes.length - 1) || (paramIndex < parenthesesNode.parameterSize ),
+                      (paramIndex < paramTypes.length - 1) || (paramIndex < parenthesesNode.parameterSize -1 ),
                       theLgcExpDocEditor.valueDescriptionDict
                     );
                     if (result) {
@@ -704,10 +716,8 @@ export function generateCompletion(
 
             // todo multiple properties, find all path beneath the package
             const firstChainNode = identifiersChain[0];
-            const firstChainNodeContent = azLgcExpDoc.codeDocument.getNodeContent(firstChainNode.node);
-            const secondPropertyNode = identifiersChain[1].node;
             const lastPropertyNode = identifiersChain[identifiersChain.length - 1].node;
-            const startOffset = secondPropertyNode.offset;
+            const startOffset = firstChainNode.node.offset + (firstChainNode.node.length || 0);
             const endOffset = lastPropertyNode.offset + (lastPropertyNode.length || 0);
             const startPos = model.getPositionAt(startOffset);
             const endPos = model.getPositionAt(endOffset);
@@ -768,7 +778,7 @@ export function generateCompletion(
                 suggestions: theReturnValueDescCollection.map((value) => {
                   return buildCompletionItemFromDescriptorCollectionEntry(
                     contentRange,
-                    [firstChainNodeContent, ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)],
+                    ['', ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)],
                     value.valDescCollItem
                   );
                 }),
@@ -778,7 +788,6 @@ export function generateCompletion(
                   '[generateCompletion::PROPERTY] multiple',
                   offset,
                   content,
-                  secondPropertyNode,
                   lastPropertyNode,
                   identifiersChain,
                   startOffset,
@@ -790,31 +799,92 @@ export function generateCompletion(
               return result;
             }
           } else {
-            // the identifiersChain is of the size 1 and we gonna suggest all root packages
+            // the identifiersChain is of the size 1 of primitive return type and we gonna suggest all root packages
+
             const thePropertyNode = identifiersChain[0].node;
-            const startOffset = thePropertyNode.offset;
-            const endOffset = thePropertyNode.offset + (thePropertyNode.length || 0);
-            const startPos = model.getPositionAt(startOffset);
-            const endPos = model.getPositionAt(endOffset);
-            const contentRange = new AzLogicAppLangConstants._monaco.Range(
+            let startOffset = thePropertyNode.offset;
+            let endOffset = thePropertyNode.offset + (thePropertyNode.length || 0);
+            let startPos = model.getPositionAt(startOffset);
+            let endPos = model.getPositionAt(endOffset);
+            let contentRange = new AzLogicAppLangConstants._monaco.Range(
               startPos.lineNumber,
               startPos.column,
               endPos.lineNumber,
               endPos.column
             );
-            const content = model.getValueInRange(contentRange);
-            const allRootPackages = findAllRootPackageOfOneDescriptor(theLgcExpDocEditor.rootSymbolTable);
-            const result = {
-              suggestions: allRootPackages
-                .filter((value) => value.valDescCollItem.type !== 'emptyParaFunctionReturn')
-                .map((value) => {
-                  return buildCompletionItemFromDescriptorCollectionEntry(
-                    contentRange,
-                    value.paths,
-                    value.valDescCollItem
-                  );
-                }),
-            };
+            let content = model.getValueInRange(contentRange);
+
+            let theReturnValueDescCollection: DescriptorCollection[] = [];
+            let theReturnValueDescCollectionPathSliceStartIndex = 1;
+            let result:languages.CompletionList;
+
+            if (identifiersChain[0].type === 'function-call-complete'){
+              const functionFullName = identifiersChain[0].functionFullName;
+              const theFunDesc = findAmongOneDescriptor(azLgcExpDoc.globalSymbolTable,functionFullName.split('.'));
+              if (theFunDesc) {
+                const funRetTyp = determineReturnIdentifierTypeOfFunction(
+                  theLgcExpDocEditor.rootSymbolTable,
+                  azLgcExpDoc.codeDocument,
+                  identifiersChain[0] as any,
+                  theFunDesc
+                );
+
+                if (
+                  funRetTyp &&
+                  funRetTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE &&
+                  funRetTyp.returnTypeChainList?.length
+                ) {
+                  theReturnValueDescCollectionPathSliceStartIndex = funRetTyp.returnTypeChainList.length;
+                  theReturnValueDescCollection = findAllPathAmongOneDescriptor(
+                    theLgcExpDocEditor.rootSymbolTable,
+                    [
+                      ...funRetTyp.returnTypeChainList,
+                      ...(
+                        identifiersChain.slice(1) as (
+                          | IdentifierInBracketNotationReturnChainType
+                          | IdentifierReturnChainType
+                          )[]
+                      ).map((value) => value.identifierName),
+                    ]);
+                }
+              }
+            }
+           if (theReturnValueDescCollection.length){
+             const firstChainNode = identifiersChain[0];
+             startOffset = firstChainNode.node.offset + (firstChainNode.node.length || 0);
+             endOffset = startOffset;
+             startPos = model.getPositionAt(startOffset);
+             endPos = model.getPositionAt(endOffset);
+             contentRange = new AzLogicAppLangConstants._monaco.Range(
+               startPos.lineNumber,
+               startPos.column,
+               endPos.lineNumber,
+               endPos.column
+             );
+             content = model.getValueInRange(contentRange);
+             result = {
+               suggestions: theReturnValueDescCollection.map((value) => {
+                 return buildCompletionItemFromDescriptorCollectionEntry(
+                   contentRange,
+                   ['', ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)],
+                   value.valDescCollItem
+                 );
+               }),
+             };
+           }else{
+              const allRootPackages = findAllRootPackageOfOneDescriptor(theLgcExpDocEditor.rootSymbolTable);
+              result = {
+                suggestions: allRootPackages
+                  .filter((value) => value.valDescCollItem.type !== 'emptyParaFunctionReturn')
+                  .map((value) => {
+                    return buildCompletionItemFromDescriptorCollectionEntry(
+                      contentRange,
+                      value.paths,
+                      value.valDescCollItem
+                    );
+                  }),
+              };
+            }
             AzLogicAppLangConstants.inSemanticDebugMode &&
               console.log(
                 '[generateCompletion::PROPERTY] root one',

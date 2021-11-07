@@ -16,6 +16,7 @@ export enum ErrorCode {
   INVALID_NESTED_TEMPLATE,
   INVALID_ROOT_FUNCTION_CALL,
   INVALID_STANDALONE_ACCESSOR,
+  UNRECOGNIZED_TOKENS,
   // todo add a new one, no qstring-dbl in expression
 }
 

@@ -24,6 +24,7 @@ import {
 
 AzLogicAppExpressionLang.scannerOrItsPath = `assets/scanner.wasm`;
 AzLogicAppExpressionLang.monaco = monaco;
+AzLogicAppExpressionLang.inLexicalDebugMode = false;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;
 AzLogicAppExpressionLang.inSemanticDebugMode = true;
 AzLogicAppExpressionLang.emitBinaryTokens = true;
@@ -41,6 +42,14 @@ function generateNextSymbolTable() {
         ],
         [IdentifierType.CONSTANT(nextSeed)],
         IdentifierType.Number
+      ),
+      activity: createOverloadedFunValDesc([
+          'Activity get Metedata 1'
+        ],
+        [
+          [IdentifierType.CONSTANT('Get Metadata1')]
+        ],
+        [IdentifierType.FUNCTION_RETURN_TYPE(['activity'])]
       ),
       variables: createOverloadedFunValDesc([
           'Variable one',
@@ -101,7 +110,34 @@ function generateNextSymbolTable() {
             IdentifierType.String,
             true
           ),
+          globalParameters: createPkgValDesc(
+            [
+              'Global parameter package'
+            ],
+            {
+              firstGlobalStrPara: createRefValDesc(['firstGlobalStrPara'], IdentifierType.String),
+              oneGlobalNumber: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+              oneGlobalFloat: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+              oneGlobalBoolean: createRefValDesc(['oneGlobalNumber'], IdentifierType.Boolean),
+              oneGlobalArr: createRefValDesc(['oneGlobalNumber'], IdentifierType.Array, true, []),
+              oneGlobalObj: createRefValDesc(['oneGlobalObj'], IdentifierType.AnyObject, true, {}),
+              oneTypedObj: createPkgValDesc(['oneTypedObj'], {
+                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+              }),
+            }
+          )
         }),
+        activity: createPkgValDesc(['**Return package activity**', 'Package activity'], {
+          output: createRefValDesc(
+            ['output'],
+            IdentifierType.Any
+          )
+        })
       })
     )
   );
@@ -156,7 +192,17 @@ const useStyles = makeStyles((theme) => ({
 // @item().one['two'].
 
 
-const sampleCodes = `@variables('firstVar')`;
+const sampleCodes =
+`@createArray(
+    s
+)`;
+// `@createArray(string(add(
+//         sub(
+//             pipeline().globalParameters.oneGlobalFloat,
+//             pipeline().globalParameters.oneGlobalNumber
+//         ),
+//         pipeline().globalParameters.oneGlobalFloat
+// )))`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
