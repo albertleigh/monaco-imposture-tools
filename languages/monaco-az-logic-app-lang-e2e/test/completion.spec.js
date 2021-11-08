@@ -5,6 +5,7 @@ const {
   collectMonacoListRowsAriaLabels, triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, clearPageErrors,
   seizePageErrors, delay
 } = require("./utils");
+const os = require("os");
 
 function generateCompletionTests(openOnePage, closeOnePage) {
   describe('completion test cases', ()=>{
@@ -302,10 +303,16 @@ pipeline()
         let nextText, content, problems, allCompletionList;
 
         nextText =
-          `@createArray(
+            `@createArray(
     s`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        if (os.platform() === 'linux'){
+          await page.keyboard.press('Escape');
+        }
 
         await page.keyboard.press('Enter');
         await page.keyboard.press('ArrowUp');
@@ -318,7 +325,7 @@ pipeline()
         expect(allCompletionList.length>=1).ok;
 
         allCompletionList.every(value =>
-          value.match(/^\.s/)
+            value.match(/^\.s/)
         )
 
       })

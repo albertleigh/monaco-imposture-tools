@@ -1,3 +1,4 @@
+const os = require('os');
 const chai = require('chai');
 const expect = chai.expect;
 const puppeteer = require('puppeteer');
@@ -37,6 +38,12 @@ describe('e2e easy test', () => {
     s`;
 
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+    await delay(250);
+
+    if (os.platform() === 'linux'){
+      await page.keyboard.press('Escape');
+    }
 
     await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowUp');
