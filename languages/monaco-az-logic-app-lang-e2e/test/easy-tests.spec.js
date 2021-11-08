@@ -34,16 +34,15 @@ describe('e2e easy test', () => {
     let nextText, content, problems, allCompletionList;
 
     nextText =
-`@createArray(
-    s`;
+`@concat(
+    pipeline().DataFactory,
+pipeline().`;
 
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
     await delay(250);
 
-    if (os.platform() === 'linux'){
-      await page.keyboard.press('Escape');
-    }
+    await page.keyboard.press('Escape');
 
     await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowUp');
@@ -56,7 +55,7 @@ describe('e2e easy test', () => {
     expect(allCompletionList.length>=1).ok;
 
     allCompletionList.every(value =>
-      value.match(/^\.s/)
+      value.match(/^\./)
     )
 
   });

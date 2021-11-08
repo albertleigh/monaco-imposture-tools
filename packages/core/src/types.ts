@@ -1,6 +1,8 @@
 // -- raw grammar typings
 import {CodeDocument} from './grammar';
 
+export const DEFAULT_SEPARATOR = '\n';
+
 export interface ImpostureLang {
   /**
    * @deprecated

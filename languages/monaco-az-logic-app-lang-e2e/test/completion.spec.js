@@ -277,6 +277,37 @@ pipeline()
         )
       })
 
+      it('multi-line post function identifiers completion v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@concat(
+    pipeline().DataFactory,
+pipeline().`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        await page.keyboard.press('Escape');
+
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('End');
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        allCompletionList.every(value =>
+          value.match(/^\./)
+        )
+
+      })
+
+
       it('one-line post function identifiers completion v1', async ()=>{
         let nextText, content, problems, allCompletionList;
 
@@ -310,9 +341,7 @@ pipeline()
 
         await delay(250);
 
-        if (os.platform() === 'linux'){
-          await page.keyboard.press('Escape');
-        }
+        await page.keyboard.press('Escape');
 
         await page.keyboard.press('Enter');
         await page.keyboard.press('ArrowUp');

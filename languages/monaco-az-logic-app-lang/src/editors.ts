@@ -1,17 +1,24 @@
-import {CodeDocument, INITIAL, Registry, StackElement, ValueEventEmitter, IRawTheme, Position as TmPosition} from '@monaco-imposture-tools/core';
+import {
+  DEFAULT_SEPARATOR,
+  INITIAL,
+  IRawTheme,
+  Position as TmPosition,
+  Registry,
+  StackElement,
+  ValueEventEmitter
+} from '@monaco-imposture-tools/core';
 import {loadWASM} from '@monaco-imposture-tools/oniguruma-asm';
-import {CancellationToken, IDisposable, editor, languages, Position, Range} from './editor.api';
-import {default as monaco} from './editor.api';
+import type {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from './editor.api';
 import {ValidateResult} from './validateHelper';
 import {debounce} from './debounce';
 import {TMToMonacoToken} from './tm-to-monaco-token';
 import {generateHover} from './hoverProviderHelper';
 import {generateCompletion} from './completionProviderHelper';
-import {language, conf} from './languageConfiguration';
+import {conf, language} from './languageConfiguration';
 import {generateCodeActions} from './codeActionProviderHelper';
 import {themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
-import {SymbolTable, ValueDescriptionDictionary, AzLogicAppLangConstants} from "./base";
+import {AzLogicAppLangConstants, SymbolTable, ValueDescriptionDictionary} from "./base";
 import {generateValueDescriptionDictionary} from "./utils";
 
 class TokenizerState implements languages.IState {
@@ -104,7 +111,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
       const azLgcExpDocResult = azLgcExpEditor.azLgcExpDocEventEmitter;
       const validateResult = azLgcExpEditor.validationResultEventEmitter;
       if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
-        const codeDoc = this.grammar!.parse(text || ' ');
+        const codeDoc = this.grammar!.parse(text || ' ', {separator: azLgcExpEditor.getEndOfLine()});
 
         const azLgcExpDoc = parseAzLgcExpDocument(codeDoc, itsGlobalSymbolTable);
         azLgcExpDocResult.emit(azLgcExpDoc);
@@ -320,7 +327,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
             ) {
               theAzLgcExpDoc =
                 (await this._doParse(
-                  modelLines.join(CodeDocument.DEFAULT_SEPARATOR),
+                  modelLines.join(theLgcExpDocEditor.getEndOfLine()),
                   model.getVersionId(),
                   theLgcExpDocEditor
                 )) || theAzLgcExpDoc;
@@ -365,6 +372,12 @@ export class AzLogicAppExpressionLangMonacoEditor {
   private _rootSymbolTable: SymbolTable;
   private _valueDescriptionDict: ValueDescriptionDictionary;
 
+  public getEndOfLine(){
+    if(this.standaloneCodeEditor){
+      return this.standaloneCodeEditor.getModel().getEOL();
+    }
+    return DEFAULT_SEPARATOR;
+  }
 
   public get rootSymbolTable(): SymbolTable{
     return this._rootSymbolTable;
@@ -406,17 +419,21 @@ export class AzLogicAppExpressionLangMonacoEditor {
     }
 
     AzLogicAppExpressionLangMonacoEditor.activate().then(() => {
+
+      const theTextModel = Object.assign(
+        AzLogicAppLangConstants._monaco.editor.createModel(
+          (standaloneEditorConstructionOptions?.value || ' ').replace(/\r/gm, ""),
+          AzLogicAppLangConstants.LANGUAGE_ID
+        ),
+        {
+          id: editorId,
+        }
+      );
+      // force to use LF as eol
+      theTextModel.setEOL(0)
       this.standaloneCodeEditor = AzLogicAppLangConstants._monaco.editor.create(domeElement, {
         language: AzLogicAppLangConstants.LANGUAGE_ID,
-        model: Object.assign(
-          AzLogicAppLangConstants._monaco.editor.createModel(
-            standaloneEditorConstructionOptions?.value || ' ',
-            AzLogicAppLangConstants.LANGUAGE_ID
-          ),
-          {
-            id: editorId,
-          }
-        ),
+        model: theTextModel,
         ...standaloneEditorConstructionOptions,
       });
 

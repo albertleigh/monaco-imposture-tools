@@ -1,4 +1,4 @@
-import {languages} from './editor.api';
+import type {languages} from './editor.api';
 import {
   DescriptionType,
 } from './base';

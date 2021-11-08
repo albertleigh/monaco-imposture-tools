@@ -193,8 +193,9 @@ const useStyles = makeStyles((theme) => ({
 
 
 const sampleCodes =
-`@createArray(
-    s
+`@concat(
+    pipeline().DataFactory,
+    pipeline().
 )`;
 // `@createArray(string(add(
 //         sub(

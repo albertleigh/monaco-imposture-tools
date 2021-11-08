@@ -1,4 +1,4 @@
-import {CancellationToken, editor, languages, Position, Range} from './editor.api';
+import type {CancellationToken, editor, languages, Position, Range} from './editor.api';
 import {
   AzLogicAppNode,
   DescCollItem,
