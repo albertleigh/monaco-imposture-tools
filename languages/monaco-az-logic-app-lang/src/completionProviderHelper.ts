@@ -1,4 +1,4 @@
-import type {CancellationToken, editor, languages, Position, Range} from './editor.api';
+import {CancellationToken, editor, languages, Position, Range} from './editor.api';
 import {
   AzLogicAppNode,
   DescCollItem,
@@ -414,6 +414,25 @@ export function generateCompletion(
           identifiersChain = chain.chain;
           completionKind = CompletionType.PROPERTY;
         }
+      }
+    }else if (
+      originalAstNode.$impostureLang.dataType === "identifiers-capture" &&
+      originalAstNode.parent.$impostureLang.dataType === "identifiers:wPunctuation" &&
+      !(node instanceof IdentifierNode) &&
+      node instanceof ParenthesisNode &&
+      node.offset < offset &&
+      node.offset + node.length > offset &&
+      node.paramIndexByOffset(offset) > -1 &&
+      node.parameter(node.paramIndexByOffset(offset))
+    ){
+      // incomplete identifier
+      const thePara = node.parameter(node.paramIndexByOffset(offset));
+      const chain = findCompleteIdentifiersChain(
+        thePara.astNode as any, azLgcExpDoc.codeDocument
+      )
+      if (chain.chain.length) {
+        identifiersChain = chain.chain;
+        completionKind = CompletionType.PROPERTY;
       }
     }else if(
       node instanceof ParenthesisNode &&

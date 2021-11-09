@@ -1,4 +1,4 @@
-import type {CancellationToken, editor, languages, Range} from './editor.api';
+import {CancellationToken, editor, languages, Range} from './editor.api';
 import {ErrorCode} from './validateHelper';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

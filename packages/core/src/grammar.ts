@@ -2064,11 +2064,16 @@ export class CodeDocument {
   public readonly lines: string[];
   private readonly accLineLength: number[] = [];
 
+  get separator(){
+    return this._separator;
+  }
+
   constructor(
     public readonly text: string,
     private _separator: string = DEFAULT_SEPARATOR,
     public readonly root?: ASTNode
   ) {
+
     this.lines = text.split(_separator);
 
     this.lines.forEach((value, i) => {

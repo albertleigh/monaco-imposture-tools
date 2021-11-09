@@ -8,7 +8,7 @@ import {
   ValueEventEmitter
 } from '@monaco-imposture-tools/core';
 import {loadWASM} from '@monaco-imposture-tools/oniguruma-asm';
-import type {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from './editor.api';
+import {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from './editor.api';
 import {ValidateResult} from './validateHelper';
 import {debounce} from './debounce';
 import {TMToMonacoToken} from './tm-to-monaco-token';
@@ -111,7 +111,17 @@ export class AzLogicAppExpressionLangMonacoEditor {
       const azLgcExpDocResult = azLgcExpEditor.azLgcExpDocEventEmitter;
       const validateResult = azLgcExpEditor.validationResultEventEmitter;
       if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
-        const codeDoc = this.grammar!.parse(text || ' ', {separator: azLgcExpEditor.getEndOfLine()});
+
+        // force to use the default LF as EOL
+        const codeDoc = this.grammar!.parse(text || ' ');
+
+        if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
+          if (codeDoc.separator === '\r\n'){
+            console.log('[azLgcLang::parseAzLgcExpDocument] EOF CRLF');
+          }else{
+            console.log('[azLgcLang::parseAzLgcExpDocument] EOF LF');
+          }
+        }
 
         const azLgcExpDoc = parseAzLgcExpDocument(codeDoc, itsGlobalSymbolTable);
         azLgcExpDocResult.emit(azLgcExpDoc);
@@ -430,7 +440,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
         }
       );
       // force to use LF as eol
-      theTextModel.setEOL(0)
+      theTextModel.pushEOL(0);
       this.standaloneCodeEditor = AzLogicAppLangConstants._monaco.editor.create(domeElement, {
         language: AzLogicAppLangConstants.LANGUAGE_ID,
         model: theTextModel,
@@ -462,6 +472,16 @@ export class AzLogicAppExpressionLangMonacoEditor {
           AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, evt.versionId, this);
         }
       });
+      // phase 2 todo: it feels like onDidChangeOptions cannot catch eol changing
+      // this.standaloneCodeEditor.getModel()?.onDidChangeOptions((evt)=>{
+      //   if (this.standaloneCodeEditor.getModel().getEOL() === '\r\n'){
+      //     // force to use LF as EOL
+      //     this.standaloneCodeEditor.getModel().pushEOL(0);
+      //     if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
+      //       console.log('[azLgcLang::standaloneCodeEditor] onDidChangeOptions set EOL from CRLF to LF by force');
+      //     }
+      //   }
+      // })
     });
   }
 
