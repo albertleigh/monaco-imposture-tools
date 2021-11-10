@@ -83,10 +83,9 @@ export interface IdentifierInBracketNotationReturnChainType extends AbstractRetu
   type: 'array-literal';
   isBracketNotation: true;
   identifierName: string;
-  punctuationNode: AzLogicAppNodeType<'punctuation'>;
-  propertyNameNode: AzLogicAppNodeType<'string'>;
-  propertyNameOffset: number;
-  propertyNameLength: number;
+  literalArrayNode: AzLogicAppNodeType<'array-literal'>;
+  isPropertyLiteral: boolean;
+  propertyNameNode?: AzLogicAppNode;
 }
 
 export enum ParenthesesElderSiblingType {
@@ -610,6 +609,7 @@ export interface PackageDescription extends AbstractValueDescription {
   _$type: DescriptionType.PackageReference;
   _$subDescriptor: Record<string, ValueDescription>;
   _$identifierType:IdentifierType;
+  _$isInternal?: boolean;
 }
 
 export function createPkgValDesc(

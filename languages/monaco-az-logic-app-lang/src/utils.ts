@@ -2,15 +2,27 @@ import {CodeDocument} from '@monaco-imposture-tools/core';
 import {
   AzLogicAppLangConstants,
   AzLogicAppNode,
-  AzLogicAppNodeType, createPkgValDesc, createRefValDesc, DescCollItem,
-  DescriptionType, DescriptorCollection, EmptyParaRetDescCollItem,
+  AzLogicAppNodeType,
+  createPkgValDesc,
+  createRefValDesc,
+  DescCollItem,
+  DescriptionType,
+  DescriptorCollection,
+  EmptyParaRetDescCollItem,
+  FunctionCallReturnChainType,
   IdentifierInBracketNotationReturnChainType,
   IdentifierReturnChainType,
   IdentifierType,
-  IdentifierTypeName, OlFunDescCollItem, PackageDescription,
+  IdentifierTypeName,
+  OlFunDescCollItem,
+  PackageDescription,
   ParenthesesElderSiblingType,
-  ReturnChainType, SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME, SymbolTable,
-  ValueDescription, ValueDescriptionDictionary, ValueDescriptionDictionaryFunctionKey,
+  ReturnChainType,
+  SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME,
+  SymbolTable,
+  ValueDescription,
+  ValueDescriptionDictionary,
+  ValueDescriptionDictionaryFunctionKey,
 } from './base';
 
 //#region lexical utils
@@ -143,55 +155,44 @@ export function isBracketNotation(
 ): IdentifierInBracketNotationReturnChainType | undefined {
   if (
     node &&
-    node.$impostureLang?.dataType === 'array-literal' &&
-    node.children?.length === 1 &&
-    node.children[0].$impostureLang?.dataType === 'string'
+    node.$impostureLang?.dataType === 'array-literal'
   ) {
-    const theElderSibling = findAnElderSibling(node);
-    const propertyNameOffset = node.children[0].offset + 1;
-    const propertyNameLength = (node.children[0].length || 2) - 2;
-    const identifierName = codeDocument.text.substr(propertyNameOffset, propertyNameLength);
-    if (theElderSibling && theElderSibling.$impostureLang?.dataType === 'punctuation') {
-      return {
-        type: 'array-literal',
-        isBracketNotation: true,
-        label: identifierName,
-        identifierName,
-        punctuationNode: theElderSibling as any,
-        node: node,
-        propertyNameNode: node.children[0] as any,
-        propertyNameOffset,
-        propertyNameLength,
-      };
-    }
-  }
-  return;
-}
+    let firstChildAstNode: AzLogicAppNode|undefined = undefined;
+    let label = '';
+    let identifierName = '';
+    let isPropertyLiteral = false;
+    if (node.children?.length){
+      firstChildAstNode = node.children[0] as AzLogicAppNode;
+      switch (firstChildAstNode.$impostureLang.dataType) {
+        case 'string':
+          identifierName = codeDocument.getNodeContent(firstChildAstNode).replace(/'/gm, '');
+          label = identifierName;
+          isPropertyLiteral = true;
+          break;
+        case 'number':
+          identifierName = codeDocument.getNodeContent(firstChildAstNode);
+          label = identifierName;
+          isPropertyLiteral = true;
+          break;
+        default:
+          label = codeDocument.getNodeContent(firstChildAstNode);
+          break;
 
-export function isForwardBracketNotation(
-  node: AzLogicAppNode,
-  codeDocument: CodeDocument
-): IdentifierInBracketNotationReturnChainType | undefined {
-  if (
-    node &&
-    node.$impostureLang?.dataType === 'array-literal' &&
-    node.children?.length === 1 &&
-    node.children[0].$impostureLang?.dataType === 'string'
-  ) {
-    const propertyNameOffset = node.children[0].offset + 1;
-    const propertyNameLength = (node.children[0].length || 2) - 2;
-    const identifierName = codeDocument.text.substr(propertyNameOffset, propertyNameLength);
+      }
+    }
+    // const propertyNameOffset = node.children[0].offset + 1;
+    // const propertyNameLength = (node.children[0].length || 2) - 2;
+    // const identifierName = codeDocument.text.substr(propertyNameOffset, propertyNameLength);
     return {
       type: 'array-literal',
+      node: node,
       isBracketNotation: true,
       label: identifierName,
       identifierName,
-      punctuationNode: node as any,
-      node: node,
-      propertyNameNode: node.children[0] as any,
-      propertyNameOffset,
-      propertyNameLength,
-    };
+      isPropertyLiteral,
+      literalArrayNode: node as any,
+      propertyNameNode: node.children?.length? node.children[0] as any : undefined,
+    } as IdentifierInBracketNotationReturnChainType;
   }
   return;
 }
@@ -227,7 +228,7 @@ export function findCompleteIdentifiersChain(
       const isBracketNotationRes = isBracketNotation(oneElderSibling, codeDocument);
       if (isBracketNotationRes) {
         chain.unshift(isBracketNotationRes);
-        oneElderSibling = findAnElderSibling(isBracketNotationRes.punctuationNode);
+        oneElderSibling = findAnElderSibling(isBracketNotationRes.literalArrayNode);
         continue;
       } else {
         break;
@@ -307,10 +308,10 @@ export function findCompleteForwardIdentifiersChain(
     if (oneYoungerSibling?.$impostureLang?.dataType === 'array-literal') {
       // todo fix this array-literal
       // to check punctuation
-      const isBracketNotationRes = isForwardBracketNotation(oneYoungerSibling, codeDocument);
+      const isBracketNotationRes = isBracketNotation(oneYoungerSibling, codeDocument);
       if (isBracketNotationRes) {
         chain.push(isBracketNotationRes);
-        oneYoungerSibling = findAYoungerSibling(isBracketNotationRes.punctuationNode);
+        oneYoungerSibling = findAYoungerSibling(isBracketNotationRes.literalArrayNode);
         continue;
       } else {
         break;
@@ -401,38 +402,80 @@ export function inferIdentifierTypeFromChain(
 
       if (retIdTyp) {
         if (retIdTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retIdTyp.returnTypeChainList?.length) {
-          const theReturnValueDesc = findAmongOneDescriptor(symbolTable,[
-            ...retIdTyp.returnTypeChainList,
-            ...(idChain.slice(1) as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
-              (value) => value.identifierName
-            ),
-          ]);
-          if (theReturnValueDesc && theReturnValueDesc._$type === DescriptionType.ReferenceValue) {
-            return theReturnValueDesc._$valueType;
+
+          const funRetChainTyp = idChain[0];
+          const interpretedChainList = interpretFunctionChainList(idChain, retIdTyp, funRetChainTyp);
+
+          const funPathVdIterator = iterateAmongOneSymbolTable(symbolTable);
+          let funPathIndex = 0;
+          let nextOne = funPathVdIterator.next();
+          let curVd: ValueDescription = nextOne.value;
+          while (!nextOne.done && curVd){
+            if (funPathIndex > interpretedChainList.length -1){
+              funPathVdIterator.next('');
+              break;
+            }
+            // need to survive any type of dynamic array bracket
+            if (
+              interpretedChainList[funPathIndex]?.retChainTyp.type === 'array-literal' &&
+              ! (interpretedChainList[funPathIndex]?.retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
+            ){
+              // force to return an unknown any value
+              return IdentifierType.Any;
+            }
+            nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
+            curVd = nextOne.value;
+          }
+
+          if (curVd && curVd._$type === DescriptionType.ReferenceValue) {
+            return curVd._$valueType;
           }else if (
             // check em all in case we gonna support more
-            theReturnValueDesc && theReturnValueDesc._$type === DescriptionType.FunctionValue ||
-            theReturnValueDesc && theReturnValueDesc._$type === DescriptionType.OverloadedFunctionValue ||
-            theReturnValueDesc && theReturnValueDesc._$type === DescriptionType.PackageReference
+            curVd && curVd._$type === DescriptionType.FunctionValue ||
+            curVd && curVd._$type === DescriptionType.OverloadedFunctionValue ||
+            curVd && curVd._$type === DescriptionType.PackageReference
           ){
-            return theReturnValueDesc._$identifierType;
+            return curVd._$identifierType;
           }
+
+
         } else if (!retIdTyp.isComposite) {
           return retIdTyp;
         }
       }
     }
   } else if ('identifierName' in idChain[0] && idChain[0].identifierName) {
-    const packagePaths = (idChain as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
-      (value) => value.identifierName
-    );
-    const theRefDesc = findAmongOneDescriptor(symbolTable, packagePaths);
-    if (theRefDesc?._$type === DescriptionType.ReferenceValue) {
-      if (theRefDesc._$valueType.type === IdentifierTypeName.OBJECT) {
+
+
+    const interpretedChainList = interpretIdentifierChainList(idChain);
+    const identifierPathVdIterator = iterateAmongOneSymbolTable(symbolTable);
+
+    let funPathIndex = 0;
+    let nextOne = identifierPathVdIterator.next();
+    let curVd: ValueDescription = nextOne.value;
+    while (!nextOne.done && curVd){
+      if (funPathIndex > interpretedChainList.length -1){
+        identifierPathVdIterator.next('');
+        break;
+      }
+      // need to survive any type of dynamic array bracket
+      if (
+        interpretedChainList[funPathIndex].retChainTyp.type === 'array-literal' &&
+        ! (interpretedChainList[funPathIndex].retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
+      ){
+        // force to return an unknown any value
+        return IdentifierType.Any;
+      }
+      nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
+      curVd = nextOne.value;
+    }
+
+    if (curVd?._$type === DescriptionType.ReferenceValue) {
+      if (curVd._$valueType.type === IdentifierTypeName.OBJECT) {
         // todo: ooops, currently we cannot support non-primitive identifier type
         // will be fixed once we switched from enum id type to class based identifier type
-      } else if (!theRefDesc._$valueType.isComposite) {
-        return theRefDesc._$valueType;
+      } else if (!curVd._$valueType.isComposite) {
+        return curVd._$valueType;
       }
     }
   }
@@ -562,13 +605,16 @@ export function createSymbolTable(
   base: Record<string, ValueDescription>,
   funRetTyp: {[SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME]: PackageDescription} = AzLogicAppLangConstants.emtpyFunRetTyp
 ):SymbolTable{
-  return {
+  const result = {
     ...createPkgValDesc([],{
       ...AzLogicAppLangConstants.globalSymbolTableBase,
       ...base,
     }),
     ...funRetTyp
   }
+  result._$isInternal = true
+  result[SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME]._$isInternal = true;
+  return result;
 }
 
 export function isValueDescriptor(node: any) {
@@ -837,6 +883,41 @@ export function findAllAmongOneSymbolTable(descriptor: SymbolTable, paths: strin
   return  [];
 }
 
+function covertCollectedPathsIntoString(collectedPaths:string[]):string{
+  return collectedPaths.filter(Boolean)
+    .filter(one =>( one !== SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME))
+    .join('.')
+}
+
+// it feels like we need a generator to iterate symbol table over here
+export function * iterateAmongOneSymbolTable(descriptor: SymbolTable | ValueDescription)
+  : Generator<ValueDescription,ValueDescription| SymbolTable,string>
+{
+  const collectedPaths:string[] = [];
+  let cur = descriptor as ValueDescription;
+  let nextPath =  yield cur;
+  collectedPaths.push(nextPath);
+  while (cur && nextPath){
+    if (!isValueDescriptor(cur)) return;
+    if (cur._$type === DescriptionType.ReferenceValue && cur._$valueType.isAnyObject){
+      // terminal any type
+      yield createRefValDesc([
+        `${covertCollectedPathsIntoString(collectedPaths)}:any`
+      ], IdentifierType.Any);
+    }else if (nextPath === SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME && nextPath in cur){
+      cur = cur[nextPath];
+    }else if (cur._$type === DescriptionType.PackageReference){
+      cur = cur._$subDescriptor[nextPath];
+    }else{
+      // no way to continue
+      return
+    }
+    nextPath = yield cur;
+    nextPath && (collectedPaths.push(nextPath));
+  }
+  return
+}
+
 export function collectAllPathBeneathOneDescriptorNode(
   descriptorNode: ValueDescription,
   paths: string[],
@@ -880,12 +961,30 @@ export function findAllPathAmongOneDescriptor(descriptor: ValueDescription, path
   return collector;
 }
 
+function interpretFunctionChainList(idChain: ReturnChainType[], retTyp: IdentifierType, funRetChainTyp: FunctionCallReturnChainType ){
+  let interpretedChainList: Array<{path:string, retChainTyp: FunctionCallReturnChainType | IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType}> =
+    retTyp.returnTypeChainList.map(one=> ({path:one, retChainTyp:funRetChainTyp}));
+  interpretedChainList = interpretedChainList.concat(
+    (idChain.slice(1) as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
+      (oneRetTyp) => ({path: oneRetTyp.identifierName, retChainTyp: oneRetTyp})
+    ) as any
+  )
+  return interpretedChainList;
+}
+
+function interpretIdentifierChainList(idChain: ReturnChainType[]){
+  return (idChain as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
+    (oneRetTyp) => ({path: oneRetTyp.identifierName, retChainTyp: oneRetTyp})
+  )
+}
+
 export function findValueDescriptionFromChain(
   symbolTable: SymbolTable,
   codeDocument: CodeDocument,
   idChain: ReturnChainType[]
 ): ValueDescription | undefined {
   if (idChain.length === 0) return;
+
   if (idChain[0].type === 'function-call-complete') {
     const functionFullName = idChain[0].functionFullName;
     const theFunDesc = findAmongOneDescriptor(symbolTable, functionFullName.split('.'));
@@ -897,21 +996,58 @@ export function findValueDescriptionFromChain(
         theFunDesc
       );
       if (retTyp && retTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retTyp.returnTypeChainList?.length) {
-        // todo, enhancement: it would be a lot of better to return which part of the chain not found
-        return findAmongOneDescriptor(symbolTable, [
-          ...retTyp.returnTypeChainList,
-          ...(idChain.slice(1) as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
-            (value) => value.identifierName
-          ),
-        ]);
+
+        const funRetChainTyp = idChain[0];
+        const interpretedChainList = interpretFunctionChainList(idChain, retTyp, funRetChainTyp);
+
+        const funPathVdIterator = iterateAmongOneSymbolTable(symbolTable);
+        let funPathIndex = 0;
+        let nextOne = funPathVdIterator.next();
+        let curVd: ValueDescription = nextOne.value;
+        while (!nextOne.done && curVd){
+          if (funPathIndex > interpretedChainList.length -1){
+            funPathVdIterator.next('');
+            break;
+          }
+          // need to survive any type of dynamic array bracket
+          if (
+            interpretedChainList[funPathIndex]?.retChainTyp.type === 'array-literal' &&
+            ! (interpretedChainList[funPathIndex]?.retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
+          ){
+            // force to return an unknown any value
+            return createRefValDesc([], IdentifierType.Any);
+          }
+          nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
+          curVd = nextOne.value;
+        }
+        return curVd;
       }
     }
   } else if ('identifierName' in idChain[0] && idChain[0].identifierName) {
-    return findAmongOneDescriptor(symbolTable,
-      (idChain as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
-        (value) => value.identifierName
-      )
-    );
+
+    const interpretedChainList = interpretIdentifierChainList(idChain);
+    const identifierPathVdIterator = iterateAmongOneSymbolTable(symbolTable);
+
+    let funPathIndex = 0;
+    let nextOne = identifierPathVdIterator.next();
+    let curVd: ValueDescription = nextOne.value;
+    while (!nextOne.done && curVd){
+      if (funPathIndex > interpretedChainList.length -1){
+        identifierPathVdIterator.next('');
+        break;
+      }
+      // need to survive any type of dynamic array bracket
+      if (
+        interpretedChainList[funPathIndex].retChainTyp.type === 'array-literal' &&
+        ! (interpretedChainList[funPathIndex].retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
+      ){
+        // force to return an unknown any value
+        return createRefValDesc([], IdentifierType.Any);
+      }
+      nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
+      curVd = nextOne.value;
+    }
+    return curVd;
   }
   return;
 }
@@ -934,15 +1070,47 @@ export function findValDescArrFromChain(
       );
       if (retTyp){
         if (retTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retTyp.returnTypeChainList?.length) {
-          // todo, enhancement: it would be a lot of better to return which part of the chain not found
-          const funResult = findAllAmongOneSymbolTable(symbolTable, [
-            ...retTyp.returnTypeChainList,
-            ...(idChain.slice(1) as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
-              (value) => value.identifierName
-            ),
-          ]);
+
+          const funResult:ValueDescription[] = [];
+
+          const funRetChainTyp = idChain[0];
+          const interpretedChainList = interpretFunctionChainList(idChain, retTyp, funRetChainTyp);
+
+          const funPathVdIterator = iterateAmongOneSymbolTable(symbolTable);
+          let funPathIndex = 0;
+          let nextOne = funPathVdIterator.next();
+          let curVd: ValueDescription = nextOne.value;
+          while (!nextOne.done && curVd){
+
+            if (curVd._$type !== DescriptionType.PackageReference || !curVd._$isInternal){
+              funResult.push(curVd);
+            }
+
+            if (funPathIndex > interpretedChainList.length -1){
+              funPathVdIterator.next('');
+              break;
+            }
+            // need to survive any type of dynamic array bracket
+            if (
+              interpretedChainList[funPathIndex]?.retChainTyp.type === 'array-literal' &&
+              ! (interpretedChainList[funPathIndex]?.retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
+            ){
+              // force to return an unknown any value
+              funResult.push(createRefValDesc([], IdentifierType.Any));
+              // populate the rest with any vd
+              while(funResult.length < retTyp.returnTypeChainList.length){
+                funResult.push(createRefValDesc([], IdentifierType.Any));
+              }
+              break;
+            }
+            nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
+            curVd = nextOne.value;
+          }
           if (funResult.length >= retTyp.returnTypeChainList.length){
-            return funResult.slice(retTyp.returnTypeChainList.length -1);
+            // returnTypeChainList is consisted of internal reserved one return type key word, the function call return type
+            // and the path to the function call return type; thus we only need to remove the path to
+            // the function call return type, which is  *retTyp.returnTypeChainList.length - 2*
+            return funResult.slice(retTyp.returnTypeChainList.length - 2);
           }else {
             return []
           }
@@ -956,11 +1124,43 @@ export function findValDescArrFromChain(
       }
     }
   } else if ('identifierName' in idChain[0] && idChain[0].identifierName) {
-    return findAllAmongOneSymbolTable(symbolTable,
-      (idChain as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
-        (value) => value.identifierName
-      )
-    );
+
+    const identifierResult:ValueDescription[] = [];
+
+    const interpretedChainList = interpretIdentifierChainList(idChain);
+    const identifierPathVdIterator = iterateAmongOneSymbolTable(symbolTable);
+
+    let funPathIndex = 0;
+    let nextOne = identifierPathVdIterator.next();
+    let curVd: ValueDescription = nextOne.value;
+    while (!nextOne.done && curVd){
+
+      if (curVd._$type !== DescriptionType.PackageReference || !curVd._$isInternal){
+        identifierResult.push(curVd);
+      }
+
+      if (funPathIndex > interpretedChainList.length -1){
+        identifierPathVdIterator.next('');
+        break;
+      }
+      // need to survive any type of dynamic array bracket
+      if (
+        interpretedChainList[funPathIndex].retChainTyp.type === 'array-literal' &&
+        ! (interpretedChainList[funPathIndex].retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
+      ){
+        // force to return an unknown any value
+        identifierResult.push(createRefValDesc([], IdentifierType.Any));
+        // populate the rest with any vd
+        while(identifierResult.length < interpretedChainList.length){
+          identifierResult.push(createRefValDesc([], IdentifierType.Any));
+        }
+        break;
+      }
+      nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
+      curVd = nextOne.value;
+    }
+
+    return identifierResult;
   }
   return [];
 }
