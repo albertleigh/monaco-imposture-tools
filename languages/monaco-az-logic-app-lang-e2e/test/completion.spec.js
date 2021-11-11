@@ -5,7 +5,6 @@ const {
   collectMonacoListRowsAriaLabels, triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, clearPageErrors,
   seizePageErrors, delay
 } = require("./utils");
-const os = require("os");
 
 function generateCompletionTests(openOnePage, closeOnePage) {
   describe('completion test cases', ()=>{
@@ -28,6 +27,34 @@ function generateCompletionTests(openOnePage, closeOnePage) {
     afterEach(async()=>{
       const pageErrorsStr = await seizePageErrors(page);
       expect(pageErrorsStr).not.ok;
+    })
+
+
+    describe('index type completion', ()=>{
+      it('pipeline index type completion v1', async ()=>{
+
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline()[]`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+        await page.keyboard.press('ArrowLeft');
+        await delay(250);
+        await triggerCompletionOfCurrentCursor(page);
+
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('DataFactory') > -1 ||
+          value.indexOf('globalParameters') > -1 ||
+          value.indexOf('add(') > -1
+        )).ok;
+
+      })
     })
 
     it('suggest completion list for a root function call', async ()=>{
@@ -130,9 +157,9 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         await triggerCompletionOfCurrentCursor(page);
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=1).ok;
-        allCompletionList.every(value =>
+        expect(allCompletionList.every(value =>
           value.match(/^\./)
-        )
+        )).ok
       })
     })
 
@@ -272,9 +299,9 @@ pipeline()
         await triggerCompletionOfCurrentCursor(page);
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=1).ok;
-        allCompletionList.every(value =>
+        expect(allCompletionList.every(value =>
           value.match(/^\./)
-        )
+        )).ok
       })
 
       it('multi-line post function identifiers completion v2', async ()=>{
@@ -301,9 +328,43 @@ pipeline().`;
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=1).ok;
 
-        allCompletionList.every(value =>
-          value.match(/^\./)
-        )
+        expect(allCompletionList.some(value =>
+          value.indexOf('DataFactory')
+        )).ok
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('globalParaMeters')
+        )).ok
+
+      })
+
+      it('multi-line post function identifiers completion v3', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@concat(
+    pipeline().DataFactory,
+pipeline().global`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        await page.keyboard.press('Escape');
+
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('End');
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.every(value =>
+          value.match(/^\.global/)
+        )).ok
 
       })
 
@@ -324,9 +385,9 @@ pipeline().`;
         await triggerCompletionOfCurrentCursor(page);
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=1).ok;
-        allCompletionList.every(value =>
+        expect(allCompletionList.every(value =>
           value.match(/^\.globalParameters/)
-        )
+        )).ok
 
       })
 
@@ -334,7 +395,7 @@ pipeline().`;
         let nextText, content, problems, allCompletionList;
 
         nextText =
-            `@createArray(
+          `@createArray(
     s`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
@@ -353,9 +414,13 @@ pipeline().`;
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=1).ok;
 
-        allCompletionList.every(value =>
-            value.match(/^\.s/)
-        )
+        expect(allCompletionList.some(value =>
+          value.match(/^s/)
+        )).ok;
+
+        expect(allCompletionList.every(value =>
+          value.indexOf('s') > -1
+        )).ok;
 
       })
 

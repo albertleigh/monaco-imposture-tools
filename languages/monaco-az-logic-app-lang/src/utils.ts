@@ -520,9 +520,12 @@ export function determineOverloadFunParamSeq(
     const commaIndices = listCommaIndicesOfParenthesesChildren(
       parenthesesNode.children as AzLogicAppNode[] | undefined
     );
+    const curParaSize = commaIndices.length === 0?
+      (parenthesesNode.children?.length || 0) > 0? 1: 0:
+      commaIndices.length + 1;
     // check para size
     const sizeMatchingParaCandidates = curParaCandidates.filter(
-      (value) => value.length - 1 === commaIndices.length + 1
+      (value) => value.length - 1 === curParaSize
     );
 
     // noop there would be var list args
@@ -907,7 +910,13 @@ export function * iterateAmongOneSymbolTable(descriptor: SymbolTable | ValueDesc
     }else if (nextPath === SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME && nextPath in cur){
       cur = cur[nextPath];
     }else if (cur._$type === DescriptionType.PackageReference){
-      cur = cur._$subDescriptor[nextPath];
+      if (!(nextPath in cur._$subDescriptor) && cur._$allowAdditionalAnyProperties){
+        cur = createRefValDesc([
+          `${covertCollectedPathsIntoString(collectedPaths)}:any`
+        ], IdentifierType.Any)
+      }else{
+        cur = cur._$subDescriptor[nextPath];
+      }
     }else{
       // no way to continue
       return

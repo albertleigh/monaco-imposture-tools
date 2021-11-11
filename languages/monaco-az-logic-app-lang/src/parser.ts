@@ -795,6 +795,7 @@ export class IdentifierNodeInBracketNotation extends IdentifierNode{
     public readonly literalArrayNode: LiteralArrayNode
   ) {
     super(astNode, identifierName, target);
+    literalArrayNode.parent = this;
   }
 
   public get children():SyntaxNode[]{
@@ -1368,7 +1369,7 @@ function _collect_identifiers_w_punctuation(
               ctx.vr.problems.push({
                 severity: DiagnosticSeverity.Error,
                 code: ErrorCode.INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
-                message: `The first item of the bracket identifier could only be of the string/number type.`,
+                message: `The index type could only be of the string/number type.`,
                 startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
                 endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
                 node: literalArrayNode.astNode as any,
@@ -1378,7 +1379,7 @@ function _collect_identifiers_w_punctuation(
             ctx.vr.problems.push({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
-              message: `The first item of the bracket identifier cannot be empty.`,
+              message: `The index type cannot be empty.`,
               startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
               endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
               node: literalArrayNode.astNode as any,
@@ -1389,7 +1390,7 @@ function _collect_identifiers_w_punctuation(
         ctx.vr.problems.push({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
-          message: `Unrecognized identifiers, a literal array bracket identifier was expected`,
+          message: `Unrecognized identifiers, The index type was expected`,
           startPos: ctx.vr.codeDocument.positionAt(curSymbol.node.offset),
           endPos: ctx.vr.codeDocument.positionAt(curSymbol.node.offset + (curSymbol.node.length || 0)),
           node: curSymbol.node as any,

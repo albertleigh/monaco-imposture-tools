@@ -33,30 +33,30 @@ describe('e2e easy test', () => {
 
     let nextText, content, problems, allCompletionList;
 
-    nextText =
-`@concat(
-    pipeline().DataFactory,
-pipeline().`;
+    nextText = `@pipeline()[]`;
 
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
     await delay(250);
-
-    await page.keyboard.press('Escape');
-
-    await page.keyboard.press('Enter');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('End');
-
+    await page.keyboard.press('ArrowLeft');
     await delay(250);
-
     await triggerCompletionOfCurrentCursor(page);
+
+
     allCompletionList = await collectMonacoListRowsAriaLabels(page);
     expect(allCompletionList.length>=1).ok;
 
-    allCompletionList.every(value =>
-      value.match(/^\./)
-    )
+    expect(allCompletionList.some(value =>
+      value.indexOf('DataFactory') > -1
+    )).ok;
+
+    expect(allCompletionList.some(value =>
+      value.indexOf('globalParameters') > -1
+    )).ok;
+
+    expect(allCompletionList.some(value =>
+      value.indexOf('add(') > -1
+    )).ok
 
   });
 });

@@ -137,7 +137,7 @@ function generateNextSymbolTable() {
             ['output'],
             IdentifierType.Any
           )
-        })
+        }, {allowAdditionalAnyProperties: true})
       })
     )
   );
@@ -187,23 +187,10 @@ const useStyles = makeStyles((theme) => ({
 
 // @{@{add(1,2)}}
 // @{@add(1,2)}
-// @item().one.two.three
-// @item().one['two'].three
+
 // @item().one['two'].
 
-
-const sampleCodes =
-`@concat(
-    pipeline().DataFactory,
-    pipeline().
-)`;
-// `@createArray(string(add(
-//         sub(
-//             pipeline().globalParameters.oneGlobalFloat,
-//             pipeline().globalParameters.oneGlobalNumber
-//         ),
-//         pipeline().globalParameters.oneGlobalFloat
-// )))`;
+const sampleCodes = ` `;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

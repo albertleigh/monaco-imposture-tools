@@ -131,7 +131,7 @@ function generateNextSymbolTable() {
             ['output'],
             IdentifierType.Any
           )
-        })
+        }, {allowAdditionalAnyProperties: true})
       })
     )
   );

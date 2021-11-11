@@ -1,5 +1,6 @@
 import {CancellationToken, editor, languages, Position, Range} from './editor.api';
 import {
+  AzLogicAppLangConstants,
   AzLogicAppNode,
   DescCollItem,
   DescCollItemTyp,
@@ -11,16 +12,17 @@ import {
   IdentifierTypeName,
   OlFunDescCollItem,
   ReturnChainType,
+  SymbolTable,
   ValueDescription,
   ValueDescriptionDictionary,
-  ValueDescriptionDictionaryFunctionKey,
-  AzLogicAppLangConstants, SymbolTable
+  ValueDescriptionDictionaryFunctionKey
 } from './base';
 import {
-  determineReturnIdentifierTypeOfFunction, findCompleteIdentifiersChain,
+  determineReturnIdentifierTypeOfFunction, findAllAmongOneSymbolTable,
   findAllPathAmongOneDescriptor,
   findAllRootPackageOfOneDescriptor,
   findAmongOneDescriptor,
+  findCompleteIdentifiersChain,
   findValueDescriptionFromChain,
 } from './utils';
 import {
@@ -32,6 +34,7 @@ import {
   FunctionCallNode,
   FunctionCallTarget,
   IdentifierNode,
+  IdentifierNodeInBracketNotation, LiteralArrayNode, LiteralNumberNode, LiteralStringNode,
   ParenthesisNode,
   RootFunctionCallNode
 } from "./parser";
@@ -41,6 +44,7 @@ export enum CompletionType {
   FUNCTION_CALL = 0x001,
   FUNCTION_PARAMETER = 0x002,
   PROPERTY = 0x003,
+  IDENTIFIER_IN_BRACKETS = 0x004,
 }
 
 function getFunctionParaCntFromDc(dci: DescCollItemTyp): number {
@@ -73,6 +77,13 @@ function buildFunctionLabelWithPara(paths: string[], dci: DescCollItemTyp): stri
         olFunVd._$parameterTypes[dci.overloadedIndex].map((value) => value.label).join(', ');
     const retLabel = olFunVd._$returnType[dci.overloadedIndex].label;
     result = `${pathName}(${paramLabel}):${retLabel}`;
+  } else if (dci.type == 'emptyParaFunctionReturn'){
+    const retPath = dci.returnPath || [];
+    if (retPath.length){
+      result = `${pathName}().${retPath.join('.')}`
+    }else{
+      result = `${pathName}()`
+    }
   }
   return result;
 }
@@ -370,6 +381,18 @@ export function generateCompletion(
         }
       }
     }else if (
+      (
+        node instanceof LiteralStringNode ||
+        node instanceof LiteralNumberNode
+      ) &&
+      node.parent instanceof LiteralArrayNode &&
+      node.parent.parent instanceof IdentifierNodeInBracketNotation &&
+      node.parent.startPosOfItem(0) <= offset &&
+      node.parent.endPosOfItem(0) >= offset
+    ){
+      node = node.parent.parent;
+      completionKind = CompletionType.IDENTIFIER_IN_BRACKETS;
+    }else if (
       node.parent instanceof FunctionCallNode &&
       Array.from(node.siblings).some(one => {
         if (one instanceof FunctionCallTarget){
@@ -392,6 +415,14 @@ export function generateCompletion(
         identifiersChain = chain.chain;
         completionKind = CompletionType.PROPERTY;
       }
+    }else if (node instanceof IdentifierNodeInBracketNotation){
+      // if (node.elderSibling){
+      //   const chain = findCompleteIdentifiersChain(node.elderSibling.astNode as any, azLgcExpDoc.codeDocument);
+      //   if (chain.chain.length){
+      //     identifiersChain = chain.chain;
+      //   }
+      // }
+      completionKind = CompletionType.IDENTIFIER_IN_BRACKETS;
     }else if (
       // function call target must have been turned into CompletionType.FUNCTION_CALL
       node instanceof IdentifierNode
@@ -863,6 +894,7 @@ export function generateCompletion(
                           | IdentifierInBracketNotationReturnChainType
                           | IdentifierReturnChainType
                           )[]
+                        // phase 2: todo fix it: this kind of suggestion won't contain the content like .a['b'].c
                       ).map((value) => value.identifierName),
                     ]);
                 }
@@ -919,6 +951,79 @@ export function generateCompletion(
             return result;
           }
         }
+        break;
+      case CompletionType.IDENTIFIER_IN_BRACKETS:
+      {
+        if (node instanceof IdentifierNodeInBracketNotation){
+          const suggestions: languages.CompletionList['suggestions'] =[];
+
+          const startPos = model.getPositionAt(node.literalArrayNode.startPosOfItem(0));
+          const endPos = model.getPositionAt(node.literalArrayNode.endPosOfItem(0));
+          const contentRange = new AzLogicAppLangConstants._monaco.Range(
+            startPos.lineNumber,
+            startPos.column,
+            endPos.lineNumber,
+            endPos.column
+          );
+          const content = model.getValueInRange(contentRange);
+
+          // iterate all direct sub package path if any
+          if (
+            node.elderSibling &&
+            node.elderSibling.rValue
+          ){
+            let elderVd = node.elderSibling.rValue;
+            if (
+              elderVd._$type === DescriptionType.ReferenceValue &&
+              elderVd._$valueType.type === IdentifierTypeName.FUNCTION_RETURN_TYPE
+            ){
+              elderVd = findAmongOneDescriptor(theLgcExpDocEditor.rootSymbolTable, elderVd._$valueType.returnTypeChainList || []);
+            }
+            if (elderVd?._$type === DescriptionType.PackageReference){
+              Object.keys(elderVd._$subDescriptor).filter(one => !one.match(/^_\$.*/))
+                .forEach(oneField => {
+                  suggestions.push({
+                    label: `'${oneField}'`,
+                    insertText: `'${oneField}'`,
+                    kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Text,
+                    range: contentRange,
+                  })
+                })
+            }
+          }
+
+          // seize all string and number function call
+          const allFunctionsReturningStringAndNumber = [
+            ...theLgcExpDocEditor.valueDescriptionDict.get(IdentifierType.String),
+            ...theLgcExpDocEditor.valueDescriptionDict.get(IdentifierType.Number)
+          ];
+
+          if (allFunctionsReturningStringAndNumber.length){
+            allFunctionsReturningStringAndNumber.forEach((value) => {
+              suggestions.push(buildCompletionItemFromDescriptorCollectionEntry(
+                contentRange,
+                value.paths,
+                value.valDescCollItem
+              ))
+            });
+          }
+
+          const result = {suggestions};
+          AzLogicAppLangConstants.inSemanticDebugMode &&
+          console.log(
+            '[generateCompletion::IDENTIFIER_IN_BRACKETS]',
+            offset,
+            content,
+            node,
+            startPos,
+            endPos,
+            startPos,
+            endPos,
+            result.suggestions
+          );
+          return result;
+        }
+      }
         break;
       case CompletionType.UNKNOWN:
         break;
