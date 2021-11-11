@@ -28,6 +28,34 @@ function generateValidationTests(openOnePage, closeOnePage) {
       expect(pageErrorsStr).not.ok;
     })
 
+    describe('Bunch of valid expressions', ()=>{
+      [
+        '@addHours(utcNow(),-5)',
+        '@take([string(1), string(1)], 2)',
+        "@activity('Get Metadata1').output2fewfwelf",
+        "@activity('Get Metadata1').output[string(1)]",
+        "@pipeline()['TriggeredByPipelineName']",
+        "@activity('Get Metadata1').output[string(1)]",
+        "@pipeline()['DataFactory']",
+        "@activity('Get Metadata1').output.childItems[0].name",
+        "@item().one.two.three",
+        "@item().one['two'].three",
+      ].forEach((value, index)=>{
+        it(`Valid expression ${index}`, async ()=>{
+          let nextText, content, problems;
+
+          nextText = value
+
+          await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+          content = await seizeCurExpTxt(page);
+          problems = await seizeCurExpProb(page);
+          expect(content).eq(nextText);
+          expect(problems.length).eq(0);
+        })
+      })
+    })
+
     describe('Handle the dynamic value descriptor', ()=>{
       it('@dynamic# v1', async ()=>{
         let nextText, content, problems;
@@ -264,6 +292,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
       it('fill in a function concat of variable parameter list v1', async ()=>{
         let nextText, content, problems;
+
         nextText = '@concat';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
         await page.keyboard.press('Enter');
@@ -286,11 +315,11 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
-        expect(content).eq('@concat(pipeline().DataFactory, )');
-        expect(problems.length).eq(1);
-        expect(problems[0].code).eq(6);
+        expect(content).eq('@concat(pipeline().DataFactory)');
+        expect(problems.length).eq(0);
 
         // @concat(pipeline().DataFactory, |)
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, ', ');
         await triggerCompletionOfCurrentCursor(page);
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, 'pipe');
         await page.keyboard.press('ArrowDown');
@@ -300,21 +329,10 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
-        expect(content).eq('@concat(pipeline().DataFactory, pipeline().GroupId, )');
-
-        expect(problems.length).eq(1);
-
-        await page.keyboard.press('Backspace');
-        await page.keyboard.press('Backspace');
-
-        await delay(250);
-
-
-        content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
-        expect(content).eq('@concat(pipeline().DataFactory, pipeline().GroupId)');
+        expect(content).eq('@concat(pipeline().DataFactory, pipeline().globalParameters.firstGlobalStrPara)');
 
         expect(problems.length).eq(0);
+
       })
 
       it('The function call lacked or had more parameters required:: root level', async ()=>{
@@ -654,6 +672,222 @@ function generateValidationTests(openOnePage, closeOnePage) {
         expect(problems[0].startPos.character).eq(18);
         expect(problems[0].endPos.character).eq(19);
       })
+    })
+
+    describe('UNRECOGNIZED_TOKENS 0x0f', ()=>{
+
+      it('multiline line UNRECOGNIZED_TOKENS v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@createArray(
+  @string(
+  concat('1', '2')
+`;
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        // expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(15);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(13);
+        expect(problems[0].endPos.line).eq(1);
+        expect(problems[0].endPos.character).lessThanOrEqual(3);
+
+      })
+
+      it('multiline line UNRECOGNIZED_TOKENS v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@createArray(@string(add(
+  sub(
+    pipeline().globalParameters.oneGlobalFloat,
+pipeline().globalParameters.oneGlobalNumber
+),
+pipeline().globalParameters.oneGlobalFloat
+`;
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        // expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(15);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(13);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(14);
+
+      })
+
+      it('one line UNRECOGNIZED_TOKENS v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@createArray(@string(concat('1', '2')))`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        // expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(15);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(13);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(14);
+
+      })
+
+    })
+
+    describe('INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER 0x10', ()=>{
+
+      it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@activity('Get Metadata1').output[string(1), string(1)]`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(16);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(33);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(55);
+
+      })
+
+      it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline()[]`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(16);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(11);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(13);
+
+      })
+
+      it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v3', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@activity('Get Metadata1').output[].one.two.tree`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(16);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(33);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(36);
+
+      })
+
+      it('multi-line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@activity('Get Metadata1').output[
+    string(1), string(1)
+`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).ok;
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(16);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(33);
+        expect(problems[0].endPos.line).eq(2);
+        expect(problems[0].endPos.character).lessThanOrEqual(5);
+
+      })
+
+    })
+
+    describe('INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER 0x11', ()=>{
+
+      it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline()[json('')]`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(17);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(11);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(21);
+
+      })
+
+      it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline()[[]]`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(17);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(11);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(15);
+
+      })
+
     })
 
   });

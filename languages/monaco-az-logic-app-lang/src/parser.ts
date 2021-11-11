@@ -25,12 +25,14 @@ import {
 } from "./validateHelper";
 import {
   determineOverloadFunParamSeq,
+  findAllAmongOneSymbolTable,
+  findAmongOneDescriptor,
   findAnElderSibling,
   findCompleteForwardIdentifiersChain,
-  getFunctionCallFullname,
+  findValDescArrFromChain,
+  getFunctionCallFullname, inferIdentifierTypeFromChain,
   populateVarParaIncreasingly
 } from "./utils";
-import {findAllAmongOneSymbolTable, findAmongOneDescriptor, findValDescArrFromChain} from "./utils";
 
 // ------------------------ gen ast nodes  ----------------------------
 
@@ -585,6 +587,98 @@ export class LiteralArrayNode extends LiteralValueNode{
     cb(this, depth);
     this.children.forEach(one=> one.traverse(cb, nextDepth));
   }
+
+  private _cachedCommaIndices:number[];
+  public get commaIndices():number[]{
+    if (!this._cachedCommaIndices){
+      this._cachedCommaIndices = [];
+      this.content.forEach((value, index) => {
+        if (value instanceof CommaPunctuator){
+          this._cachedCommaIndices.push(index);
+        }
+      });
+    }
+    return this._cachedCommaIndices.slice();
+  }
+
+  private _ensureCommaIndicesPopulated(){
+    if(!this._cachedCommaIndices){
+      const _dummyCommaIndices = this.commaIndices;
+    }
+  }
+
+  public get itemSize(){
+    this._ensureCommaIndicesPopulated();
+    return this._cachedCommaIndices.length === 0?
+      this.content.length > 0 ? 1: 0:
+      this._cachedCommaIndices.length+1;
+  }
+
+  public item(index:number):SyntaxNode|undefined{
+    this._ensureCommaIndicesPopulated();
+    if (
+      index === 0 && !(this.content[0] instanceof CommaPunctuator)
+    ){
+      return this.content[0];
+    }else if (
+      index > 0 && index <= this._cachedCommaIndices.length &&
+      this._cachedCommaIndices[index-1]+1<this.content.length &&
+      !(this.content[this._cachedCommaIndices[index-1]+1] instanceof CommaPunctuator)
+    ){
+      return this.content[this._cachedCommaIndices[index-1]+1];
+    }else{
+      return undefined;
+    }
+  }
+
+  public comma(index:number):CommaPunctuator|undefined{
+    this._ensureCommaIndicesPopulated();
+    if (index >= 0 && index < this._cachedCommaIndices.length){
+      return this.content[this._cachedCommaIndices[index]];
+    }
+    return undefined;
+  }
+
+  public startPosOfItem(itemIndex:number){
+    this._ensureCommaIndicesPopulated();
+    if (itemIndex <= 0){
+      return this.offset + 1;
+    }else if (itemIndex >= this._cachedCommaIndices.length + 1){
+      return this.offset+ this.length -1
+    }else {
+      return this.content[this._cachedCommaIndices[itemIndex -1]].offset + 1;
+    }
+  }
+
+  public endPosOfItem(itemIndex:number){
+    this._ensureCommaIndicesPopulated();
+    if (itemIndex > this._cachedCommaIndices.length -1 ){
+      return this.offset + this.length -1;
+    }else if (itemIndex < 0){
+      return  this.offset + 1;
+    }else {
+      return this.content[this._cachedCommaIndices[itemIndex]].offset + 1;
+    }
+  }
+
+  public itemIndexByOffset(offset:number){
+    this._ensureCommaIndicesPopulated();
+    if (
+      this.offset+1 <= offset &&
+      this.offset+ this.length -1 >= offset
+    ){
+      let paramIndex = 0;
+      while(
+        paramIndex < this.itemSize &&
+        offset > this.endPosOfItem(paramIndex)
+        ){
+        paramIndex ++
+      }
+      return paramIndex;
+    }else{
+      return -1;
+    }
+  }
   
 }
 
@@ -691,20 +785,22 @@ export class IdentifierNodeWithPunctuation extends IdentifierNode{
   }
 }
 
-export class IdentifierNodeInBracketNotation extends IdentifierNodeWithPunctuation{
+export class IdentifierNodeInBracketNotation extends IdentifierNode{
 
   constructor(
     astNode: ASTNode,
     identifierName: string,
+    public readonly isPropertyLiteral: boolean,
     readonly target: ReferenceValueDescription | PackageDescription,
-    public readonly prefixAccessor: AccessorPunctuator
+    public readonly literalArrayNode: LiteralArrayNode
   ) {
-    super(astNode, identifierName, target, prefixAccessor);
+    super(astNode, identifierName, target);
+    literalArrayNode.parent = this;
   }
 
   public get children():SyntaxNode[]{
     if (!this._cachedChildren){
-      this._cachedChildren = [this.prefixAccessor];
+      this._cachedChildren = this.literalArrayNode.children;
     }
     return this._cachedChildren;
   }
@@ -712,7 +808,7 @@ export class IdentifierNodeInBracketNotation extends IdentifierNodeWithPunctuati
   traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
     const nextDepth = depth+1;
     cb(this, depth);
-    this.prefixAccessor.traverse(cb, nextDepth);
+    this.literalArrayNode.traverse(cb, nextDepth);
   }
 
 }
@@ -1037,7 +1133,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
       })
     }
 
-    // validate the atSymbolNode and innerFunctionCallNode
+    // validate the atSymbolNode innerFunctionCallNode and over all surroundings
     if (!ctx.vr.hasProblems()){
       if (
         precedingNodes.length ||
@@ -1079,21 +1175,63 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
         });
       }else if (
         !! atSymbolNode &&
-        !! innerFunctionCallNode &&
-        (
-          atSymbolNode.offset + atSymbolNode.length !==
-            innerFunctionCallNode.offset
-        )
+        !! innerFunctionCallNode
       ){
+
         // need ensure the offset of the atsymbol and start of the function-call are the same position
-        ctx.vr.problems.push({
-          severity: DiagnosticSeverity.Error,
-          code: ErrorCode.INVALID_ROOT_FUNCTION_CALL,
-          message: `There should be no spaces between @ and the function name`,
-          startPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset),
-          endPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset + rootFunctionCall.length),
-          node,
-        })
+        if (
+          atSymbolNode.offset + atSymbolNode.length !==
+          innerFunctionCallNode.offset
+        ){
+          ctx.vr.problems.push({
+            severity: DiagnosticSeverity.Error,
+            code: ErrorCode.INVALID_ROOT_FUNCTION_CALL,
+            message: `There should be no spaces or tokens between @ and the function name`,
+            startPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset),
+            endPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset + rootFunctionCall.length),
+            node,
+          })
+        }
+
+        // check if any UNRECOGNIZED_TOKENS exist
+        const startPos = rootFunctionCall.offset;
+        const endPos = rootFunctionCall.offset + rootFunctionCall.length;
+        const firstChild = precedingNodes.length? precedingNodes[0]: atSymbolNode;
+        const lastChild = followingNodes.length? followingNodes[followingNodes.length - 1]: innerFunctionCallNode;
+
+        if (
+          !ctx.vr.codeDocument.text.substr(
+            startPos,
+            firstChild.offset - startPos
+          )
+            .match(/^\s*$/)
+        ){
+          ctx.vr.problems.push({
+            severity: DiagnosticSeverity.Error,
+            code: ErrorCode.UNRECOGNIZED_TOKENS,
+            message: `Unrecognized tokens`,
+            startPos: ctx.vr.codeDocument.positionAt(startPos),
+            endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
+            node: rootFunctionCall.astNode as any,
+          });
+        }
+        if (
+          !ctx.vr.codeDocument.text.substr(
+            lastChild.offset + lastChild.length,
+            endPos - lastChild.offset - lastChild.length
+          )
+            .match(/^\s*$/)
+        ){
+          ctx.vr.problems.push({
+            severity: DiagnosticSeverity.Error,
+            code: ErrorCode.UNRECOGNIZED_TOKENS,
+            message: `Unrecognized tokens`,
+            startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
+            endPos: ctx.vr.codeDocument.positionAt( endPos ),
+            node: rootFunctionCall.astNode as any,
+          });
+        }
+
       }
     }
 
@@ -1151,6 +1289,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
 }
 
 function _collect_identifiers_w_punctuation(
+  ctx: ValidationIntermediateContext,
   nodes:SyntaxNode[],
   symbolChain:ReturnChainType[],
   vdChain: ValueDescription[],
@@ -1191,12 +1330,72 @@ function _collect_identifiers_w_punctuation(
       (curSymbol as any).isBracketNotation
     ){
       const _curSymbol = curSymbol as IdentifierInBracketNotationReturnChainType;
-      nodes.push(new IdentifierNodeInBracketNotation(
-        _curSymbol.node,
-        _curSymbol.identifierName,
-        curVd as any,
-        new AccessorPunctuator(_curSymbol.punctuationNode)
-      ));
+      // todo need injected vrCtx to validate and add problems if any
+
+      const literalArrayNodeRes =  _do_parse(_curSymbol.node as any, ctx);
+      if (
+        literalArrayNodeRes.nodes.length === 1 &&
+        literalArrayNodeRes.nodes[0] instanceof LiteralArrayNode
+      ){
+        const literalArrayNode = literalArrayNodeRes.nodes[0];
+        nodes.push(new IdentifierNodeInBracketNotation(
+          _curSymbol.node,
+          _curSymbol.identifierName,
+          _curSymbol.isPropertyLiteral,
+          curVd as any,
+          literalArrayNodeRes.nodes[0]
+        ));
+        // alright need to validate the literal array node for bracketNotation
+        if (literalArrayNode.itemSize !== 1){
+          ctx.vr.problems.push({
+            severity: DiagnosticSeverity.Error,
+            code: ErrorCode.INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER,
+            message: `The literal array bracket identifier expect exactly one item.`,
+            startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
+            endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
+            node: literalArrayNode.astNode as any,
+          });
+        }else{
+          const firstItem = literalArrayNode.item(0);
+          if (firstItem){
+            const oneIdChain = findCompleteForwardIdentifiersChain(firstItem.astNode as any, ctx.vr.codeDocument);
+            const sourceIdTyp = inferIdentifierTypeFromChain(ctx.vr.globalSymbolTable, ctx.vr.codeDocument, oneIdChain.chain);
+            if (
+              !(
+                sourceIdTyp?.assignableTo(IdentifierType.String) ||
+                sourceIdTyp?.assignableTo(IdentifierType.Number)
+              )
+            ){
+              ctx.vr.problems.push({
+                severity: DiagnosticSeverity.Error,
+                code: ErrorCode.INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
+                message: `The index type could only be of the string/number type.`,
+                startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
+                endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
+                node: literalArrayNode.astNode as any,
+              });
+            }
+          }else {
+            ctx.vr.problems.push({
+              severity: DiagnosticSeverity.Error,
+              code: ErrorCode.INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
+              message: `The index type cannot be empty.`,
+              startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
+              endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
+              node: literalArrayNode.astNode as any,
+            });
+          }
+        }
+      }else {
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized identifiers, The index type was expected`,
+          startPos: ctx.vr.codeDocument.positionAt(curSymbol.node.offset),
+          endPos: ctx.vr.codeDocument.positionAt(curSymbol.node.offset + (curSymbol.node.length || 0)),
+          node: curSymbol.node as any,
+        });
+      }
     }else{
       break;
     }
@@ -1219,6 +1418,63 @@ function _collect_function_call_identifiers(
 ):IdentifierNode[]{
   const result:IdentifierNode[] = [];
   const funCallParsedRes = _parse_children(functionCallNode, {...ctx});
+  // check if any UNRECOGNIZED_TOKENS exist
+  if (!ctx.vr.hasProblems()){
+    const funCallTargetChildren = funCallParsedRes.nodes;
+    if (
+      funCallTargetChildren.length === 0 &&
+      functionCallNode.length &&
+      !ctx.vr.codeDocument.getNodeContent(functionCallNode)
+        .match(/^\s*$/)
+    ){
+      ctx.vr.problems.push({
+        severity: DiagnosticSeverity.Error,
+        code: ErrorCode.UNRECOGNIZED_TOKENS,
+        message: `Unrecognized tokens`,
+        startPos: ctx.vr.codeDocument.positionAt(functionCallNode.offset),
+        endPos: ctx.vr.codeDocument.positionAt(functionCallNode.offset + functionCallNode.length),
+        node: functionCallNode,
+      });
+    }else if (funCallTargetChildren.length){
+      const startPos = functionCallNode.offset;
+      const endPos = functionCallNode.offset + (functionCallNode.length || 0);
+      const firstChild = funCallTargetChildren[0];
+      const lastChild = funCallTargetChildren[funCallTargetChildren.length -1];
+      if (
+        !ctx.vr.codeDocument.text.substr(
+          startPos,
+          firstChild.offset - startPos
+        )
+          .match(/^\s*$/)
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized tokens`,
+          startPos: ctx.vr.codeDocument.positionAt(startPos),
+          endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
+          node: functionCallNode,
+        });
+      }
+      if (
+        !ctx.vr.codeDocument.text.substr(
+          lastChild.offset + lastChild.length,
+          endPos - lastChild.offset - lastChild.length
+        )
+          .match(/^\s*$/)
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized tokens`,
+          startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
+          endPos: ctx.vr.codeDocument.positionAt( endPos ),
+          node: functionCallNode,
+        });
+      }
+    }
+  }
+
   const lastFunDesc = functionDescArr[functionDescArr.length - 1];
 
   let index=0;
@@ -1286,7 +1542,7 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
         chainVds[0] as any
       ))
 
-      _collect_identifiers_w_punctuation(nodes, postIdChain.chain, chainVds);
+      _collect_identifiers_w_punctuation(ctx, nodes, postIdChain.chain, chainVds);
 
       const lastVd = chainVds[chainVds.length -1];
       if(
@@ -1552,6 +1808,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           const chainVds = findValDescArrFromChain(ctx.vr.globalSymbolTable, ctx.vr.codeDocument, postFunCallChain.chain);
           if (chainVds.length){
             _collect_identifiers_w_punctuation(
+              ctx,
               nodes,
               postFunCallChain.chain,
               chainVds
@@ -1595,13 +1852,151 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
   const returnCtx = {...ctx};
 
   const templateContentRes = _parse_children(node, {...ctx, directWrapperType: WrapperType.CURLY_BRACKETS})
+  const expressionTemplate = new ExpressionTemplateNode(
+    node,
+    templateContentRes.nodes
+  );
 
   Object.assign(returnCtx, templateContentRes.ctx);
 
-  nodes.push(new ExpressionTemplateNode(
-    node,
-    templateContentRes.nodes
-  ))
+  nodes.push(expressionTemplate)
+
+  // check if any UNRECOGNIZED_TOKENS exist
+  if(!ctx.vr.hasProblems()){
+    const templateChildren = templateContentRes.nodes;
+    if(
+      templateChildren.length === 0 &&
+      expressionTemplate.length >3 &&
+      !ctx.vr.codeDocument.text.substr(expressionTemplate.offset + 2, expressionTemplate.length -3)
+        .match(/^\s*$/)
+    ){
+      ctx.vr.problems.push({
+        severity: DiagnosticSeverity.Error,
+        code: ErrorCode.UNRECOGNIZED_TOKENS,
+        message: `Unrecognized tokens`,
+        startPos: ctx.vr.codeDocument.positionAt(expressionTemplate.offset + 2),
+        endPos: ctx.vr.codeDocument.positionAt(expressionTemplate.offset + expressionTemplate.length -1),
+        node,
+      });
+    }else if (
+      templateChildren.length
+    ){
+      const startPos = expressionTemplate.offset + 2;
+      const endPos = expressionTemplate.offset + expressionTemplate.length -1;
+      const firstChild = templateChildren[0];
+      const lastChild = templateChildren[templateChildren.length -1];
+      if (
+        !ctx.vr.codeDocument.text.substr(
+          startPos,
+          firstChild.offset - startPos
+        )
+          .match(/^\s*$/)
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized tokens`,
+          startPos: ctx.vr.codeDocument.positionAt(startPos),
+          endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
+          node,
+        });
+      }
+      if (
+        !ctx.vr.codeDocument.text.substr(
+          lastChild.offset + lastChild.length,
+          endPos - lastChild.offset - lastChild.length
+        )
+          .match(/^\s*$/)
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized tokens`,
+          startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
+          endPos: ctx.vr.codeDocument.positionAt( endPos ),
+          node,
+        });
+      }
+    }
+  }
+
+  return {
+    ctx: returnCtx,
+    nodes
+  }
+}
+
+function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateContext):ParserRes{
+
+  const nodes:SyntaxNode[] = [];
+  const returnCtx = {...ctx, hasFunctionCall: true, directWrapperType: WrapperType.LITERAL_ARRAY};
+
+  const literalArrContentParsedRes = _parse_children(node, returnCtx);
+  const literalArrayNode = new LiteralArrayNode(node, literalArrContentParsedRes.nodes);
+  // todo should we ignore the ctx returned by the literalArrContentParsedRes, emmm think about it
+  // Object.assign(returnCtx, literalArrContentParsedRes.ctx);
+  nodes.push(literalArrayNode);
+  // need not to validate the content array were seperated by commas correctly, expression validation would do the job
+  // check if any UNRECOGNIZED_TOKENS exist
+  if (!ctx.vr.hasProblems()){
+    const literalArrayChildren = literalArrContentParsedRes.nodes;
+    if (
+      literalArrayChildren.length === 0 &&
+      literalArrayNode.length > 2 &&
+      !ctx.vr.codeDocument.text.substr(literalArrayNode.offset+1, literalArrayNode.length -2)
+        .match(/^\s*$/)
+    ){
+      ctx.vr.problems.push({
+        severity: DiagnosticSeverity.Error,
+        code: ErrorCode.UNRECOGNIZED_TOKENS,
+        message: `Unrecognized tokens`,
+        startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + 1),
+        endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length - 1),
+        node,
+      });
+    }else if (literalArrayChildren.length){
+      const startPos = literalArrayNode.offset + 1;
+      const endPos = literalArrayNode.offset + literalArrayNode.length - 1;
+      const firstChild = literalArrayChildren[0];
+      const lastChild = literalArrayChildren[literalArrayChildren.length -1];
+      if (
+        !ctx.vr.codeDocument.text.substr(
+          startPos,
+          firstChild.offset - startPos
+        )
+          .match(/^\s*$/)
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized tokens`,
+          startPos: ctx.vr.codeDocument.positionAt(startPos),
+          endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
+          node,
+        });
+      }
+      if (
+        !ctx.vr.codeDocument.text.substr(
+          lastChild.offset + lastChild.length,
+          endPos - lastChild.offset - lastChild.length
+        )
+          .match(/^\s*$/)
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.UNRECOGNIZED_TOKENS,
+          message: `Unrecognized tokens`,
+          startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
+          endPos: ctx.vr.codeDocument.positionAt( endPos ),
+          node,
+        });
+      }
+    }
+
+  }
+
+  returnCtx.needOneSeparator = true;
+  returnCtx.precedingPeerIdentifierExist = true;
 
   return {
     ctx: returnCtx,
@@ -1644,6 +2039,23 @@ function _parse_children(node: AzLogicAppNode, ctx: ValidationIntermediateContex
             const lastNode = nodes[nodes.length-1];
             lastNode.youngerSibling = oneNode;
             oneNode.elderSibling = lastNode;
+            if (
+              ctx.directWrapperType !== WrapperType.ROOT &&
+              lastNode.offset + lastNode.length !== oneNode.offset &&
+              !ctx.vr.codeDocument.text.substr(
+                lastNode.offset + lastNode.length, oneNode.offset -lastNode.offset - lastNode.length
+              )
+                .match(/^\s*$/)
+            ){
+              ctx.vr.problems.push({
+                severity: DiagnosticSeverity.Error,
+                code: ErrorCode.UNRECOGNIZED_TOKENS,
+                message: `Unrecognized tokens`,
+                startPos: ctx.vr.codeDocument.positionAt(lastNode.offset + lastNode.length),
+                endPos: ctx.vr.codeDocument.positionAt(oneNode.offset),
+                node,
+              });
+            }
           }
           // push the first node or linked node
           nodes.push(oneNode);
@@ -1837,10 +2249,68 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
     case 'parentheses':
     {
       const parenthesesChildrenRes = _parse_children(node, ctx);
+      const parenthesesChildren = parenthesesChildrenRes.nodes;
       Object.assign(returnCtx, parenthesesChildrenRes.ctx);
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      nodes.push(new ParenthesisNode(node, parenthesesChildrenRes.nodes))
+      const parenthesisNode = new ParenthesisNode(node, parenthesesChildren);
+      nodes.push(parenthesisNode);
+      if (!ctx.vr.hasProblems()){
+        if(
+          parenthesesChildren.length === 0 &&
+          parenthesisNode.length > 2 &&
+          !ctx.vr.codeDocument.text.substr(
+            parenthesisNode.offset + 1, parenthesisNode.length - 2
+          )
+            .match(/^\s*$/)
+        ){
+          ctx.vr.problems.push({
+            severity: DiagnosticSeverity.Error,
+            code: ErrorCode.UNRECOGNIZED_TOKENS,
+            message: `Unrecognized tokens`,
+            startPos: ctx.vr.codeDocument.positionAt(parenthesisNode.offset + 1),
+            endPos: ctx.vr.codeDocument.positionAt(parenthesisNode.offset + parenthesisNode.length -1),
+            node,
+          });
+        }else if (parenthesesChildren.length){
+          if (
+            !ctx.vr.codeDocument.text.substr(
+              parenthesisNode.offset + 1, parenthesesChildren[0].offset - parenthesisNode.offset - 1
+            )
+              .match(/^\s*$/)
+          ){
+            ctx.vr.problems.push({
+              severity: DiagnosticSeverity.Error,
+              code: ErrorCode.UNRECOGNIZED_TOKENS,
+              message: `Unrecognized tokens`,
+              startPos: ctx.vr.codeDocument.positionAt(parenthesisNode.offset + 1),
+              endPos: ctx.vr.codeDocument.positionAt( parenthesesChildren[0].offset ),
+              node,
+            });
+          }
+          if (
+            !ctx.vr.codeDocument.text.substr(
+              parenthesesChildren[parenthesesChildren.length -1].offset + parenthesesChildren[parenthesesChildren.length -1].length,
+              parenthesisNode.offset + parenthesisNode.length - 1 -
+              ( parenthesesChildren[parenthesesChildren.length -1].offset + parenthesesChildren[parenthesesChildren.length -1].length )
+            )
+              .match(/^\s*$/)
+          ){
+            ctx.vr.problems.push({
+              severity: DiagnosticSeverity.Error,
+              code: ErrorCode.UNRECOGNIZED_TOKENS,
+              message: `Unrecognized tokens`,
+              startPos: ctx.vr.codeDocument.positionAt(
+                parenthesesChildren[parenthesesChildren.length -1].offset + parenthesesChildren[parenthesesChildren.length -1].length
+              ),
+              endPos: ctx.vr.codeDocument.positionAt(
+                parenthesisNode.offset + parenthesisNode.length - 1
+              ),
+              node,
+            });
+          }
+        }
+      }
     }
       break;
     case 'number':
@@ -1869,13 +2339,9 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
       break;
     case 'array-literal':
     {
-      const literalArrContentParsedRes = _parse_children(node, ctx);
-      // todo should we ignore the ctx returned by the literalArrContentParsedRes, emmm think about it
-      // Object.assign(returnCtx, literalArrContentParsedRes.ctx);
-      nodes.push(new LiteralArrayNode(node, literalArrContentParsedRes.nodes));
-      // todo need to validate the content array were seperated by commas correctly
-      returnCtx.needOneSeparator = true;
-      returnCtx.precedingPeerIdentifierExist = true;
+      const literalArrRes = _parse_literal_array(node, returnCtx);
+      returnCtx = literalArrRes.ctx;
+      nodes = literalArrRes.nodes;
     }
       break;
     case 'comma':
@@ -1899,6 +2365,7 @@ export function parseAzLgcExpDocument(
   let result:AzLgcExpDocument
   const vr = new ValidateResult(codeDocument, globalSymbolTable);
   if (codeDocument.root?.type === 'IncludeOnlyRule') {
+    // no need to check any UNRECOGNIZED_TOKENS exist beneath the root entry level
     const res = _parse_children(codeDocument.root as any, {vr, directWrapperType: WrapperType.ROOT});
     result = new AzLgcExpDocument(codeDocument, res.nodes, vr);
   }

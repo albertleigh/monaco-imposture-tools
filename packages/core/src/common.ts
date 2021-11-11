@@ -3,8 +3,6 @@ import {IRawGrammar, IRawRepository} from './types';
 import {Rule} from './rule';
 import {OnigScanner} from '@monaco-imposture-tools/oniguruma-asm';
 
-export const SEPARATOR = '\n';
-
 export const enum FontStyle {
   NotSet = -1,
   None = 0,

@@ -16,6 +16,9 @@ export enum ErrorCode {
   INVALID_NESTED_TEMPLATE,
   INVALID_ROOT_FUNCTION_CALL,
   INVALID_STANDALONE_ACCESSOR,
+  UNRECOGNIZED_TOKENS,
+  INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER,
+  INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
   // todo add a new one, no qstring-dbl in expression
 }
 
@@ -55,6 +58,7 @@ export enum WrapperType {
   FUNCTION_PARENTHESES,
   PARENTHESES,
   CURLY_BRACKETS,
+  LITERAL_ARRAY,
 }
 
 export interface ValidationIntermediateContext {

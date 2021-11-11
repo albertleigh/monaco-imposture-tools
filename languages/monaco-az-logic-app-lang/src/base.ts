@@ -83,10 +83,9 @@ export interface IdentifierInBracketNotationReturnChainType extends AbstractRetu
   type: 'array-literal';
   isBracketNotation: true;
   identifierName: string;
-  punctuationNode: AzLogicAppNodeType<'punctuation'>;
-  propertyNameNode: AzLogicAppNodeType<'string'>;
-  propertyNameOffset: number;
-  propertyNameLength: number;
+  literalArrayNode: AzLogicAppNodeType<'array-literal'>;
+  isPropertyLiteral: boolean;
+  propertyNameNode?: AzLogicAppNode;
 }
 
 export enum ParenthesesElderSiblingType {
@@ -366,7 +365,7 @@ export class IdentifierType {
       case IdentifierTypeName.CONSTANT:
         return this.constantStringValue;
       case IdentifierTypeName.FUNCTION_RETURN_TYPE:
-        return 'composite:functionReturnType';
+        return 'Return type';
       case IdentifierTypeName.INTERNAL_PKG_REF:
         return `package::${this.packageDescription._$desc[0]}`
       case IdentifierTypeName.INTERNAL_FUN_REF:
@@ -610,11 +609,16 @@ export interface PackageDescription extends AbstractValueDescription {
   _$type: DescriptionType.PackageReference;
   _$subDescriptor: Record<string, ValueDescription>;
   _$identifierType:IdentifierType;
+  _$isInternal?: boolean;
+  _$allowAdditionalAnyProperties?: boolean;
 }
 
 export function createPkgValDesc(
   descStrings: string[],
-  subDescriptor: Record<string, ValueDescription>
+  subDescriptor: Record<string, ValueDescription>,
+  options:Partial<{
+    allowAdditionalAnyProperties: boolean
+  }> = {}
 ): PackageDescription {
   const pkgDesc = {
     _$type: DescriptionType.PackageReference,
@@ -622,6 +626,9 @@ export function createPkgValDesc(
     _$subDescriptor: subDescriptor,
   } as PackageDescription;
   pkgDesc._$identifierType = IdentifierType.INTERNAL_PKG_REF(pkgDesc);
+
+  pkgDesc._$allowAdditionalAnyProperties = !!options.allowAdditionalAnyProperties;
+
   return pkgDesc as PackageDescription;
 }
 
@@ -638,6 +645,8 @@ export type SymbolTable = ValueDescription & {
 export const ValueDescriptionDictionaryFunctionKey = '_$ValueDescriptionDictionaryFunctionKey';
 export type ValueDescriptionDictionary = Map<IdentifierType | string, DescriptorCollection[]>;
 
+export type ErrorHandler = (namespace:string, err:Error)=> void;
+
 export class AzLogicAppLangConstants{
 
   static readonly SCOPE_NAME = 'source.azLgcAppExp'; // source.js      ->    source.azLgcAppExp
@@ -647,6 +656,7 @@ export class AzLogicAppLangConstants{
   static inLexicalDebugMode = false;
   static inSyntaxDebugMode = false;
   static inSemanticDebugMode = false;
+  static globalErrorHandler?: ErrorHandler;
 
   static _init: Promise<any> | undefined = undefined;
   static _registry: Registry | undefined = undefined;
@@ -663,9 +673,9 @@ export class AzLogicAppLangConstants{
     // collection functions
     contains: createOverloadedFunValDesc(
       [
-        '**contains(string, string):boolean**',
-        '**contains(array, array):boolean**',
-        '**contains(object, object):boolean**',
+        '**contains(stringWithin:string, findString:string):boolean**',
+        '**contains(arrayWithin:array, element:array):boolean**',
+        '**contains(objectWithin:object, key:object):boolean**',
         'Check whether a collection has a specific item.',
       ],
       [
@@ -706,17 +716,13 @@ export class AzLogicAppLangConstants{
       ],
       [IdentifierType.AnyObject, IdentifierType.Array]
     ),
-    join: createOverloadedFunValDesc(
+    join: createFunValDesc(
       [
-        '**join(object, object):string**',
-        '**join(array, array):string**',
+        '**join(collection:any, delimiter:string):string**',
         'Return a string that has all the items from an array and has each character separated by a delimiter.',
       ],
-      [
-        [IdentifierType.String, IdentifierType.String],
-        [IdentifierType.Array, IdentifierType.Array],
-      ],
-      [IdentifierType.String, IdentifierType.String]
+      [IdentifierType.Any, IdentifierType.String],
+      IdentifierType.String
     ),
     last: createOverloadedFunValDesc(
       [
@@ -736,19 +742,18 @@ export class AzLogicAppLangConstants{
       [[IdentifierType.String], [IdentifierType.Array]],
       [IdentifierType.Number, IdentifierType.Number]
     ),
-    skip: createOverloadedFunValDesc(
+    skip: createFunValDesc(
       [
-        '**skip(array):array**',
-        '**skip(integer):array**',
+        '**skip(collection:array, count:integer):array**',
         'Returns the elements in the array starting at index Count, for example this function returns [3, 4]: skip([1, 2 ,3 ,4], 2)',
       ],
-      [[IdentifierType.Array], [IdentifierType.Number]],
-      [IdentifierType.String, IdentifierType.String]
+      [IdentifierType.Array, IdentifierType.Number],
+      IdentifierType.Array
     ),
     take: createOverloadedFunValDesc(
       [
-        '**take(array, number):array**',
-        '**take(string, number):array**',
+        '**take(collection:array, count:number):array**',
+        '**take(string:string, count:number):array**',
         'Returns the first Count elements from the array or string passed in, for example this function returns [1, 2]: take([1, 2, 3, 4], 2)',
       ],
       [
@@ -912,61 +917,111 @@ export class AzLogicAppLangConstants{
     ),
     xpath: createFunValDesc(
       [
-        '**xpath(any, any):any**',
+        '**xpath(xml:any, xpath:any):any**',
         'Check XML for nodes or values that match an XPath (XML Path Language) expression, and return the matching nodes or values. An XPath expression, or just "XPath", helps you navigate an XML document structure so that you can select nodes or compute values in the XML content.',
       ],
       [IdentifierType.Any, IdentifierType.Any],
       IdentifierType.Any
     ),
     //*********date functions
-    addToTime: createFunValDesc(
-      ['**addToTime(string, number, string, string):string**', 'Add a number of time units to a timestamp. '],
-      [IdentifierType.String, IdentifierType.Number, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    addDays: createFunValDesc(
-      ['**addDays(string, number, string):string**', 'Add a number of days to a timestamp.'],
-      [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
-      IdentifierType.String
-    ),
-    addHours: createFunValDesc(
-      ['**addHours(string, number, string):string**', 'Add a number of hours to a timestamp.'],
-      [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
-      IdentifierType.String
-    ),
-    addMinutes: createFunValDesc(
-      ['**addMinutes(string, number, string):string**', 'Add a number of minutes to a timestamp.'],
-      [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
-      IdentifierType.String
-    ),
-    addSeconds: createFunValDesc(
-      ['**addSeconds(string, number, string):string**', 'Add a number of seconds to a timestamp.'],
-      [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
-      IdentifierType.String
-    ),
-    convertFromUtc: createFunValDesc(
+    addToTime: createOverloadedFunValDesc(
       [
-        '**convertFromUtc(string, string, string):string**',
+        '**addToTime(timestamp:string, interval:number, timeUnit:string):string**',
+        '**addToTime(timestamp:string, interval:number, timeUnit:string, format:string):string**',
+        'Add a number of time units to a timestamp. '
+      ],
+      [
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String, IdentifierType.String]
+      ],
+      [
+        IdentifierType.String,
+        IdentifierType.String
+      ]
+    ),
+    addDays: createOverloadedFunValDesc(
+      [
+        '**addDays(timestamp:string, days:number):string**',
+        '**addDays(timestamp:string, days:number, format:string):string**',
+        'Add a number of days to a timestamp.'
+      ],
+      [
+        [IdentifierType.String, IdentifierType.Number],
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    addHours: createOverloadedFunValDesc(
+      [
+        '**addHours(timestamp:string, hours:number):string**',
+        '**addHours(timestamp:string, hours:number, format:string):string**',
+        'Add a number of hours to a timestamp.'
+      ],
+      [
+        [IdentifierType.String, IdentifierType.Number],
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    addMinutes: createOverloadedFunValDesc(
+      [
+        '**addMinutes(timestamp:string, minutes:number):string**',
+        '**addMinutes(timestamp:string, minutes:number, format:string):string**',
+        'Add a number of minutes to a timestamp.'
+      ],
+      [
+        [IdentifierType.String, IdentifierType.Number],
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    addSeconds: createOverloadedFunValDesc(
+      [
+        '**addSeconds(timestamp:string, seconds:number):string**',
+        '**addSeconds(timestamp:string, seconds:number, format:string):string**',
+        'Add a number of seconds to a timestamp.'
+      ],
+      [
+        [IdentifierType.String, IdentifierType.Number],
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    convertFromUtc: createOverloadedFunValDesc(
+      [
+        '**convertFromUtc(timestamp:string, destinationTimeZone:string):string**',
+        '**convertFromUtc(timestamp:string, destinationTimeZone:string, format:string):string**',
         'Convert a timestamp from Universal Time Coordinated (UTC) to the target time zone.',
       ],
-      [IdentifierType.String, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    convertTimeZone: createFunValDesc(
       [
-        '**convertTimeZone(string, string, string):string**',
+        [IdentifierType.String, IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    convertTimeZone: createOverloadedFunValDesc(
+      [
+        '**convertTimeZone(timestamp:string, sourceTimeZone:string, destinationTimeZone:string):string**',
+        '**convertTimeZone(timestamp:string, sourceTimeZone:string, destinationTimeZone:string, format:string):string**',
         'Convert a timestamp from the source time zone to the target time zone.',
       ],
-      [IdentifierType.String, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    convertToUtc: createFunValDesc(
       [
-        '**convertToUtc(string, string, string):string**',
+        [IdentifierType.String, IdentifierType.String, IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String, IdentifierType.String, IdentifierType.String],
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    convertToUtc: createOverloadedFunValDesc(
+      [
+        '**convertToUtc(timestamp:string, sourceTimeZone:string):string**',
+        '**convertToUtc(timestamp:string, sourceTimeZone:string, format:string):string**',
         'Convert a timestamp from the source time zone to Universal Time Coordinated (UTC).',
       ],
-      [IdentifierType.String, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
+      [
+        [IdentifierType.String, IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
     ),
     dayOfMonth: createFunValDesc(
       ['**dayOfMonth(string):Integer**', 'Return the day of the month from a timestamp.'],
@@ -983,62 +1038,106 @@ export class AzLogicAppLangConstants{
       [IdentifierType.String],
       IdentifierType.Number
     ),
-    formatDateTime: createFunValDesc(
-      ['**formatDateTime(string, string):string**', 'Return a timestamp in the specified format.'],
-      [IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    getFutureTime: createFunValDesc(
+    formatDateTime: createOverloadedFunValDesc(
       [
-        '**getFutureTime(number, string, string):string**',
+        '**formatDateTime(Date:string):string**',
+        '**formatDateTime(Date:string, Format:string):string**',
+        'Return a timestamp in the specified format.'
+      ],
+      [
+        [IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String],
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    getFutureTime: createOverloadedFunValDesc(
+      [
+        '**getFutureTime(interval:number, timeUnit:string):string**',
+        '**getFutureTime(interval:number, timeUnit:string, format:string):string**',
         'Return the current timestamp plus the specified time units.',
       ],
-      [IdentifierType.Number, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    getPastTime: createFunValDesc(
       [
-        '**getPastTime(number, string, string):string**',
+        [IdentifierType.Number, IdentifierType.String],
+        [IdentifierType.Number, IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    getPastTime: createOverloadedFunValDesc(
+      [
+        '**getPastTime(interval:number, timeUnit:string):string**',
+        '**getPastTime(interval:number, timeUnit:string, format:string):string**',
         'Return the current timestamp minus the specified time units.',
       ],
-      [IdentifierType.Number, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    startOfDay: createFunValDesc(
-      ['**startOfDay(string, string):string**', 'Return the start of the day for a timestamp.'],
-      [IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    startOfHour: createFunValDesc(
-      ['**startOfHour(string, string):string**', 'Return the start of the hour for a timestamp.'],
-      [IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    startOfMonth: createFunValDesc(
-      ['**startOfMonth(string, string):string**', 'Return the start of the month for a timestamp.'],
-      [IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
-    ),
-    subtractFromTime: createFunValDesc(
       [
-        '**subtractFromTime(string, integer, string, string):string**',
+        [IdentifierType.Number, IdentifierType.String],
+        [IdentifierType.Number, IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    startOfDay: createOverloadedFunValDesc(
+      [
+        '**startOfDay(timestamp:string):string**',
+        '**startOfDay(timestamp:string, format:string):string**',
+        'Return the start of the day for a timestamp.'
+      ],
+      [
+        [IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    startOfHour: createOverloadedFunValDesc(
+      [
+        '**startOfHour(timestamp:string):string**',
+        '**startOfHour(timestamp:string, format:string):string**',
+        'Return the start of the hour for a timestamp.'
+      ],
+      [
+        [IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    startOfMonth: createOverloadedFunValDesc(
+      [
+        '**startOfMonth(timestamp:string):string**',
+        '**startOfMonth(timestamp:string, format:string):string**',
+        'Return the start of the month for a timestamp.'
+      ],
+      [
+        [IdentifierType.String],
+        [IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
+    ),
+    subtractFromTime: createOverloadedFunValDesc(
+      [
+        '**subtractFromTime(timestamp:string, interval:integer, timeUnit:string):string**',
+        '**subtractFromTime(timestamp:string, interval:integer, timeUnit:string, format:string):string**',
         'Subtract a number of time units from a timestamp. See also getPastTime.',
       ],
-      [IdentifierType.String, IdentifierType.Number, IdentifierType.String, IdentifierType.String],
-      IdentifierType.String
+      [
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String],
+        [IdentifierType.String, IdentifierType.Number, IdentifierType.String, IdentifierType.String]
+      ],
+      [IdentifierType.String, IdentifierType.String]
     ),
     ticks: createFunValDesc(
       [
-        '**ticks(string):Integer**',
+        '**ticks(timestamp:string):Integer**',
         'Return the ticks property value for a specified timestamp. A tick is a 100-nanosecond interval.',
       ],
       [IdentifierType.String],
       IdentifierType.Number
     ),
-    utcNow: createFunValDesc(
-      ['**utcNow(string):string**', 'Return the current timestamp.'],
-      [IdentifierType.String],
-      IdentifierType.String
+    utcNow: createOverloadedFunValDesc(
+      [
+        '**utcNow():string**',
+        '**utcNow(format:string):string**',
+        'Return the current timestamp.'
+      ],
+      [[], [IdentifierType.String]],
+      [IdentifierType.String, IdentifierType.String]
     ),
     //*********logical functions
     and: createFunValDesc(
@@ -1075,7 +1174,7 @@ export class AzLogicAppLangConstants{
     ),
     if: createFunValDesc(
       [
-        '**if(boolean, any, any):any**',
+        '**if(expression:boolean, trueResult:any, falseResult:any):any**',
         'Check whether an expression is true or false. Based on the result, return a specified value.',
       ],
       [IdentifierType.Boolean, IdentifierType.Any, IdentifierType.Any],
@@ -1121,7 +1220,7 @@ export class AzLogicAppLangConstants{
     ),
     div: createFunValDesc(
       [
-        '**div(number, number):number**',
+        '**div(dividend:number, divisor:number):number**',
         'Return the integer result from dividing two numbers. To get the remainder result, see mod().',
       ],
       [IdentifierType.Number, IdentifierType.Number],
@@ -1155,19 +1254,19 @@ export class AzLogicAppLangConstants{
     ),
     rand: createFunValDesc(
       [
-        '**rand(number, number):number**',
+        '**rand(minimum:number, maximum:number):number**',
         'Return a random integer from a specified range, which is inclusive only at the starting end.',
       ],
       [IdentifierType.Number, IdentifierType.Number],
       IdentifierType.Number
     ),
     range: createFunValDesc(
-      ['**range(number, number):number**', 'Return an integer array that starts from a specified integer.'],
+      ['**range(startIndex:number, count:number):number**', 'Return an integer array that starts from a specified integer.'],
       [IdentifierType.Number, IdentifierType.Number],
       IdentifierType.NumberArray
     ),
     sub: createFunValDesc(
-      ['**sub(number, number):number**', 'Return the result from subtracting the second number from the first number.'],
+      ['**sub(minuend:number, subtrahend:number):number**', 'Return the result from subtracting the second number from the first number.'],
       [IdentifierType.Number, IdentifierType.Number],
       IdentifierType.Number
     ),
@@ -1179,7 +1278,7 @@ export class AzLogicAppLangConstants{
     ),
     endswith: createFunValDesc(
       [
-        '**endswith(string, string):boolean**',
+        '**endswith(string:string, endString:string):boolean**',
         'Check whether a string ends with a specific substring. Return true when the substring is found, or return false when not found. This function is not case-sensitive.',
       ],
       [IdentifierType.String, IdentifierType.String],
@@ -1188,7 +1287,7 @@ export class AzLogicAppLangConstants{
     guid: createOverloadedFunValDesc(
       [
         '**guid():string**',
-        '**guid(string):string**',
+        '**guid(format:string):string**',
         'Check whether a string ends with a specific substring. Return true when the substring is found, or return false when not found. This function is not case-sensitive.',
       ],
       [[], [IdentifierType.String]],
@@ -1196,7 +1295,7 @@ export class AzLogicAppLangConstants{
     ),
     indexOf: createFunValDesc(
       [
-        '**indexOf(string, string):number**',
+        '**indexOf(string:string, searchString:string):number**',
         'Return the starting position or index value for a substring. This function is not case-sensitive, and indexes start with the number 0.',
       ],
       [IdentifierType.String, IdentifierType.String],
@@ -1204,7 +1303,7 @@ export class AzLogicAppLangConstants{
     ),
     lastIndexOf: createFunValDesc(
       [
-        '**lastIndexOf(string, string):number**',
+        '**lastIndexOf(string:string, searchString:string):number**',
         'Return the starting position or index value for the last occurrence of a substring. This function is not case-sensitive, and indexes start with the number 0.',
       ],
       [IdentifierType.String, IdentifierType.String],
@@ -1212,7 +1311,7 @@ export class AzLogicAppLangConstants{
     ),
     replace: createFunValDesc(
       [
-        '**replace(string, string, string):string**',
+        '**replace(string:string, oldString:string, newString:string):string**',
         'Replace a substring with the specified string, and return the result string. This function is case-sensitive.',
       ],
       [IdentifierType.String, IdentifierType.String, IdentifierType.String],
@@ -1220,7 +1319,7 @@ export class AzLogicAppLangConstants{
     ),
     split: createFunValDesc(
       [
-        '**split(string, string):string[]**',
+        '**split(string:string, separator:string):string[]**',
         'Return an array that contains substrings, separated by commas, based on the specified delimiter character in the original string.',
       ],
       [IdentifierType.String, IdentifierType.String],
@@ -1228,7 +1327,7 @@ export class AzLogicAppLangConstants{
     ),
     startswith: createFunValDesc(
       [
-        '**startswith(string, string):boolean**',
+        '**startswith(string:string, startString:string):boolean**',
         'Check whether a string starts with a specific substring. Return true when the substring is found, or return false when not found. This function is not case-sensitive.',
       ],
       [IdentifierType.String, IdentifierType.String],

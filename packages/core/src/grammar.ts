@@ -7,10 +7,10 @@ import {
   IScopeNameSet,
   IThemeProvider,
   Matcher,
-  SEPARATOR,
 } from './common';
 import {clone} from './utils';
 import {
+  DEFAULT_SEPARATOR,
   ASTNode,
   BeginEndRuleASTNode,
   BeginWhileRuleASTNode,
@@ -535,7 +535,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     }
   ): CodeDocument {
     option = option || {
-      separator: SEPARATOR,
+      separator: DEFAULT_SEPARATOR,
     };
 
     if (this._rootId === -1) {
@@ -2040,7 +2040,6 @@ class LineTokens {
 }
 
 export class CodeDocument {
-  static DEFAULT_SEPARATOR = '\n';
 
   static readonly OFFSET_NOT_IN_RANGE = class OffsetNotInRange extends Error {
     constructor(offset: number, range: number) {
@@ -2065,11 +2064,16 @@ export class CodeDocument {
   public readonly lines: string[];
   private readonly accLineLength: number[] = [];
 
+  get separator(){
+    return this._separator;
+  }
+
   constructor(
     public readonly text: string,
-    private _separator: string = CodeDocument.DEFAULT_SEPARATOR,
+    private _separator: string = DEFAULT_SEPARATOR,
     public readonly root?: ASTNode
   ) {
+
     this.lines = text.split(_separator);
 
     this.lines.forEach((value, i) => {

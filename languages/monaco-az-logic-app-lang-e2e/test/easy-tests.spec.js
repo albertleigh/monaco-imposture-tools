@@ -1,3 +1,4 @@
+const os = require('os');
 const chai = require('chai');
 const expect = chai.expect;
 const puppeteer = require('puppeteer');
@@ -31,13 +32,31 @@ describe('e2e easy test', () => {
     await clearUpMonacoEditor(page);
 
     let nextText, content, problems, allCompletionList;
-    await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, '@{add');
 
-    // await page.keyboard.press('ArrowLeft');
-    // trigger ctrl + space
+    nextText = `@pipeline()[]`;
+
+    await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+    await delay(250);
+    await page.keyboard.press('ArrowLeft');
+    await delay(250);
     await triggerCompletionOfCurrentCursor(page);
 
+
     allCompletionList = await collectMonacoListRowsAriaLabels(page);
-    expect(allCompletionList.length>0).ok;
+    expect(allCompletionList.length>=1).ok;
+
+    expect(allCompletionList.some(value =>
+      value.indexOf('DataFactory') > -1
+    )).ok;
+
+    expect(allCompletionList.some(value =>
+      value.indexOf('globalParameters') > -1
+    )).ok;
+
+    expect(allCompletionList.some(value =>
+      value.indexOf('add(') > -1
+    )).ok
+
   });
 });
