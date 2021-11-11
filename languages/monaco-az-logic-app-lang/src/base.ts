@@ -645,6 +645,8 @@ export type SymbolTable = ValueDescription & {
 export const ValueDescriptionDictionaryFunctionKey = '_$ValueDescriptionDictionaryFunctionKey';
 export type ValueDescriptionDictionary = Map<IdentifierType | string, DescriptorCollection[]>;
 
+export type ErrorHandler = (namespace:string, err:Error)=> void;
+
 export class AzLogicAppLangConstants{
 
   static readonly SCOPE_NAME = 'source.azLgcAppExp'; // source.js      ->    source.azLgcAppExp
@@ -654,6 +656,7 @@ export class AzLogicAppLangConstants{
   static inLexicalDebugMode = false;
   static inSyntaxDebugMode = false;
   static inSemanticDebugMode = false;
+  static globalErrorHandler?: ErrorHandler;
 
   static _init: Promise<any> | undefined = undefined;
   static _registry: Registry | undefined = undefined;

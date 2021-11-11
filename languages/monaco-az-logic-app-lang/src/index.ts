@@ -7,6 +7,7 @@ import {
 
 export * from '@monaco-imposture-tools/core';
 export {
+  ErrorHandler,
   ValueDescription,
   FunctionValueDescription,
   OverloadedFunctionValueDescription,

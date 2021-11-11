@@ -18,7 +18,7 @@ import {conf, language} from './languageConfiguration';
 import {generateCodeActions} from './codeActionProviderHelper';
 import {themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
-import {AzLogicAppLangConstants, SymbolTable, ValueDescriptionDictionary} from "./base";
+import {AzLogicAppLangConstants, ErrorHandler, SymbolTable, ValueDescriptionDictionary} from "./base";
 import {generateValueDescriptionDictionary} from "./utils";
 
 class TokenizerState implements languages.IState {
@@ -58,6 +58,13 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
   public static set inSemanticDebugMode(val:boolean){
     AzLogicAppLangConstants.inSemanticDebugMode = val;
+  }
+
+  public static get globalErrorHandler(){
+    return AzLogicAppLangConstants.globalErrorHandler;
+  }
+  public static set globalErrorHandler(handler:ErrorHandler|undefined){
+    AzLogicAppLangConstants.globalErrorHandler = handler;
   }
 
   public static get init() {
@@ -105,54 +112,63 @@ export class AzLogicAppExpressionLangMonacoEditor {
     versionId: number,
     azLgcExpEditor: AzLogicAppExpressionLangMonacoEditor
   ): AzLgcExpDocument | undefined {
-    if (this.grammar && azLgcExpEditor) {
-      const itsGlobalSymbolTable = azLgcExpEditor.rootSymbolTable;
-      const _cur = this._curAzLgcExpDocsMap.get(azLgcExpEditor.standaloneCodeEditor);
-      const azLgcExpDocResult = azLgcExpEditor.azLgcExpDocEventEmitter;
-      const validateResult = azLgcExpEditor.validationResultEventEmitter;
-      if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
+    try{
+      if (this.grammar && azLgcExpEditor) {
+        const itsGlobalSymbolTable = azLgcExpEditor.rootSymbolTable;
+        const _cur = this._curAzLgcExpDocsMap.get(azLgcExpEditor.standaloneCodeEditor);
+        const azLgcExpDocResult = azLgcExpEditor.azLgcExpDocEventEmitter;
+        const validateResult = azLgcExpEditor.validationResultEventEmitter;
+        if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
 
-        // force to use the default LF as EOL
-        const codeDoc = this.grammar!.parse(text || ' ');
+          // force to use the default LF as EOL
+          const codeDoc = this.grammar!.parse(text || ' ');
 
-        if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
-          if (codeDoc.separator === '\r\n'){
-            console.log('[azLgcLang::parseAzLgcExpDocument] EOF CRLF');
-          }else{
-            console.log('[azLgcLang::parseAzLgcExpDocument] EOF LF');
+          if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
+            if (codeDoc.separator === '\r\n'){
+              console.log('[azLgcLang::parseAzLgcExpDocument] EOF CRLF');
+            }else{
+              console.log('[azLgcLang::parseAzLgcExpDocument] EOF LF');
+            }
           }
-        }
 
-        const azLgcExpDoc = parseAzLgcExpDocument(codeDoc, itsGlobalSymbolTable);
-        azLgcExpDocResult.emit(azLgcExpDoc);
+          const azLgcExpDoc = parseAzLgcExpDocument(codeDoc, itsGlobalSymbolTable);
+          azLgcExpDocResult.emit(azLgcExpDoc);
 
-        AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
+          AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
           console.log("[azLgcLang::parseAzLgcExpDocument]", azLgcExpDoc.entries, azLgcExpDoc.validateResult, azLgcExpDoc);
-        AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
+          AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
           azLgcExpDoc.consoleLogSyntaxNodes();
 
-        const vr = azLgcExpDoc.validateResult;
+          const vr = azLgcExpDoc.validateResult;
 
-        AzLogicAppExpressionLangMonacoEditor.monaco.editor.setModelMarkers(
-          azLgcExpEditor.standaloneCodeEditor.getModel(),
-          AzLogicAppLangConstants.LANGUAGE_ID,
-          vr.problems.map((one) => ({
-            severity: one.severity as any,
-            code: '' + one.code,
-            message: one.message,
-            startLineNumber: one.startPos.line + 1,
-            startColumn: one.startPos.character + 1,
-            endColumn: one.endPos.character + 1,
-            endLineNumber: one.endPos.line + 1,
-          }))
-        );
+          AzLogicAppExpressionLangMonacoEditor.monaco.editor.setModelMarkers(
+            azLgcExpEditor.standaloneCodeEditor.getModel(),
+            AzLogicAppLangConstants.LANGUAGE_ID,
+            vr.problems.map((one) => ({
+              severity: one.severity as any,
+              code: '' + one.code,
+              message: one.message,
+              startLineNumber: one.startPos.line + 1,
+              startColumn: one.startPos.character + 1,
+              endColumn: one.endPos.character + 1,
+              endLineNumber: one.endPos.line + 1,
+            }))
+          );
 
-        validateResult.emit(vr);
-        this._curAzLgcExpDocsMap.set(azLgcExpEditor.standaloneCodeEditor, {versionId, azLgcExpDoc});
-        return azLgcExpDoc;
+          validateResult.emit(vr);
+          this._curAzLgcExpDocsMap.set(azLgcExpEditor.standaloneCodeEditor, {versionId, azLgcExpDoc});
+          return azLgcExpDoc;
+        }
+      }
+      return this._curAzLgcExpDocsMap.get(azLgcExpEditor.standaloneCodeEditor)?.azLgcExpDoc;
+    }catch (err) {
+      if (this.globalErrorHandler){
+        this.globalErrorHandler('[azLgcLang::parseAzLgcExpDocument]', err);
+      }else{
+        throw  err;
       }
     }
-    return this._curAzLgcExpDocsMap.get(azLgcExpEditor.standaloneCodeEditor)?.azLgcExpDoc;
+    return
   }
   private static _debouncedDoParseSync = debounce(function (
     text: string,
@@ -266,12 +282,20 @@ export class AzLogicAppExpressionLangMonacoEditor {
             return new TokenizerState(INITIAL);
           },
           tokenizeEncoded(line: string, state: TokenizerState): languages.IEncodedLineTokens {
-            const res = grammar?.tokenizeLine2(line, state.ruleStack);
-            AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
-            console.log(`grammar::tokenize2 ${line} ||`, res.tokens, res);
-            return {
-              endState: new TokenizerState(res.ruleStack),
-              tokens: res.tokens
+            try{
+              const res = grammar?.tokenizeLine2(line, state.ruleStack);
+              AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
+              console.log(`grammar::tokenize2 ${line} ||`, res.tokens, res);
+              return {
+                endState: new TokenizerState(res.ruleStack),
+                tokens: res.tokens
+              }
+            }catch (err) {
+              if (this.globalErrorHandler){
+                this.globalErrorHandler('[azLgcLang::grammar::tokenize2]', err);
+              }else{
+                throw  err;
+              }
             }
           }
         })
@@ -281,38 +305,54 @@ export class AzLogicAppExpressionLangMonacoEditor {
             return new TokenizerState(INITIAL);
           },
           tokenize(line: string, state: TokenizerState): languages.ILineTokens {
-            const _curEditorForTknSvc = AzLogicAppExpressionLangMonacoEditor.defaultEditor.standaloneCodeEditor;
+            try{
+              const _curEditorForTknSvc = AzLogicAppExpressionLangMonacoEditor.defaultEditor.standaloneCodeEditor;
 
-            const res = grammar?.tokenizeLine(line, state.ruleStack);
+              const res = grammar?.tokenizeLine(line, state.ruleStack);
 
-            AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
-            console.log(`grammar::tokenize ${line} ||`, res.tokens, res);
+              AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
+              console.log(`grammar::tokenize ${line} ||`, res.tokens, res);
 
-            return {
-              endState: new TokenizerState(res.ruleStack),
-              tokens: res.tokens.map((token) => ({
-                ...token,
-                // at the moment, monaco-editor doesn't seem to accept array of scopes
-                scopes: _curEditorForTknSvc
-                  ? TMToMonacoToken(_curEditorForTknSvc!, token.scopes)
-                  : token.scopes[token.scopes.length - 1],
-              })),
-            };
+              return {
+                endState: new TokenizerState(res.ruleStack),
+                tokens: res.tokens.map((token) => ({
+                  ...token,
+                  // at the moment, monaco-editor doesn't seem to accept array of scopes
+                  scopes: _curEditorForTknSvc
+                    ? TMToMonacoToken(_curEditorForTknSvc!, token.scopes)
+                    : token.scopes[token.scopes.length - 1],
+                })),
+              };
+            }catch (err) {
+              if (this.globalErrorHandler){
+                this.globalErrorHandler('[azLgcLang::grammar::tokenize]', err);
+              }else{
+                throw  err;
+              }
+            }
           },
         });
       }
 
       this._hoverProvider = realMonaco.languages.registerHoverProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
         provideHover: (model, position) => {
-          const thAzLgcEditor = this.getCodeEditorById(model.id);
-          const _curCodeDocEntry = this._curAzLgcExpDocsMap.get(thAzLgcEditor.standaloneCodeEditor);
-          if (_curCodeDocEntry) {
-            const offset = _curCodeDocEntry.azLgcExpDoc.codeDocument.offsetAt({
-              line: position.lineNumber - 1,
-              character: position.column - 1,
-            });
-            const theNode = _curCodeDocEntry.azLgcExpDoc.getSyntaxNodeByOffset(offset);
-            return generateHover(theNode, _curCodeDocEntry.azLgcExpDoc);
+          try{
+            const thAzLgcEditor = this.getCodeEditorById(model.id);
+            const _curCodeDocEntry = this._curAzLgcExpDocsMap.get(thAzLgcEditor.standaloneCodeEditor);
+            if (_curCodeDocEntry) {
+              const offset = _curCodeDocEntry.azLgcExpDoc.codeDocument.offsetAt({
+                line: position.lineNumber - 1,
+                character: position.column - 1,
+              });
+              const theNode = _curCodeDocEntry.azLgcExpDoc.getSyntaxNodeByOffset(offset);
+              return generateHover(theNode, _curCodeDocEntry.azLgcExpDoc);
+            }
+          }catch (err) {
+            if (this.globalErrorHandler){
+              this.globalErrorHandler('[azLgcLang::provideHover]', err);
+            }else{
+              throw  err;
+            }
           }
         },
       });
@@ -325,24 +365,32 @@ export class AzLogicAppExpressionLangMonacoEditor {
           context: languages.CompletionContext,
           token: CancellationToken
         ) => {
-          const theLgcExpDocEditor = this.getCodeEditorById(model.id);
-          const _curCodeDoc = this._curAzLgcExpDocsMap.get(theLgcExpDocEditor.standaloneCodeEditor);
-          if (_curCodeDoc) {
-            const modelLines = model.getLinesContent();
-            let theAzLgcExpDoc = _curCodeDoc.azLgcExpDoc;
-            if (
-              !theAzLgcExpDoc ||
-              modelLines.length !== theAzLgcExpDoc.codeDocument.lines.length ||
-              modelLines.some((value, index) => value !== theAzLgcExpDoc.codeDocument.lines[index])
-            ) {
-              theAzLgcExpDoc =
-                (await this._doParse(
-                  modelLines.join(theLgcExpDocEditor.getEndOfLine()),
-                  model.getVersionId(),
-                  theLgcExpDocEditor
-                )) || theAzLgcExpDoc;
+          try{
+            const theLgcExpDocEditor = this.getCodeEditorById(model.id);
+            const _curCodeDoc = this._curAzLgcExpDocsMap.get(theLgcExpDocEditor.standaloneCodeEditor);
+            if (_curCodeDoc) {
+              const modelLines = model.getLinesContent();
+              let theAzLgcExpDoc = _curCodeDoc.azLgcExpDoc;
+              if (
+                !theAzLgcExpDoc ||
+                modelLines.length !== theAzLgcExpDoc.codeDocument.lines.length ||
+                modelLines.some((value, index) => value !== theAzLgcExpDoc.codeDocument.lines[index])
+              ) {
+                theAzLgcExpDoc =
+                  (await this._doParse(
+                    modelLines.join(theLgcExpDocEditor.getEndOfLine()),
+                    model.getVersionId(),
+                    theLgcExpDocEditor
+                  )) || theAzLgcExpDoc;
+              }
+              return generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
             }
-            return generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
+          }catch (err) {
+            if (this.globalErrorHandler){
+              this.globalErrorHandler('[azLgcLang::provideCompletionItems]', err);
+            }else{
+              throw  err;
+            }
           }
           return {
             suggestions: [],
@@ -365,7 +413,15 @@ export class AzLogicAppExpressionLangMonacoEditor {
           context: languages.CodeActionContext,
           token: CancellationToken
         ): languages.ProviderResult<languages.CodeActionList> => {
-          return generateCodeActions(model, range, context, token);
+          try{
+            return generateCodeActions(model, range, context, token);
+          }catch (err) {
+            if (this.globalErrorHandler){
+              this.globalErrorHandler('[azLgcLang::provideCodeActions]', err);
+            }else{
+              throw  err;
+            }
+          }
         },
       });
 
@@ -418,71 +474,85 @@ export class AzLogicAppExpressionLangMonacoEditor {
     _rootSymbolTable: SymbolTable = AzLogicAppLangConstants.globalSymbolTable
   ) {
 
-    this.rootSymbolTable = _rootSymbolTable;
+    try{
+      this.rootSymbolTable = _rootSymbolTable;
 
-    if (
-      AzLogicAppLangConstants._usingBuiltInTheme &&
-      standaloneEditorConstructionOptions.theme &&
-      standaloneEditorConstructionOptions.theme in themes
-    ){
-      AzLogicAppLangConstants._theme = themes[standaloneEditorConstructionOptions.theme];
-    }
-
-    AzLogicAppExpressionLangMonacoEditor.activate().then(() => {
-
-      const theTextModel = Object.assign(
-        AzLogicAppLangConstants._monaco.editor.createModel(
-          (standaloneEditorConstructionOptions?.value || ' ').replace(/\r/gm, ""),
-          AzLogicAppLangConstants.LANGUAGE_ID
-        ),
-        {
-          id: editorId,
-        }
-      );
-      // force to use LF as eol
-      theTextModel.pushEOL(0);
-      this.standaloneCodeEditor = AzLogicAppLangConstants._monaco.editor.create(domeElement, {
-        language: AzLogicAppLangConstants.LANGUAGE_ID,
-        model: theTextModel,
-        ...standaloneEditorConstructionOptions,
-      });
-
-      this.azLgcExpDocEventEmitter = new ValueEventEmitter<AzLgcExpDocument | undefined>(undefined);
-      this.validationResultEventEmitter = new ValueEventEmitter<ValidateResult | undefined>(undefined);
-
-      AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(editorId, this);
-
-      // setup default editor if needed
       if (
-        !AzLogicAppExpressionLangMonacoEditor._curEditorsMap.has(AzLogicAppLangConstants.DEFAULT_EDITOR_ID)
-      ) {
-        AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(
-          AzLogicAppLangConstants.DEFAULT_EDITOR_ID,
-          this
-        );
+        AzLogicAppLangConstants._usingBuiltInTheme &&
+        standaloneEditorConstructionOptions.theme &&
+        standaloneEditorConstructionOptions.theme in themes
+      ){
+        AzLogicAppLangConstants._theme = themes[standaloneEditorConstructionOptions.theme];
       }
 
-      const theValStr = this.standaloneCodeEditor.getValue();
-      if (theValStr) {
-        AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, -1, this);
-      }
-      this.standaloneCodeEditor.getModel()?.onDidChangeContent((evt) => {
-        const theValStr = this.standaloneCodeEditor!.getValue();
+      AzLogicAppExpressionLangMonacoEditor.activate().then(() => {
+
+        const theTextModel = Object.assign(
+          AzLogicAppLangConstants._monaco.editor.createModel(
+            (standaloneEditorConstructionOptions?.value || ' ').replace(/\r/gm, ""),
+            AzLogicAppLangConstants.LANGUAGE_ID
+          ),
+          {
+            id: editorId,
+          }
+        );
+        // force to use LF as eol
+        theTextModel.pushEOL(0);
+        this.standaloneCodeEditor = AzLogicAppLangConstants._monaco.editor.create(domeElement, {
+          language: AzLogicAppLangConstants.LANGUAGE_ID,
+          model: theTextModel,
+          ...standaloneEditorConstructionOptions,
+        });
+
+        this.azLgcExpDocEventEmitter = new ValueEventEmitter<AzLgcExpDocument | undefined>(undefined);
+        this.validationResultEventEmitter = new ValueEventEmitter<ValidateResult | undefined>(undefined);
+
+        AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(editorId, this);
+
+        // setup default editor if needed
+        if (
+          !AzLogicAppExpressionLangMonacoEditor._curEditorsMap.has(AzLogicAppLangConstants.DEFAULT_EDITOR_ID)
+        ) {
+          AzLogicAppExpressionLangMonacoEditor._curEditorsMap.set(
+            AzLogicAppLangConstants.DEFAULT_EDITOR_ID,
+            this
+          );
+        }
+
+        const theValStr = this.standaloneCodeEditor.getValue();
         if (theValStr) {
-          AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, evt.versionId, this);
+          AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, -1, this);
+        }
+        this.standaloneCodeEditor.getModel()?.onDidChangeContent((evt) => {
+          const theValStr = this.standaloneCodeEditor!.getValue();
+          if (theValStr) {
+            AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, evt.versionId, this);
+          }
+        });
+        // phase 2 todo: it feels like onDidChangeOptions cannot catch eol changing
+        // this.standaloneCodeEditor.getModel()?.onDidChangeOptions((evt)=>{
+        //   if (this.standaloneCodeEditor.getModel().getEOL() === '\r\n'){
+        //     // force to use LF as EOL
+        //     this.standaloneCodeEditor.getModel().pushEOL(0);
+        //     if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
+        //       console.log('[azLgcLang::standaloneCodeEditor] onDidChangeOptions set EOL from CRLF to LF by force');
+        //     }
+        //   }
+        // })
+      }, reason => {
+        if (AzLogicAppExpressionLangMonacoEditor.globalErrorHandler){
+          AzLogicAppExpressionLangMonacoEditor.globalErrorHandler('[azLgcLang::activate]', reason);
+        }else{
+          throw reason;
         }
       });
-      // phase 2 todo: it feels like onDidChangeOptions cannot catch eol changing
-      // this.standaloneCodeEditor.getModel()?.onDidChangeOptions((evt)=>{
-      //   if (this.standaloneCodeEditor.getModel().getEOL() === '\r\n'){
-      //     // force to use LF as EOL
-      //     this.standaloneCodeEditor.getModel().pushEOL(0);
-      //     if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
-      //       console.log('[azLgcLang::standaloneCodeEditor] onDidChangeOptions set EOL from CRLF to LF by force');
-      //     }
-      //   }
-      // })
-    });
+    }catch (err) {
+      if (AzLogicAppExpressionLangMonacoEditor.globalErrorHandler){
+        AzLogicAppExpressionLangMonacoEditor.globalErrorHandler('[azLgcLang::constructor]', err);
+      }else{
+        throw  err;
+      }
+    }
   }
 
   get azLgcExpDocument() {
