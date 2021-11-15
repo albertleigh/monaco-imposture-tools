@@ -489,7 +489,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
 
         const theTextModel = Object.assign(
           AzLogicAppLangConstants._monaco.editor.createModel(
-            (standaloneEditorConstructionOptions?.value || ' ').replace(/\r/gm, ""),
+            (standaloneEditorConstructionOptions?.value || '').replace(/\r/gm, ""),
             AzLogicAppLangConstants.LANGUAGE_ID
           ),
           {
@@ -525,7 +525,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
         }
         this.standaloneCodeEditor.getModel()?.onDidChangeContent((evt) => {
           const theValStr = this.standaloneCodeEditor!.getValue();
-          if (theValStr) {
+          if (typeof theValStr === 'string') {
             AzLogicAppExpressionLangMonacoEditor._doParse(theValStr, evt.versionId, this);
           }
         });
