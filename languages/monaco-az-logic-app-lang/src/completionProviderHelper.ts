@@ -18,7 +18,7 @@ import {
   ValueDescriptionDictionaryFunctionKey
 } from './base';
 import {
-  determineReturnIdentifierTypeOfFunction, findAllAmongOneSymbolTable,
+  determineReturnIdentifierTypeOfFunction,
   findAllPathAmongOneDescriptor,
   findAllRootPackageOfOneDescriptor,
   findAmongOneDescriptor,
@@ -148,6 +148,8 @@ function buildCompletionItemFromDescriptorCollectionEntry(
       label,
       kind: buildCompletionItemKindFromValueDescription(vd),
       insertText: vd._$type === DescriptionType.FunctionValue ? `${label}()${paramComma}` : `${label}${paramComma}`,
+      detail: vd._$desc.length? vd._$desc[0]: undefined,
+      documentation: vd._$desc.length? vd._$desc.join('\n'): undefined,
       range: contentRange,
     };
   }
@@ -296,27 +298,38 @@ export function generateCompletion(
   // switch to semantic nodes and prepare mete data from semantic nodes
 
   if (node) {
-    // turn to its father when encountering  accessors
-    if (node instanceof AccessorPunctuator){
-      if (node.elderSibling){
-        node = node.elderSibling;
-      }
-    }
-
     // turn to other semantic nodes in an expression
-    if (
-      node instanceof CommaPunctuator &&
-      !(node.parent instanceof ParenthesisNode)
-    ) {
+    if (node instanceof CommaPunctuator) {
       if (
         offset == node.offset &&
         node.elderSibling
       ){
-        node = node.elderSibling;
+        if (
+          node.parent instanceof ParenthesisNode &&
+          node.elderSibling.offset+node.elderSibling.length === offset
+        ){
+          node = node.elderSibling;
+        }else{
+          node = node.elderSibling;
+        }
       }else if (
         offset == node.offset + node.length &&
         node.youngerSibling
       ){
+        if (
+          node.parent instanceof ParenthesisNode &&
+          node.youngerSibling.offset === offset
+        ){
+          node = node.youngerSibling;
+        }else{
+          node = node.youngerSibling;
+        }
+      }
+    }
+
+    // turn to its father when encountering  accessors
+    if (node instanceof AccessorPunctuator){
+      if (node.elderSibling){
         node = node.elderSibling;
       }
     }

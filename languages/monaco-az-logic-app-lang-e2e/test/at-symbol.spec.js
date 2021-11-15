@@ -3,7 +3,7 @@ const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
   collectMonacoListRowsAriaLabels, clearPageErrors, seizePageErrors,
-  seizeCurExpProb, seizeCurExpTxt, hoverOneSpanContaining, triggerCompletionOfCurrentCursor
+  seizeCurExpProb, seizeCurExpTxt, hoverOneSpanContaining, triggerCompletionOfCurrentCursor, delay
 } = require("./utils");
 
 function generateAtSymbolTests(openOnePage, closeOnePage) {
@@ -31,6 +31,10 @@ function generateAtSymbolTests(openOnePage, closeOnePage) {
 
     it('populate completion list right after @', async ()=>{
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, '@');
+
+      await triggerCompletionOfCurrentCursor(page);
+      await delay(250);
+
       const allCompletionList = await collectMonacoListRowsAriaLabels(page);
       expect(allCompletionList.length>0).ok;
 

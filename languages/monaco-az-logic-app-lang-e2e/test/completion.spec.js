@@ -62,6 +62,9 @@ function generateCompletionTests(openOnePage, closeOnePage) {
 
       nextText = '@pipe';
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+      await triggerCompletionOfCurrentCursor(page);
+      await delay(250);
+
       await page.keyboard.press('Enter');
 
       await delay(250);
@@ -330,11 +333,11 @@ pipeline().`;
 
         expect(allCompletionList.some(value =>
           value.indexOf('DataFactory')
-        )).ok
+        )> -1).ok
 
         expect(allCompletionList.some(value =>
-          value.indexOf('globalParaMeters')
-        )).ok
+          value.indexOf('globalParameters')
+        )> -1).ok
 
       })
 
@@ -368,6 +371,77 @@ pipeline().global`;
 
       })
 
+      it('multi-line post function identifiers completion v4', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@concat(
+  pipeline().,
+pipeline().globalParameters.firstGlobalStrPara`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        // await page.keyboard.press('Escape');
+
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('End');
+        await page.keyboard.press('ArrowLeft');
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('DataFactory') > -1
+        )).ok
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('globalParameters') > -1
+        )).ok
+
+      })
+
+      it('multi-line post function identifiers completion v5', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =
+          `@concat(
+  pipeline(),
+pipeline().globalParameters.firstGlobalStrPara`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        // await page.keyboard.press('Escape');
+
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('ArrowUp');
+        await page.keyboard.press('End');
+        await page.keyboard.press('ArrowLeft');
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('DataFactory') > -1
+        )).ok
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('globalParameters') > -1
+        )).ok
+
+      })
 
       it('one-line post function identifiers completion v1', async ()=>{
         let nextText, content, problems, allCompletionList;
