@@ -121,7 +121,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
         if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
 
           // force to use the default LF as EOL
-          const codeDoc = this.grammar!.parse(text || ' ');
+          const codeDoc = this.grammar!.parse(text || '');
 
           if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
             if (codeDoc.separator === '\r\n'){
