@@ -2178,7 +2178,7 @@ export class CodeDocument {
    * @param offset
    */
   positionAt(offset: number): Position {
-    if (!this.text || this.text.length < offset) {
+    if ( typeof this.text !== 'string' || this.text.length < offset) {
       throw new CodeDocument.OFFSET_NOT_IN_RANGE(offset, this.text?.length || 0);
     }
     let theLine = 0,

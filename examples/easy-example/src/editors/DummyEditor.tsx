@@ -190,7 +190,7 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-const sampleCodes = ` `;
+const sampleCodes = `@contains([1,2], [1])`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

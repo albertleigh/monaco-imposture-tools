@@ -522,6 +522,9 @@ export class LiteralArrayNode extends LiteralValueNode{
 
   readonly _valueDesc: ReferenceValueDescription;
 
+  readonly squareBraceOffset: number;
+  readonly squareBraceLength: number;
+
   constructor(
     astNode: ASTNode,
     public readonly content: SyntaxNode[]
@@ -576,6 +579,42 @@ export class LiteralArrayNode extends LiteralValueNode{
         }
         break;
     }
+
+    // override the existing literal array
+    if (
+      this.astNode && this.astNode.$impostureLang?.dataType === "array-literal" &&
+      (this.astNode as any).beginCaptureChildren.length &&
+      (this.astNode as any).beginCaptureChildren[0].scopeName === "meta.brace.square.azLgcAppExp" &&
+      typeof (this.astNode as any).beginCaptureChildren[0].offset === 'number'
+    ){
+      this.squareBraceOffset = (this.astNode as any).beginCaptureChildren[0].offset;
+    }else{
+      this.squareBraceOffset = this.astNode.offset;
+    }
+
+    if (
+      this.astNode && this.astNode.$impostureLang?.dataType === "array-literal" &&
+      (this.astNode as any).endCaptureChildren.length &&
+      (this.astNode as any).endCaptureChildren[0].scopeName === "meta.brace.square.azLgcAppExp" &&
+      typeof (this.astNode as any).endCaptureChildren[0].offset === 'number'
+    ){
+      this.squareBraceLength =
+        (this.astNode as any).endCaptureChildren[0].offset
+        + ((this.astNode as any).endCaptureChildren[0].length || 0)
+        - this.squareBraceOffset
+      ;
+    }else{
+      this.squareBraceLength = this.astNode.length || 0;
+    }
+
+  }
+
+  get offset(){
+    return this.squareBraceOffset;
+  }
+
+  get length(){
+    return this.squareBraceLength;
   }
 
   public get children():SyntaxNode[]{
