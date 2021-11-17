@@ -40,6 +40,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@activity('Get Metadata1').output.childItems[0].name",
         "@item().one.two.three",
         "@item().one['two'].three",
+        "@contains( [pipeline().DataFactory], [pipeline().GroupId] )",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;

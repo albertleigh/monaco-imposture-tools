@@ -215,20 +215,21 @@ export class ParenthesisNode extends SyntaxNode{
     return this._cachedCommaIndices.slice();
   }
 
-  public get parameterSize(){
+  private _ensureCommaIndicesPopulated(){
     if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
+      this._cachedCommaIndices = this.commaIndices;
     }
+  }
+
+  public get parameterSize(){
+    this._ensureCommaIndicesPopulated();
     return this._cachedCommaIndices.length === 0?
       this.content.length > 0 ? 1: 0:
       this._cachedCommaIndices.length+1;
   }
 
   public parameter(index:number):SyntaxNode|undefined{
-    if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
-    }
-
+    this._ensureCommaIndicesPopulated();
     if (
       index === 0 && !(this.content[0] instanceof CommaPunctuator)
     ){
@@ -245,9 +246,7 @@ export class ParenthesisNode extends SyntaxNode{
   }
 
   public comma(index:number):CommaPunctuator|undefined{
-    if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
-    }
+    this._ensureCommaIndicesPopulated();
     if (index >= 0 && index < this._cachedCommaIndices.length){
       return this.content[this._cachedCommaIndices[index]];
     }
@@ -255,9 +254,7 @@ export class ParenthesisNode extends SyntaxNode{
   }
 
   public paramIndexByOffset(offset:number){
-    if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
-    }
+    this._ensureCommaIndicesPopulated();
     if (
       this.offset+1 <= offset &&
       this.offset+ this.length -1 >= offset
@@ -276,9 +273,7 @@ export class ParenthesisNode extends SyntaxNode{
   }
 
   public startPosOfParameter(paramIndex:number){
-    if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
-    }
+    this._ensureCommaIndicesPopulated();
     if (paramIndex <= 0){
       return this.offset + 1;
     }else if (paramIndex >= this._cachedCommaIndices.length + 1){
@@ -289,9 +284,7 @@ export class ParenthesisNode extends SyntaxNode{
   }
 
   public endPosOfParameter(paramIndex:number){
-    if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
-    }
+    this._ensureCommaIndicesPopulated();
     if (paramIndex > this._cachedCommaIndices.length -1 ){
       return this.offset + this.length -1;
     }else if (paramIndex < 0){
@@ -642,7 +635,7 @@ export class LiteralArrayNode extends LiteralValueNode{
 
   private _ensureCommaIndicesPopulated(){
     if(!this._cachedCommaIndices){
-      const _dummyCommaIndices = this.commaIndices;
+      this._cachedCommaIndices = this.commaIndices;
     }
   }
 
