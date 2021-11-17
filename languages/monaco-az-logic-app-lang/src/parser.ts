@@ -576,7 +576,7 @@ export class LiteralArrayNode extends LiteralValueNode{
     // override the existing literal array
     if (
       this.astNode && this.astNode.$impostureLang?.dataType === "array-literal" &&
-      (this.astNode as any).beginCaptureChildren.length &&
+      (this.astNode as any).beginCaptureChildren?.length &&
       (this.astNode as any).beginCaptureChildren[0].scopeName === "meta.brace.square.azLgcAppExp" &&
       typeof (this.astNode as any).beginCaptureChildren[0].offset === 'number'
     ){
@@ -587,7 +587,7 @@ export class LiteralArrayNode extends LiteralValueNode{
 
     if (
       this.astNode && this.astNode.$impostureLang?.dataType === "array-literal" &&
-      (this.astNode as any).endCaptureChildren.length &&
+      (this.astNode as any).endCaptureChildren?.length &&
       (this.astNode as any).endCaptureChildren[0].scopeName === "meta.brace.square.azLgcAppExp" &&
       typeof (this.astNode as any).endCaptureChildren[0].offset === 'number'
     ){
