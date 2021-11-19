@@ -37,7 +37,11 @@ class TokenizerState implements languages.IState {
   }
 }
 
+type MonacoLangCompletionListResult = monaco.languages.ProviderResult<monaco.languages.CompletionList>;
+
 export class AzLogicAppExpressionLangMonacoEditor {
+
+  public static globalCompletionItemInterceptor?:(completionList:MonacoLangCompletionListResult)=>MonacoLangCompletionListResult = undefined;
 
   public static get inLexicalDebugMode(){
     return AzLogicAppLangConstants.inLexicalDebugMode;
@@ -227,6 +231,22 @@ export class AzLogicAppExpressionLangMonacoEditor {
     AzLogicAppLangConstants._monaco = _monaco;
   }
 
+  private static _curColorMap:string[]|undefined = undefined;
+  static populateColorMapIfNeeded(){
+    if (this.emitBinaryTokens && !this._curColorMap){
+      this._curColorMap = AzLogicAppLangConstants._registry.getColorMap();
+      this.monaco.languages.setColorMap(this._curColorMap);
+    }
+  }
+  static resetColorMapIfNeeded(){
+    if (this.emitBinaryTokens){
+      this.monaco.languages.setColorMap(null);
+      if (this._curColorMap){
+        this._curColorMap = undefined;
+      }
+    }
+  }
+
   public static activate(
     scannerOrItsPath: string | ArrayBuffer = this._scannerOrItsPath,
     realMonaco: typeof monaco = AzLogicAppLangConstants._monaco,
@@ -276,7 +296,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
       realMonaco.languages.setMonarchTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, language);
 
       if (this.emitBinaryTokens){
-        realMonaco.languages.setColorMap(AzLogicAppLangConstants._registry.getColorMap());
+        this.populateColorMapIfNeeded();
         this._tokenProvider = realMonaco.languages.setTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
           getInitialState(): languages.IState {
             return new TokenizerState(INITIAL);
@@ -383,6 +403,11 @@ export class AzLogicAppExpressionLangMonacoEditor {
                     theLgcExpDocEditor
                   )) || theAzLgcExpDoc;
               }
+              if (AzLogicAppExpressionLangMonacoEditor.globalCompletionItemInterceptor){
+                return AzLogicAppExpressionLangMonacoEditor.globalCompletionItemInterceptor(
+                  generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token)
+                );
+              }
               return generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
             }
           }catch (err) {
@@ -487,6 +512,8 @@ export class AzLogicAppExpressionLangMonacoEditor {
 
       AzLogicAppExpressionLangMonacoEditor.activate().then(() => {
 
+        AzLogicAppExpressionLangMonacoEditor.populateColorMapIfNeeded();
+
         const theTextModel = Object.assign(
           AzLogicAppLangConstants._monaco.editor.createModel(
             (standaloneEditorConstructionOptions?.value || '').replace(/\r/gm, ""),
@@ -553,6 +580,10 @@ export class AzLogicAppExpressionLangMonacoEditor {
         throw  err;
       }
     }
+  }
+
+  public cleanUp(){
+    AzLogicAppExpressionLangMonacoEditor.resetColorMapIfNeeded();
   }
 
   get azLgcExpDocument() {
