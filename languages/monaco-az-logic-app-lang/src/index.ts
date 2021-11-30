@@ -1,13 +1,11 @@
-import {AzLogicAppLangConstants} from './base'
+import {SymbolTable, createSymbolTable} from './values'
 import {AzLogicAppExpressionLangMonacoEditor} from './editors';
-import {
-  createSymbolTable,
-  generateValueDescriptionDictionary
-} from './utils'
 
 export * from '@monaco-imposture-tools/core';
 export {
   ErrorHandler,
+} from './base';
+export {
   ValueDescription,
   FunctionValueDescription,
   OverloadedFunctionValueDescription,
@@ -19,25 +17,22 @@ export {
   createOverloadedFunValDesc,
   createRefValDesc,
   createPkgValDesc,
+  createSymbolTable,
   createFunRetDesc,
-} from './base';
-
-export {
-  createSymbolTable
-} from './utils';
+} from './values';
 
 export {Problem, ValidateResult} from './validateHelper';
 export {AzLogicAppExpressionLangMonacoEditor} from './editors';
 export {AzLgcExpDocument} from './parser';
 
 
-AzLogicAppLangConstants.globalSymbolTable = createSymbolTable({});
-//
-AzLogicAppLangConstants.globalValueDescriptionDict = generateValueDescriptionDictionary(AzLogicAppLangConstants.globalSymbolTable);
+SymbolTable.globalSymbolTable = createSymbolTable({});
+SymbolTable.globalValueDescriptionDict
+  = SymbolTable.globalSymbolTable.generateValueDescriptionDictionary();
 
-export const emtpyFunRetTyp = AzLogicAppLangConstants.emtpyFunRetTyp;
-export const globalSymbolTableBase =  AzLogicAppLangConstants.globalSymbolTableBase;
-export const globalSymbolTable = AzLogicAppLangConstants.globalSymbolTable;
+export const emtpyFunRetTyp = SymbolTable.emtpyFunRetTyp;
+export const globalSymbolTableBase =  SymbolTable.globalSymbolTableBase;
+export const globalSymbolTable = SymbolTable.globalSymbolTable;
 
 
 export default AzLogicAppExpressionLangMonacoEditor;

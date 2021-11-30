@@ -1,7 +1,7 @@
 import {languages} from './editor.api';
 import {
   DescriptionType,
-} from './base';
+} from './values';
 import {
   SyntaxNode,
   AzLgcExpDocument,

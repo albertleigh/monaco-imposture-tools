@@ -77,6 +77,16 @@ function generateNextSymbolTable() {
     createFunRetDesc(
       createPkgValDesc([],{
         pipeline: createPkgValDesc(['**Return package pipeline**', 'Package pipeline'], {
+          optionalPackage: createPkgValDesc(['Optional package', 'one demo purpose optional package'],
+            {
+              oneOptionalString: createRefValDesc(['oneOptionalString'], IdentifierType.String),
+            },
+            {optional:true}),
+          Workspace: createRefValDesc(
+            ['Name of the workspace run is running within'],
+            IdentifierType.String,
+            true
+          ),
           DataFactory: createRefValDesc(
             ['Name of the data factory the pipeline run is running within'],
             IdentifierType.String
@@ -190,7 +200,11 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-const sampleCodes = `@contains([1,2], [1])`;
+// @pipeline().optionalPackage?.oneOptionalString
+// @pipeline().globalParameters?.|
+// @pipeline().globalParameters?.
+
+const sampleCodes = `@pipeline()?.optionalPackage.oneOptionalString`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

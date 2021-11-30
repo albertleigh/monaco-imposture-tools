@@ -37,7 +37,7 @@ async function seizeCurExpProb(page){
       return value;
     }));
   })
-  return JSON.parse(probStr);
+  return JSON.parse(probStr).filter(one => one.code < 0x200);
 }
 
 async function clearUpMonacoEditor(page){

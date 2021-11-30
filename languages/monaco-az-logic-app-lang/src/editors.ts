@@ -18,8 +18,8 @@ import {conf, language} from './languageConfiguration';
 import {generateCodeActions} from './codeActionProviderHelper';
 import {themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
-import {AzLogicAppLangConstants, ErrorHandler, SymbolTable, ValueDescriptionDictionary} from "./base";
-import {generateValueDescriptionDictionary} from "./utils";
+import {AzLogicAppLangConstants, ErrorHandler} from "./base";
+import {SymbolTable, ValueDescriptionDictionary} from './values';
 
 class TokenizerState implements languages.IState {
   constructor(private _ruleStack: StackElement) {}
@@ -475,10 +475,10 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
   public set rootSymbolTable(symbolTable:SymbolTable){
     this._rootSymbolTable = symbolTable;
-    if (this._rootSymbolTable === AzLogicAppLangConstants.globalSymbolTable){
-      this._valueDescriptionDict = AzLogicAppLangConstants.globalValueDescriptionDict;
+    if (this._rootSymbolTable === SymbolTable.globalSymbolTable){
+      this._valueDescriptionDict = SymbolTable.globalValueDescriptionDict;
     }else {
-      this._valueDescriptionDict = generateValueDescriptionDictionary(symbolTable);
+      this._valueDescriptionDict = symbolTable.generateValueDescriptionDictionary();
     }
     // force re-parsing if the editor existed
     if(this.standaloneCodeEditor){
@@ -496,7 +496,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
     public readonly domeElement: HTMLDivElement,
     standaloneEditorConstructionOptions?: Omit<editor.IStandaloneEditorConstructionOptions, 'language' | 'model'>,
     public readonly editorId: string = AzLogicAppLangConstants.DEFAULT_EDITOR_ID,
-    _rootSymbolTable: SymbolTable = AzLogicAppLangConstants.globalSymbolTable
+    _rootSymbolTable: SymbolTable = SymbolTable.globalSymbolTable
   ) {
 
     try{

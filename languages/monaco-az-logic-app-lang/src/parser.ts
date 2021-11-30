@@ -2,20 +2,25 @@ import {ASTNode, CodeDocument} from "@monaco-imposture-tools/core";
 import {
   AzLogicAppNode,
   AzLogicAppNodeType,
+} from "./base";
+import {
+  AbstractReturnChainType, AzLogicAppNodeUtils,
+  IdentifierInBracketNotationReturnChainType,
+  IdentifierReturnChainType,
+  ReturnChainType,
+} from './azLgcNodesUtils';
+import {
   createRefValDesc,
   DescriptionType,
   FunctionValueDescription,
-  IdentifierInBracketNotationReturnChainType,
-  IdentifierReturnChainType,
   IdentifierType,
   IdentifierTypeName,
   OverloadedFunctionValueDescription,
   PackageDescription,
   ReferenceValueDescription,
-  ReturnChainType,
   SymbolTable,
   ValueDescription,
-} from "./base";
+} from './values'
 import {
   DiagnosticSeverity,
   ErrorCode,
@@ -23,18 +28,8 @@ import {
   ValidationIntermediateContext,
   WrapperType
 } from "./validateHelper";
-import {
-  determineOverloadFunParamSeq,
-  findAllAmongOneSymbolTable,
-  findAmongOneDescriptor,
-  findAnElderSibling,
-  findCompleteForwardIdentifiersChain,
-  findValDescArrFromChain,
-  getFunctionCallFullname, inferIdentifierTypeFromChain,
-  populateVarParaIncreasingly
-} from "./utils";
 
-// ------------------------ gen ast nodes  ----------------------------
+// ------------------------ gen cst nodes  ----------------------------
 
 // base AST
 export abstract class SyntaxNode {
@@ -432,15 +427,15 @@ export class LiteralBooleanNode extends LiteralValueNode{
     public readonly  value:boolean
   ) {
     super(astNode);
-    this._valueDesc = Object.freeze({
-      _$type: DescriptionType.ReferenceValue,
-      _$desc: [
+    this._valueDesc = ReferenceValueDescription.buildOne(
+      [
         ''+ value,
         'Boolean value'
       ],
-      _$valueType:  IdentifierType.Boolean,
-      _$value: value
-    });
+      IdentifierType.Boolean,
+      false,
+      value
+    );
   }
 }
 // string
@@ -453,15 +448,15 @@ export class LiteralStringNode extends LiteralValueNode{
     public readonly  value:string
   ) {
     super(astNode);
-    this._valueDesc = Object.freeze({
-      _$type: DescriptionType.ReferenceValue,
-      _$desc: [
+    this._valueDesc = ReferenceValueDescription.buildOne(
+      [
         value,
         'String value'
       ],
-      _$valueType:  IdentifierType.String,
-      _$value: value
-    })
+      IdentifierType.String,
+      false,
+      value
+    )
   }
 }
 // number
@@ -478,15 +473,15 @@ export class LiteralNumberNode extends LiteralValueNode{
     public readonly value:number
   ) {
     super(astNode);
-    this._valueDesc = Object.freeze({
-      _$type: DescriptionType.ReferenceValue,
-      _$desc: [
+    this._valueDesc = ReferenceValueDescription.buildOne(
+      [
         '' + value,
         'Number value'
       ],
-      _$valueType:  IdentifierType.Number,
-      _$value: value
-    })
+      IdentifierType.Number,
+      false,
+      value
+    );
   }
 }
 // null
@@ -498,15 +493,15 @@ export class LiteralNullNode extends LiteralValueNode{
     astNode: ASTNode
   ) {
     super(astNode);
-    this._valueDesc = Object.freeze({
-      _$type: DescriptionType.ReferenceValue,
-      _$desc: [
+    this._valueDesc = ReferenceValueDescription.buildOne(
+      [
         'null',
         'Null value'
       ],
-      _$valueType:  IdentifierType.Null,
-      _$value: null
-    })
+      IdentifierType.Null,
+      false,
+      null
+    );
   }
 }
 
@@ -545,31 +540,28 @@ export class LiteralArrayNode extends LiteralValueNode{
     }
     switch (firstContentReturnValue) {
       case IdentifierType.String:
-        this._valueDesc  = {
-          _$type: DescriptionType.ReferenceValue,
-          _$desc: [
+        this._valueDesc = ReferenceValueDescription.buildOne(
+          [
             'String array'
           ],
-          _$valueType:  IdentifierType.StringArray,
-        }
+          IdentifierType.StringArray
+        );
         break;
       case IdentifierType.Number:
-        this._valueDesc  = {
-          _$type: DescriptionType.ReferenceValue,
-          _$desc: [
+        this._valueDesc = ReferenceValueDescription.buildOne(
+          [
             'Number array'
           ],
-          _$valueType:  IdentifierType.NumberArray,
-        }
+          IdentifierType.NumberArray
+        );
         break;
       default:
-        this._valueDesc  = {
-          _$type: DescriptionType.ReferenceValue,
-          _$desc: [
+        this._valueDesc = ReferenceValueDescription.buildOne(
+          [
             'Array'
           ],
-          _$valueType:  IdentifierType.Array,
-        }
+          IdentifierType.Array
+        );
         break;
     }
 
@@ -815,6 +807,10 @@ export class IdentifierNodeWithPunctuation extends IdentifierNode{
     cb(this, depth);
     this.prefixAccessor.traverse(cb, nextDepth);
   }
+
+  get isOptional(){
+    return this.prefixAccessor.isOptional;
+  }
 }
 
 export class IdentifierNodeInBracketNotation extends IdentifierNode{
@@ -873,7 +869,36 @@ export class Punctuator extends SyntaxNode{
 
 }
 // punctuation-accessor
-export class AccessorPunctuator extends Punctuator{}
+export class AccessorPunctuator extends Punctuator{
+
+  get isObjectIdentifierCapture():boolean{
+    return this.astNode.$impostureLang.dataType === 'object-identifiers-captures';
+  }
+
+  get isIdentifierCapture():boolean{
+    return this.astNode.$impostureLang.dataType === 'identifiers-capture';
+  }
+
+  get isStandalone():boolean{
+    return this.astNode.$impostureLang.type === 'punctuation-accessor' &&
+    this.astNode.$impostureLang.dataType === 'punctuation';
+  }
+
+  get isOptional():boolean{
+    if (this.isIdentifierCapture || this.isObjectIdentifierCapture){
+      return this.astNode.scopeName.indexOf('optional') > -1 ||
+        this.astNode.$impostureLang.type === 'identifiers-p2-c2' ||
+        this.astNode.$impostureLang.type === 'object-identifiers-p0-c2';
+    }else if(this.isStandalone){
+      return this.astNode.children.some(value =>
+        value.scopeName.indexOf('optional') > -1 ||
+        value.$impostureLang.type === 'punctuation-accessor-c2'
+      )
+    }
+    return false;
+  }
+
+}
 // punctuation-comma
 export class CommaPunctuator extends Punctuator{}
 
@@ -903,15 +928,15 @@ export class AtSymbolNode extends SyntaxNode{
 // r val
 export class EscapedAtSymbolNode extends SyntaxNode{
 
-  static RETURN_VALUE:ReferenceValueDescription = Object.freeze({
-    _$type: DescriptionType.ReferenceValue,
-    _$desc: [
+  static RETURN_VALUE:ReferenceValueDescription = ReferenceValueDescription.buildOne(
+    [
       '@',
       'Escaped at symbol'
     ],
-    _$valueType:  IdentifierType.String,
-    _$value: '@'
-  });
+    IdentifierType.String,
+    false,
+    '@'
+  );
 
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
@@ -1343,6 +1368,8 @@ function _collect_identifiers_w_punctuation(
   }
 
   let curSymbol = symbolArr.shift();
+  let previousSyntaxNode = nodes[nodes.length-1];
+  let previousVd = ultimateSkippedVd;
   let curVd = vdArr.shift();
 
   while (!!curSymbol && !!curVd){
@@ -1351,12 +1378,56 @@ function _collect_identifiers_w_punctuation(
       curSymbol.type === "object-identifiers:wPunctuation" ||
       curSymbol.type === "identifiers:wPunctuation"
     ){
-      nodes.push(new IdentifierNodeWithPunctuation(
+      const theIdentifierNodeWithPunctuation = new IdentifierNodeWithPunctuation(
         curSymbol.node,
         curSymbol.identifierName,
         curVd as any,
         new AccessorPunctuator(curSymbol.node.children[0])
-      ));
+      );
+      // check whether its accessor must be optional over here
+      if (previousVd._$isOptional && !theIdentifierNodeWithPunctuation.isOptional){
+        let startPos = previousSyntaxNode.offset;
+        const endPos = previousSyntaxNode.offset + previousSyntaxNode.length + 1;
+        let previousSyntaxNodeLabel = 'Return value';
+        if (previousSyntaxNode instanceof FunctionCallNode){
+          previousSyntaxNodeLabel = `The return value of function ${previousSyntaxNode.functionFullName}`;
+        }else if (previousSyntaxNode instanceof IdentifierNode){
+          previousSyntaxNodeLabel = previousSyntaxNode.identifierName;
+          if (previousSyntaxNode instanceof IdentifierNodeWithPunctuation){
+            startPos += previousSyntaxNode.isOptional? 2 : 1;
+          }
+        }
+
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL,
+          message: `${previousSyntaxNodeLabel} might be null or undefined, suggest to use an optional accessor.`,
+          startPos: ctx.vr.codeDocument.positionAt(startPos),
+          endPos: ctx.vr.codeDocument.positionAt(endPos),
+          node: previousSyntaxNode.astNode as any,
+        });
+      }else if (!previousVd._$isOptional && theIdentifierNodeWithPunctuation.isOptional){
+        const prefixAccessor = theIdentifierNodeWithPunctuation.prefixAccessor;
+        const startPos = prefixAccessor.offset;
+        const endPos = prefixAccessor.offset + prefixAccessor.length;
+        let previousSyntaxNodeLabel = 'Return value';
+        if (previousSyntaxNode instanceof FunctionCallNode){
+          previousSyntaxNodeLabel = `The return value of the function ${previousSyntaxNode.functionFullName}`;
+        }else if (previousSyntaxNode instanceof IdentifierNode){
+          previousSyntaxNodeLabel = previousSyntaxNode.identifierName;
+        }
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Hint,
+          code: ErrorCode.IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL,
+          message: `${previousSyntaxNodeLabel} is defined and its optional accessor might be redundant`,
+          startPos: ctx.vr.codeDocument.positionAt(startPos),
+          endPos: ctx.vr.codeDocument.positionAt(endPos),
+          node: previousSyntaxNode.astNode as any,
+        });
+      }
+      nodes.push(theIdentifierNodeWithPunctuation);
+      previousSyntaxNode = theIdentifierNodeWithPunctuation;
+
     }else if (
       curSymbol.type === "array-literal" &&
       (curSymbol as any).isBracketNotation
@@ -1390,8 +1461,8 @@ function _collect_identifiers_w_punctuation(
         }else{
           const firstItem = literalArrayNode.item(0);
           if (firstItem){
-            const oneIdChain = findCompleteForwardIdentifiersChain(firstItem.astNode as any, ctx.vr.codeDocument);
-            const sourceIdTyp = inferIdentifierTypeFromChain(ctx.vr.globalSymbolTable, ctx.vr.codeDocument, oneIdChain.chain);
+            const oneIdChain = AbstractReturnChainType.findCompleteForwardIdentifiersChain(firstItem.astNode as any, ctx.vr.codeDocument);
+            const sourceIdTyp = ctx.vr.globalSymbolTable.inferIdentifierTypeFromChain(ctx.vr.codeDocument, oneIdChain.chain);
             if (
               !(
                 sourceIdTyp?.assignableTo(IdentifierType.String) ||
@@ -1437,6 +1508,7 @@ function _collect_identifiers_w_punctuation(
       curVd._$type !== DescriptionType.ReferenceValue ||
       !curVd._$valueType.isAnyObject
     ){
+      previousVd = curVd;
       curVd = vdArr.shift();
     }
   }
@@ -1557,11 +1629,11 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
   const nodes:SyntaxNode[] = [];
   const returnCtx = {...ctx};
 
-  const postIdChain = findCompleteForwardIdentifiersChain(node, ctx.vr.codeDocument);
+  const postIdChain = AbstractReturnChainType.findCompleteForwardIdentifiersChain(node, ctx.vr.codeDocument);
   if (postIdChain.chain.length) {
 
     returnCtx.skipIndices = postIdChain.chain.length -1 ;
-    const chainVds = findValDescArrFromChain(ctx.vr.globalSymbolTable, ctx.vr.codeDocument, postIdChain.chain);
+    const chainVds = ctx.vr.globalSymbolTable.findValDescArrFromChain(ctx.vr.codeDocument, postIdChain.chain);
 
     // convert identifiers chain to nodes
     if (
@@ -1644,7 +1716,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
   if (node.$impostureLang.dataType === 'function-call-complete'){
     let wrappedInRootAndPrecededByAtSymbol = false;
     if (ctx.directWrapperType === WrapperType.ROOT_FUNCTION_CALL) {
-      const theElderSibling = findAnElderSibling(node);
+      const theElderSibling = node.findAnElderSibling();
       //check valid root fun-call-complete or not
       if (!theElderSibling || theElderSibling.$impostureLang?.dataType !== 'atSymbol') {
         ctx.vr.problems.push({
@@ -1671,9 +1743,9 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
     ) {
       const functionCallNode = node.children[0] as AzLogicAppNodeType<'function-call'>;
       const parenthesesNode = node.children[1] as AzLogicAppNodeType<'parentheses'>;
-      const functionCallFullName = getFunctionCallFullname(functionCallNode, ctx.vr.codeDocument);
+      const functionCallFullName = AzLogicAppNodeUtils.getFunctionCallFullname(functionCallNode, ctx.vr.codeDocument);
       const functionCallPaths = functionCallFullName.split('.');
-      const functionDescArr = findAllAmongOneSymbolTable(ctx.vr.globalSymbolTable, functionCallPaths);
+      const functionDescArr = ctx.vr.globalSymbolTable.findAllByPath(functionCallPaths);
       // phase two todo: emmm.... the supportFunctionCallIdentifiers could be seized in a more elegant way
       const supportFunctionCallIdentifiers = _collect_function_call_identifiers(
         node.children[0] as any,
@@ -1725,7 +1797,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
             let parameterTypes: IdentifierType[] | undefined = undefined;
             // determine the param list
             if (functionDesc._$type === DescriptionType.OverloadedFunctionValue) {
-              paraSeq = determineOverloadFunParamSeq(ctx.vr.globalSymbolTable, ctx.vr.codeDocument, node, functionDesc);
+              paraSeq = ctx.vr.globalSymbolTable.determineOverloadFunParamSeq(ctx.vr.codeDocument, node, functionDesc);
               parameterTypes = functionDesc._$parameterTypes[paraSeq].slice();
               retTyp = functionDesc._$returnType[paraSeq];
             } else {
@@ -1772,7 +1844,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                       const sourceIdTyp = oneParaSynNode.returnType
                       const targetIdType = parameterTypes[paraIndex];
                       if (targetIdType.isVarList) {
-                        populateVarParaIncreasingly(parameterTypes, paraIndex);
+                        IdentifierType.populateVarParaIncreasingly(parameterTypes, paraIndex);
                       }
                       // check it equals or match the target id typ
                       match =
@@ -1818,7 +1890,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           // directly put fun ref into the corresponding ref vd
           let targetDesc = functionDesc as ValueDescription;
           if ( retTyp?.type ===  IdentifierTypeName.INTERNAL_FUN_REF){
-            targetDesc = findAmongOneDescriptor(ctx.vr.globalSymbolTable,retTyp.returnTypeChainList!)!
+            targetDesc = ctx.vr.globalSymbolTable.findByPath(retTyp.returnTypeChainList!)!
           }
 
           nodes.push(new FunctionCallNode(
@@ -1833,11 +1905,11 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
         }
 
         // need to decide whether we need populate the post identifier nodes over here
-        const postFunCallChain = findCompleteForwardIdentifiersChain(node, ctx.vr.codeDocument);
+        const postFunCallChain = AbstractReturnChainType.findCompleteForwardIdentifiersChain(node, ctx.vr.codeDocument);
         if (postFunCallChain.chain.length > 1) {
           returnCtx.skipIndices = postFunCallChain.chain.length -1 ;
           // alright we did have a chain longer than one, and need to populate it
-          const chainVds = findValDescArrFromChain(ctx.vr.globalSymbolTable, ctx.vr.codeDocument, postFunCallChain.chain);
+          const chainVds = ctx.vr.globalSymbolTable.findValDescArrFromChain(ctx.vr.codeDocument, postFunCallChain.chain);
           if (chainVds.length){
             _collect_identifiers_w_punctuation(
               ctx,
@@ -2145,7 +2217,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
     {
       const theAccessorPunctuator = new AccessorPunctuator(node);
       nodes.push(theAccessorPunctuator);
-      // phase 2: todo, emmm it should not make any sense to have a standalone AccessorPunctuator, plz dbl chk
+      // we might have a standalone AccessorPunctuator, like: @pipeline().globalParameters?.|
       ctx.vr.problems.push({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.INVALID_STANDALONE_ACCESSOR,

@@ -1,5 +1,6 @@
 import {CodeDocument, Position} from '@monaco-imposture-tools/core';
 import {AzLogicAppNode, AzLogicAppLangConstants} from './base';
+import {SymbolTable} from './values';
 
 export enum ErrorCode {
   INVALID_AT_SYMBOL = 0x001,
@@ -19,7 +20,15 @@ export enum ErrorCode {
   UNRECOGNIZED_TOKENS,
   INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER,
   INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
+  IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL,
   // todo add a new one, no qstring-dbl in expression
+
+  // warnings 0x200
+
+  // infos 0x400
+
+  // hints
+  IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL = 0x801,
 }
 
 export enum DiagnosticSeverity {
@@ -44,7 +53,7 @@ export class ValidateResult {
 
   constructor(
     public readonly codeDocument: CodeDocument,
-    public readonly globalSymbolTable = AzLogicAppLangConstants.globalSymbolTable
+    public readonly globalSymbolTable = SymbolTable.globalSymbolTable
   ) {}
 
   public hasProblems(): boolean {

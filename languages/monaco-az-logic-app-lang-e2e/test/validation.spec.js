@@ -41,6 +41,9 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@item().one.two.three",
         "@item().one['two'].three",
         "@contains( [pipeline().DataFactory], [pipeline().GroupId] )",
+        "@pipeline().globalParameters?.firstGlobalStrPara",
+        "@pipeline().optionalPackage?.oneOptionalString",
+        "@pipeline()?.TriggeredByPipelineName",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -233,11 +236,13 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
     describe('UNKNOWN_FUNCTION_NAME 0x04', ()=>{
       it('found unrecognized a function name:: root level', async ()=>{
-        const nextText = '@add2(1, 233)';
+        let nextText, content, problems, allCompletionList;
+
+        nextText = '@add2(1, 233)';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(1);
         // Unknown function name
@@ -887,6 +892,50 @@ pipeline().globalParameters.oneGlobalFloat
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].endPos.character).lessThanOrEqual(15);
 
+      })
+
+    })
+
+    describe('IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL 0x12', ()=>{
+
+      it ('the accessor for an optional value also has to be optional v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline().optionalPackage.oneOptionalString`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(18);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).eq(12);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).eq(28);
+      })
+
+      it ('the accessor for an optional value also has to be optional v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline()?.optionalPackage.oneOptionalString`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(18);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).eq(13);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).eq(29);
       })
 
     })
