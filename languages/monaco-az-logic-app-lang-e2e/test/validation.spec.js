@@ -49,6 +49,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@piPeline()['optionalpackage']?.oneoptionalString",
         "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int')",
         "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, [])",
+        "@concat('Baba', '''s ', 'book store')",
+        "@if(contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int'),'','''')",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -469,7 +471,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         await clearUpMonacoEditor(page);
 
-        nextText = '@take("onestring", 2 )';
+        nextText = "@take('onestring', 2 )";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
@@ -965,6 +967,28 @@ pipeline().globalParameters.oneGlobalFloat
         expect(problems[0].endPos.character).eq(29);
       })
 
+    })
+
+    describe('Q_STRING_DOUBLE_IS_NOT_ALLOWED 0x13', ()=>{
+      it ('double quoted string is not allowed v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@concat("okay..''..")`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(19);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).eq(8);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).eq(20);
+      })
     })
 
 

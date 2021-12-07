@@ -458,6 +458,10 @@ export class LiteralStringNode extends LiteralValueNode{
       value
     )
   }
+
+  isDoubleQuoted(){
+    return this.astNode.$impostureLang.type === "qstring-double";
+  }
 }
 // number
 export class LiteralNumberNode extends LiteralValueNode{
@@ -2464,10 +2468,26 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
         returnCtx.vr.codeDocument.getNodeContent(node)
       )));
       break;
-    case 'string':
+    case 'string':{
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      nodes.push(new LiteralStringNode(node, returnCtx.vr.codeDocument.getNodeContent(node)));
+      const theLiteralStringNode = new LiteralStringNode(node, returnCtx.vr.codeDocument.getNodeContent(node));
+      nodes.push(theLiteralStringNode);
+      if (theLiteralStringNode.isDoubleQuoted()){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.Q_STRING_DOUBLE_IS_NOT_ALLOWED,
+          message: `Double quoted string is not allowed`,
+          startPos: ctx.vr.codeDocument.positionAt(
+            theLiteralStringNode.offset
+          ),
+          endPos: ctx.vr.codeDocument.positionAt(
+            theLiteralStringNode.offset + theLiteralStringNode.length
+          ),
+          node: theLiteralStringNode.astNode as any,
+        });
+      }
+    }
       break;
     case 'boolean':
       returnCtx.needOneSeparator = true;
