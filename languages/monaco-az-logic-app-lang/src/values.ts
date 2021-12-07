@@ -1979,19 +1979,32 @@ export class SymbolTable {
               curVdPath = nextOne.value;
             }
 
+            let funRes:IdentifierType|undefined = undefined;
             if (curVdPath.vd instanceof ReferenceValueDescription) {
-              return curVdPath.vd._$valueType;
+              funRes = curVdPath.vd._$valueType;
             }else if (
               // check em all in case we gonna support more
               curVdPath.vd instanceof FunctionValueDescription ||
               curVdPath.vd instanceof OverloadedFunctionValueDescription ||
               curVdPath.vd instanceof PackageDescription
             ){
-              return curVdPath.vd._$identifierType;
+              funRes = curVdPath.vd._$identifierType;
             }
+            if (funPathIndex<interpretedChainList.length && funRes && funRes.isAnyObject){
+              return IdentifierType.Any;
+            }else if(funPathIndex === interpretedChainList.length){
+              return funRes;
+            }
+            return
 
-          } else if (!retIdTyp.isComposite) {
-            return retIdTyp;
+          } else if (
+            !retIdTyp.isComposite
+          ) {
+            if (idChain.length ==1){
+              return retIdTyp;
+            }else if (retIdTyp.isAnyObject){
+              return IdentifierType.Any;
+            }
           }
         }
       }
@@ -2030,17 +2043,19 @@ export class SymbolTable {
         }
       }
     }
-    switch (idChain[0].type) {
-      case 'number':
-        return IdentifierType.Number;
-      case 'string':
-        return IdentifierType.String;
-      case 'boolean':
-        return IdentifierType.Boolean;
-      case 'null':
-        return IdentifierType.Null;
-      case 'array-literal':
-        return IdentifierType.Array;
+    if (idChain.length === 1){
+      switch (idChain[0].type) {
+        case 'number':
+          return IdentifierType.Number;
+        case 'string':
+          return IdentifierType.String;
+        case 'boolean':
+          return IdentifierType.Boolean;
+        case 'null':
+          return IdentifierType.Null;
+        case 'array-literal':
+          return IdentifierType.Array;
+      }
     }
     return;
   }
@@ -2110,9 +2125,9 @@ export class SymbolTable {
             break;
           }
           paraIndex++;
-          if (!curParaCandidates.length) return 0;
-          return curParaCandidates[0][curParaCandidates[0].length - 1] as unknown as number;
         }
+        if (!curParaCandidates.length) return 0;
+        return curParaCandidates[0][curParaCandidates[0].length - 1] as unknown as number;
       }
     }
     // return the first para if no candidate found
@@ -2259,20 +2274,31 @@ export class SymbolTable {
                   interpretedChainList[funPathIndex].path,
                   createRefValDesc([], IdentifierType.Any)
                 ));
-                // populate the rest with any vd
-                while(funResult.length < retTyp.returnTypeChainList.length){
-                  funResult.push(
-                    new ValueDescriptionPath(
-                      interpretedChainList[funResult.length].path,
-                      createRefValDesc([], IdentifierType.Any)
-                    )
-                  );
-                }
                 break;
               }
               nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
               curVdPath = nextOne.value;
             }
+
+            // if the last one is of type any then populate the rest according to the symbol chain
+            if (
+              funResult.length &&
+              funResult.length < interpretedChainList.length &&
+              funResult[funResult.length-1].vd instanceof ReferenceValueDescription &&
+              (funResult[funResult.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
+            ){
+              // populate the rest with any vd
+              while(funResult.length < interpretedChainList.length){
+                funResult.push(
+                  new ValueDescriptionPath(
+                    interpretedChainList[funResult.length].path,
+                    createRefValDesc([], IdentifierType.Any)
+                  )
+                );
+              }
+            }
+
+
             if (funResult.length >= retTyp.returnTypeChainList.length){
               // returnTypeChainList is consisted of internal reserved one return type key word, the function call return type
               // and the path to the function call return type; thus we only need to remove the path to
@@ -2283,7 +2309,7 @@ export class SymbolTable {
             }
           }else {
             // regular ret typ, just create a reference vd
-            return [
+            const funResult = [
               new ValueDescriptionPath(
                 functionFullNameCodes,
                 createRefValDesc(
@@ -2291,7 +2317,25 @@ export class SymbolTable {
                   retTyp
                 )
               )
-            ]
+            ];
+            // if the last one is of type any then populate the rest according to the symbol chain
+            if (
+              funResult.length &&
+              funResult.length < idChain.length &&
+              funResult[funResult.length-1].vd instanceof ReferenceValueDescription &&
+              (funResult[funResult.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
+            ){
+              // populate the rest with any vd
+              while(funResult.length < idChain.length){
+                funResult.push(
+                  new ValueDescriptionPath(
+                    idChain[funResult.length].label,
+                    createRefValDesc([], IdentifierType.Any)
+                  )
+                );
+              }
+            }
+            return funResult;
           }
         }
       }
@@ -2339,7 +2383,23 @@ export class SymbolTable {
         nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
         curVdPath = nextOne.value;
       }
-
+      // if the last one is of type any then populate the rest according to the symbol chain
+      if (
+        identifierResult.length &&
+        identifierResult.length < idChain.length &&
+        identifierResult[identifierResult.length-1].vd instanceof ReferenceValueDescription &&
+        (identifierResult[identifierResult.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
+      ){
+        // populate the rest with any vd
+        while(identifierResult.length < idChain.length){
+          identifierResult.push(
+            new ValueDescriptionPath(
+              idChain[identifierResult.length].label,
+              createRefValDesc([], IdentifierType.Any)
+            )
+          );
+        }
+      }
       return identifierResult;
     }
     return [];

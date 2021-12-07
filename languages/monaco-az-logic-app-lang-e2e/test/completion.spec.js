@@ -3,7 +3,7 @@ const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
   collectMonacoListRowsAriaLabels, triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, clearPageErrors,
-  seizePageErrors, delay
+  seizePageErrors, delay, seizeCurExpAllProb
 } = require("./utils");
 
 function generateCompletionTests(openOnePage, closeOnePage) {
@@ -70,7 +70,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
       await delay(250);
 
       content = await seizeCurExpTxt(page);
-      problems = await seizeCurExpProb(page);
+      problems = await seizeCurExpAllProb(page);
       expect(content).eq('@pipeline()');
       expect(problems.length).eq(0);
 
@@ -102,7 +102,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
       await delay(250);
 
       content = await seizeCurExpTxt(page);
-      problems = await seizeCurExpProb(page);
+      problems = await seizeCurExpAllProb(page);
       expect(content.trim()).eq('@pipeline().globalParameters.firstGlobalStrPara');
       expect(problems.length).eq(0);
     })
@@ -187,7 +187,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@variables(\'firstVar\')');
         expect(problems.length).eq(0);
 
@@ -232,7 +232,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
 
         expect(content).eq('@variables(\'secondVar\')');
         expect(problems.length).eq(0);
@@ -452,7 +452,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 

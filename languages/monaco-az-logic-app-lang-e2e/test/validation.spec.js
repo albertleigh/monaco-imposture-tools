@@ -3,7 +3,7 @@ const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
   triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, delay, clearPageErrors, seizePageErrors,
-  seizeCurExpWarnings, seizeCurExpHints
+  seizeCurExpWarnings, seizeCurExpHints, seizeCurExpAllProb
 } = require("./utils");
 
 function generateValidationTests(openOnePage, closeOnePage) {
@@ -47,6 +47,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@pipeline()?.TriggeredByPipelineName",
         "@piPeline()?.optionalpackage?.oneOptionalString",
         "@piPeline()['optionalpackage']?.oneoptionalString",
+        "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int')",
+        "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, [])",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -65,7 +67,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
     describe('Handle the dynamic value descriptor', ()=>{
       it('@dynamic# v1', async ()=>{
-        let nextText, content, problems;
+        let nextText, content, problems, warnings;
 
         nextText = '@dynamic';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
@@ -75,8 +77,10 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq('@dynamic1(1)');
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
         await page.evaluate(() => {
           window.regenerateNextSymbolTable();
@@ -104,76 +108,96 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq('@dynamic2(2)');
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
       })
     })
 
     describe('Handle any object flawlessly', ()=>{
 
       it('regular identifiers v1', async ()=>{
-        const nextText = '@item()';
+        let nextText, content, problems, warnings;
+        nextText = '@item()';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('regular identifiers v2', async ()=>{
-        const nextText = '@item().one';
+        let nextText, content, problems, warnings;
+        nextText = '@item().one';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('regular identifiers v3', async ()=>{
-        const nextText = '@item().one.two.three';
+        let nextText, content, problems, warnings;
+        nextText = '@item().one.two.three';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('bracket identifiers v1', async ()=>{
-        const nextText = "@item()['one']";
+        let nextText, content, problems, warnings;
+        nextText = "@item()['one']";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('bracket identifiers v2', async ()=>{
-        const nextText = "@item()['one']['two']";
+        let nextText, content, problems, warnings;
+        nextText = "@item()['one']['two']";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('bracket identifiers v3', async ()=>{
-        const nextText = "@item().one['two'].three";
+        let nextText, content, problems, warnings;
+        nextText = "@item().one['two'].three";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
       })
 
     })
@@ -204,7 +228,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -214,7 +238,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
         // Miss a preceding @ for the function call at root statement
@@ -309,7 +333,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@concat()');
         expect(problems.length).eq(0);
 
@@ -323,7 +347,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@concat(pipeline().DataFactory)');
         expect(problems.length).eq(0);
 
@@ -337,7 +361,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@concat(pipeline().DataFactory, pipeline().globalParameters.firstGlobalStrPara)');
 
         expect(problems.length).eq(0);
@@ -394,7 +418,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         nextText = '@add(1, 2)';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -418,7 +442,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         nextText = '@concat(\'1\', \'2\' )';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -429,7 +453,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
@@ -439,7 +463,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
@@ -449,7 +473,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
@@ -555,7 +579,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -566,7 +590,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -577,7 +601,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })

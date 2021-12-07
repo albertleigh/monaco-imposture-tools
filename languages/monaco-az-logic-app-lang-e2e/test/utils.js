@@ -27,6 +27,17 @@ async function seizeCurExpTxt(page){
   })
 }
 
+async function seizeCurExpAllProb(page){
+  const probStr = await page.evaluate(()=>{
+    return JSON.stringify(window.expProblems, ((key, value) => {
+      if (key === 'node'){
+        return undefined;
+      }
+      return value;
+    }));
+  })
+  return JSON.parse(probStr);
+}
 
 async function seizeCurExpProb(page){
   const probStr = await page.evaluate(()=>{
@@ -120,6 +131,7 @@ module.exports = {
   collectMonacoListRowsAriaLabels,
   triggerCompletionOfCurrentCursor,
   seizeCurExpTxt,
+  seizeCurExpAllProb,
   seizeCurExpProb,
   seizeCurExpWarnings,
   seizeCurExpHints

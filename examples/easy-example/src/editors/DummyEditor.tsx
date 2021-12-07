@@ -201,9 +201,7 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-// @pipeline().optionalPackage?.|
-
-const sampleCodes = `@piPeline()['optionalpackage']?.oneoptionalString`;
+const sampleCodes = `@item().one.two.three`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

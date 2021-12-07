@@ -1355,16 +1355,7 @@ function _collect_identifiers_w_punctuation(
   const symbolArr = symbolChain.slice(startIndex);
   const ultimateSkippedVdPath = vdPathChain[startIndex -1];
 
-  // do not shift the fun vd if it is a any object
-  let vdArr:ValueDescriptionPath[];
-  if (
-    ultimateSkippedVdPath.vd instanceof ReferenceValueDescription &&
-    ultimateSkippedVdPath.vd._$valueType.isAnyObject
-  ){
-    vdArr = vdPathChain.slice(startIndex -1);
-  }else{
-    vdArr = vdPathChain.slice(startIndex);
-  }
+  const vdArr:ValueDescriptionPath[] = vdPathChain.slice(startIndex);
 
   let curSymbol = symbolArr.shift();
   let previousSyntaxNode = nodes[nodes.length-1];
@@ -1535,13 +1526,8 @@ function _collect_identifiers_w_punctuation(
     }
 
     curSymbol = symbolArr.shift();
-    if (
-      !(curVdPath.vd instanceof ReferenceValueDescription) ||
-      !curVdPath.vd._$valueType.isAnyObject
-    ){
-      previousVdPath = curVdPath;
-      curVdPath = vdArr.shift();
-    }
+    previousVdPath = curVdPath;
+    curVdPath = vdArr.shift();
   }
 
 }
