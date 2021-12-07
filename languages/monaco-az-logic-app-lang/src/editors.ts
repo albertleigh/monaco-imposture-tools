@@ -19,7 +19,7 @@ import {generateCodeActions} from './codeActionProviderHelper';
 import {themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
 import {AzLogicAppLangConstants, ErrorHandler} from "./base";
-import {SymbolTable, ValueDescriptionDictionary} from './values';
+import {SymbolTable, ValueDescriptionDictionary, PackageDescription} from './values';
 
 class TokenizerState implements languages.IState {
   constructor(private _ruleStack: StackElement) {}
@@ -69,6 +69,10 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
   public static set globalErrorHandler(handler:ErrorHandler|undefined){
     AzLogicAppLangConstants.globalErrorHandler = handler;
+  }
+
+  public static set caseMode(mode:typeof PackageDescription.CASE_MODE){
+    PackageDescription.CASE_MODE=mode;
   }
 
   public static get init() {

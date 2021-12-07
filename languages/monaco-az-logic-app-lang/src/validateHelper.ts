@@ -24,6 +24,7 @@ export enum ErrorCode {
   // todo add a new one, no qstring-dbl in expression
 
   // warnings 0x200
+  MISMATCHED_CASES_FOUND = 0X201,
 
   // infos 0x400
 
@@ -56,8 +57,12 @@ export class ValidateResult {
     public readonly globalSymbolTable = SymbolTable.globalSymbolTable
   ) {}
 
+  get errors(){
+    return this.problems.filter(one=>one.code < 0x200);
+  }
+
   public hasProblems(): boolean {
-    return !!this.problems.length;
+    return !!this.errors.length
   }
 }
 

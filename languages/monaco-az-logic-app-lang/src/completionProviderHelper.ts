@@ -996,8 +996,9 @@ export function generateCompletion(
               elderVd = theLgcExpDocEditor.rootSymbolTable.findByPath(elderVd._$valueType.returnTypeChainList || []);
             }
             if (elderVd?._$type === DescriptionType.PackageReference){
-              Object.keys(elderVd._$subDescriptor).filter(one => !one.match(/^_\$.*/))
-                .forEach(oneField => {
+              // Object.keys(elderVd._$subDescriptor)
+              Array.from(elderVd.iterator()).filter(([key]) => !key.match(/^_\$.*/))
+                .forEach(([oneField]) => {
                   suggestions.push({
                     label: `'${oneField}'`,
                     insertText: `'${oneField}'`,

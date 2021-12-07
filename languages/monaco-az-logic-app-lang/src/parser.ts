@@ -19,7 +19,7 @@ import {
   PackageDescription,
   ReferenceValueDescription,
   SymbolTable,
-  ValueDescription,
+  ValueDescription, ValueDescriptionPath,
 } from './values'
 import {
   DiagnosticSeverity,
@@ -1349,30 +1349,29 @@ function _collect_identifiers_w_punctuation(
   ctx: ValidationIntermediateContext,
   nodes:SyntaxNode[],
   symbolChain:ReturnChainType[],
-  vdChain: ValueDescription[],
+  vdPathChain: ValueDescriptionPath[],
   startIndex = 1
 ){
-  // noop
   const symbolArr = symbolChain.slice(startIndex);
-  const ultimateSkippedVd = vdChain[startIndex -1];
+  const ultimateSkippedVdPath = vdPathChain[startIndex -1];
 
   // do not shift the fun vd if it is a any object
-  let vdArr:ValueDescription[];
+  let vdArr:ValueDescriptionPath[];
   if (
-    ultimateSkippedVd._$type === DescriptionType.ReferenceValue &&
-    ultimateSkippedVd._$valueType.isAnyObject
+    ultimateSkippedVdPath.vd instanceof ReferenceValueDescription &&
+    ultimateSkippedVdPath.vd._$valueType.isAnyObject
   ){
-    vdArr = vdChain.slice(startIndex -1);
+    vdArr = vdPathChain.slice(startIndex -1);
   }else{
-    vdArr = vdChain.slice(startIndex);
+    vdArr = vdPathChain.slice(startIndex);
   }
 
   let curSymbol = symbolArr.shift();
   let previousSyntaxNode = nodes[nodes.length-1];
-  let previousVd = ultimateSkippedVd;
-  let curVd = vdArr.shift();
+  let previousVdPath = ultimateSkippedVdPath;
+  let curVdPath = vdArr.shift();
 
-  while (!!curSymbol && !!curVd){
+  while (!!curSymbol && !!curVdPath?.vd){
 
     if (
       curSymbol.type === "object-identifiers:wPunctuation" ||
@@ -1381,11 +1380,11 @@ function _collect_identifiers_w_punctuation(
       const theIdentifierNodeWithPunctuation = new IdentifierNodeWithPunctuation(
         curSymbol.node,
         curSymbol.identifierName,
-        curVd as any,
+        curVdPath.vd as any,
         new AccessorPunctuator(curSymbol.node.children[0])
       );
       // check whether its accessor must be optional over here
-      if (previousVd._$isOptional && !theIdentifierNodeWithPunctuation.isOptional){
+      if (previousVdPath.vd._$isOptional && !theIdentifierNodeWithPunctuation.isOptional){
         let startPos = previousSyntaxNode.offset;
         const endPos = previousSyntaxNode.offset + previousSyntaxNode.length + 1;
         let previousSyntaxNodeLabel = 'Return value';
@@ -1406,7 +1405,7 @@ function _collect_identifiers_w_punctuation(
           endPos: ctx.vr.codeDocument.positionAt(endPos),
           node: previousSyntaxNode.astNode as any,
         });
-      }else if (!previousVd._$isOptional && theIdentifierNodeWithPunctuation.isOptional){
+      }else if (!previousVdPath.vd._$isOptional && theIdentifierNodeWithPunctuation.isOptional){
         const prefixAccessor = theIdentifierNodeWithPunctuation.prefixAccessor;
         const startPos = prefixAccessor.offset;
         const endPos = prefixAccessor.offset + prefixAccessor.length;
@@ -1425,6 +1424,21 @@ function _collect_identifiers_w_punctuation(
           node: previousSyntaxNode.astNode as any,
         });
       }
+      // check if any mismatched cases found
+      if(
+        PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' &&
+        curVdPath.name !== curSymbol.identifierName
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Warning,
+          code: ErrorCode.MISMATCHED_CASES_FOUND,
+          message: `Identifier ${curSymbol.identifierName} would be regarded as ${curVdPath.name}`,
+          startPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset),
+          endPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset + theIdentifierNodeWithPunctuation.length),
+          node: theIdentifierNodeWithPunctuation.astNode as any,
+        });
+      }
+
       nodes.push(theIdentifierNodeWithPunctuation);
       previousSyntaxNode = theIdentifierNodeWithPunctuation;
 
@@ -1441,13 +1455,14 @@ function _collect_identifiers_w_punctuation(
         literalArrayNodeRes.nodes[0] instanceof LiteralArrayNode
       ){
         const literalArrayNode = literalArrayNodeRes.nodes[0];
-        nodes.push(new IdentifierNodeInBracketNotation(
+        const theIdentifierNodeInBracketNotation = new IdentifierNodeInBracketNotation(
           _curSymbol.node,
           _curSymbol.identifierName,
           _curSymbol.isPropertyLiteral,
-          curVd as any,
+          curVdPath.vd as any,
           literalArrayNodeRes.nodes[0]
-        ));
+        );
+        nodes.push(theIdentifierNodeInBracketNotation);
         // alright need to validate the literal array node for bracketNotation
         if (literalArrayNode.itemSize !== 1){
           ctx.vr.problems.push({
@@ -1489,6 +1504,22 @@ function _collect_identifiers_w_punctuation(
             });
           }
         }
+        // check if any mismatched cases found for a literal array of one literal property
+        if(
+          _curSymbol.isPropertyLiteral &&
+          PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' &&
+          curVdPath.name !== _curSymbol.identifierName
+        ){
+          ctx.vr.problems.push({
+            severity: DiagnosticSeverity.Warning,
+            code: ErrorCode.MISMATCHED_CASES_FOUND,
+            message: `Literal property ${_curSymbol.identifierName} would be regarded as ${curVdPath.name}`,
+            startPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeInBracketNotation.offset),
+            endPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeInBracketNotation.offset + theIdentifierNodeInBracketNotation.length),
+            node: theIdentifierNodeInBracketNotation.astNode as any,
+          });
+        }
+
       }else {
         ctx.vr.problems.push({
           severity: DiagnosticSeverity.Error,
@@ -1505,11 +1536,11 @@ function _collect_identifiers_w_punctuation(
 
     curSymbol = symbolArr.shift();
     if (
-      curVd._$type !== DescriptionType.ReferenceValue ||
-      !curVd._$valueType.isAnyObject
+      !(curVdPath.vd instanceof ReferenceValueDescription) ||
+      !curVdPath.vd._$valueType.isAnyObject
     ){
-      previousVd = curVd;
-      curVd = vdArr.shift();
+      previousVdPath = curVdPath;
+      curVdPath = vdArr.shift();
     }
   }
 
@@ -1518,7 +1549,7 @@ function _collect_identifiers_w_punctuation(
 function _collect_function_call_identifiers(
   functionCallNode: AzLogicAppNodeType<'function-call'>,
   ctx: ValidationIntermediateContext,
-  functionDescArr: ValueDescription[],
+  functionDescPathChain: ValueDescriptionPath[],
 ):IdentifierNode[]{
   const result:IdentifierNode[] = [];
   const funCallParsedRes = _parse_children(functionCallNode, {...ctx});
@@ -1579,7 +1610,9 @@ function _collect_function_call_identifiers(
     }
   }
 
-  const lastFunDesc = functionDescArr[functionDescArr.length - 1];
+  const lastFunDescPath = functionDescPathChain[functionDescPathChain.length - 1];
+
+  if (!lastFunDescPath) return result;
 
   let index=0;
   while ( index < funCallParsedRes.nodes.length){
@@ -1593,7 +1626,7 @@ function _collect_function_call_identifiers(
       ){
 
         const oneFunCallIdentifier = funCallParsedRes.nodes[index+1] as FunctionCallTarget;
-        oneFunCallIdentifier.target = lastFunDesc;
+        oneFunCallIdentifier.target = lastFunDescPath.vd;
         oneFunCallIdentifier.prefixAccessor = cur;
         result.push(oneFunCallIdentifier);
         index+=2;
@@ -1602,7 +1635,7 @@ function _collect_function_call_identifiers(
       }
     }else if (cur instanceof FunctionCallTarget){
       const theFunCallIdentifier = cur as FunctionCallTarget;
-      theFunCallIdentifier.target = lastFunDesc;
+      theFunCallIdentifier.target = lastFunDescPath.vd;
       result.push(cur);
       index++;
       break;
@@ -1633,22 +1666,22 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
   if (postIdChain.chain.length) {
 
     returnCtx.skipIndices = postIdChain.chain.length -1 ;
-    const chainVds = ctx.vr.globalSymbolTable.findValDescArrFromChain(ctx.vr.codeDocument, postIdChain.chain);
+    const vdPathArr = ctx.vr.globalSymbolTable.findValDescArrFromChain(ctx.vr.codeDocument, postIdChain.chain);
 
     // convert identifiers chain to nodes
     if (
-      chainVds.length
+      vdPathArr.length
     ){
       // push one identifier node into nodes
       nodes.push( new IdentifierNode(
         node,
         (postIdChain.chain[0] as IdentifierReturnChainType).identifierName,
-        chainVds[0] as any
+        vdPathArr[0].vd
       ))
 
-      _collect_identifiers_w_punctuation(ctx, nodes, postIdChain.chain, chainVds);
+      _collect_identifiers_w_punctuation(ctx, nodes, postIdChain.chain, vdPathArr);
 
-      const lastVd = chainVds[chainVds.length -1];
+      const lastVd = vdPathArr[vdPathArr.length -1].vd;
       if(
         lastVd._$type === DescriptionType.OverloadedFunctionValue ||
         lastVd._$type === DescriptionType.FunctionValue
@@ -1743,20 +1776,23 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
     ) {
       const functionCallNode = node.children[0] as AzLogicAppNodeType<'function-call'>;
       const parenthesesNode = node.children[1] as AzLogicAppNodeType<'parentheses'>;
+      const functionCallFullNameContent = ctx.vr.codeDocument.getNodeContent(functionCallNode);
       const functionCallFullName = AzLogicAppNodeUtils.getFunctionCallFullname(functionCallNode, ctx.vr.codeDocument);
       const functionCallPaths = functionCallFullName.split('.');
-      const functionDescArr = ctx.vr.globalSymbolTable.findAllByPath(functionCallPaths);
+      const functionDescPathArr = ctx.vr.globalSymbolTable.findAllByPath(functionCallPaths);
       // phase two todo: emmm.... the supportFunctionCallIdentifiers could be seized in a more elegant way
       const supportFunctionCallIdentifiers = _collect_function_call_identifiers(
         node.children[0] as any,
         ctx,
-        functionDescArr
+        functionDescPathArr
       );
-      const functionDesc = functionDescArr[functionDescArr.length-1];
+      const functionDescPath = functionDescPathArr[functionDescPathArr.length-1];
       if (
-        !functionDesc ||
-        (functionDesc._$type !== DescriptionType.FunctionValue &&
-          functionDesc._$type !== DescriptionType.OverloadedFunctionValue)
+        !functionDescPath?.vd ||
+        (
+          !(functionDescPath.vd instanceof FunctionValueDescription) &&
+          !(functionDescPath.vd instanceof OverloadedFunctionValueDescription)
+        )
       ) {
         ctx.vr.problems.push({
           severity: DiagnosticSeverity.Error,
@@ -1770,10 +1806,10 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
         });
       }else{
         let retTyp: IdentifierType | undefined = undefined;
-        if (functionDesc._$type === DescriptionType.FunctionValue){
-          retTyp = functionDesc._$returnType;
+        if (functionDescPath.vd instanceof FunctionValueDescription){
+          retTyp = functionDescPath.vd._$returnType;
         }else{
-          retTyp = functionDesc._$returnType[0];
+          retTyp = functionDescPath.vd._$returnType[0];
         }
         const parenthesesParsedRes = _do_parse(parenthesesNode,
           {
@@ -1796,14 +1832,14 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           if (!ctx.vr.hasProblems()){
             let parameterTypes: IdentifierType[] | undefined = undefined;
             // determine the param list
-            if (functionDesc._$type === DescriptionType.OverloadedFunctionValue) {
-              paraSeq = ctx.vr.globalSymbolTable.determineOverloadFunParamSeq(ctx.vr.codeDocument, node, functionDesc);
-              parameterTypes = functionDesc._$parameterTypes[paraSeq].slice();
-              retTyp = functionDesc._$returnType[paraSeq];
+            if (functionDescPath.vd instanceof OverloadedFunctionValueDescription) {
+              paraSeq = ctx.vr.globalSymbolTable.determineOverloadFunParamSeq(ctx.vr.codeDocument, node, functionDescPath.vd);
+              parameterTypes = functionDescPath.vd._$parameterTypes[paraSeq].slice();
+              retTyp = functionDescPath.vd._$returnType[paraSeq];
             } else {
               // regular function
-              parameterTypes = functionDesc._$parameterTypes.slice();
-              retTyp = functionDesc._$returnType;
+              parameterTypes = functionDescPath.vd._$parameterTypes.slice();
+              retTyp = functionDescPath.vd._$returnType;
             }
             // the whole process below were enhanced by using concrete syntax nodes
             // stop using parenthesesNode
@@ -1888,20 +1924,38 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           }
 
           // directly put fun ref into the corresponding ref vd
-          let targetDesc = functionDesc as ValueDescription;
+          let targetDesc = functionDescPath.vd as ValueDescription;
           if ( retTyp?.type ===  IdentifierTypeName.INTERNAL_FUN_REF){
             targetDesc = ctx.vr.globalSymbolTable.findByPath(retTyp.returnTypeChainList!)!
           }
 
-          nodes.push(new FunctionCallNode(
+          const theFunctionCallNode = new FunctionCallNode(
             node,
             functionCallFullName,
-            functionDesc,
+            functionDescPath.vd,
             supportFunctionCallIdentifiers,
             targetDesc,
             parenthesesParsedRes.nodes[0],
             paraSeq
-          ));
+          );
+          nodes.push(theFunctionCallNode);
+
+          // todo need to check if any mismatched cases existed
+          const expectedFunctionCallTargetContent = ValueDescriptionPath.buildPathString(functionDescPathArr);
+          if (
+            PackageDescription.CASE_MODE === "CASE_INSENSITIVE_WITH_WARNINGS" &&
+            expectedFunctionCallTargetContent != functionCallFullNameContent
+          ){
+            ctx.vr.problems.push({
+              severity: DiagnosticSeverity.Warning,
+              code: ErrorCode.MISMATCHED_CASES_FOUND,
+              message: `Function call target ${functionCallFullNameContent} would be regarded as ${expectedFunctionCallTargetContent}`,
+              startPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.offset),
+              endPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.offset + theFunctionCallNode.length),
+              node: theFunctionCallNode.astNode as any,
+            });
+          }
+
         }
 
         // need to decide whether we need populate the post identifier nodes over here

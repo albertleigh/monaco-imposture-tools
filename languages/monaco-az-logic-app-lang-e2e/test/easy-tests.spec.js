@@ -4,7 +4,7 @@ const expect = chai.expect;
 const puppeteer = require('puppeteer');
 
 const {delay, typeInMonacoEditor, EXPRESSION_EDITOR_ID, hoverOneSpanContaining, collectMonacoListRowsAriaLabels,
-  seizeCurExpTxt, seizeCurExpProb,
+  seizeCurExpTxt, seizeCurExpProb, seizeCurExpWarnings, seizeCurExpHints,
   clearUpMonacoEditor, triggerCompletionOfCurrentCursor
 } = require('./utils');
 
@@ -31,38 +31,28 @@ describe('e2e easy test', () => {
 
     await clearUpMonacoEditor(page);
 
-    let nextText, content, problems, allCompletionList;
+    let nextText, content, problems, warnings, hints, allCompletionList;
 
-    nextText =
-`@concat(
-  pipeline(),
-pipeline().globalParameters.firstGlobalStrPara`;
+    nextText = `@pipeline().optionalPackage?.`;
 
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
     await delay(250);
 
-    // await page.keyboard.press('Escape');
-
-    await page.keyboard.press('Enter');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('End');
-    await page.keyboard.press('ArrowLeft');
+    await triggerCompletionOfCurrentCursor(page);
 
     await delay(250);
 
-    await triggerCompletionOfCurrentCursor(page);
     allCompletionList = await collectMonacoListRowsAriaLabels(page);
-    expect(allCompletionList.length>=1).ok;
 
-    expect(allCompletionList.some(value =>
-      value.indexOf('DataFactory') > -1
-    )).ok
+    expect(allCompletionList.length>0).ok;
 
-    expect(allCompletionList.some(value =>
-      value.indexOf('globalParameters') > -1
-    )).ok
+    let hasOptional;
+    for (const oneCompletion of allCompletionList){
+      hasOptional = hasOptional || oneCompletion.indexOf('optionalPackage') > -1;
+    }
+
+    expect(hasOptional).ok;
 
   });
 });

@@ -37,7 +37,31 @@ async function seizeCurExpProb(page){
       return value;
     }));
   })
-  return JSON.parse(probStr).filter(one => one.code < 0x200);
+  return JSON.parse(probStr).filter(one => one.severity === 8);
+}
+
+async function seizeCurExpWarnings(page){
+  const probStr = await page.evaluate(()=>{
+    return JSON.stringify(window.expProblems, ((key, value) => {
+      if (key === 'node'){
+        return undefined;
+      }
+      return value;
+    }));
+  })
+  return JSON.parse(probStr).filter(one => one.severity === 4);
+}
+
+async function seizeCurExpHints(page){
+  const probStr = await page.evaluate(()=>{
+    return JSON.stringify(window.expProblems, ((key, value) => {
+      if (key === 'node'){
+        return undefined;
+      }
+      return value;
+    }));
+  })
+  return JSON.parse(probStr).filter(one => one.severity === 1);
 }
 
 async function clearUpMonacoEditor(page){
@@ -96,5 +120,7 @@ module.exports = {
   collectMonacoListRowsAriaLabels,
   triggerCompletionOfCurrentCursor,
   seizeCurExpTxt,
-  seizeCurExpProb
+  seizeCurExpProb,
+  seizeCurExpWarnings,
+  seizeCurExpHints
 }

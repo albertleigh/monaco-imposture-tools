@@ -500,6 +500,35 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
     })
 
+    describe('post optional accessor completion', ()=>{
+
+      it('suggest completion list right after one optional accessor v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@pipeline().optionalPackage?.`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+
+        expect(allCompletionList.length>0).ok;
+
+        let hasOptional;
+        for (const oneCompletion of allCompletionList){
+          hasOptional = hasOptional || oneCompletion.indexOf('optionalPackage') > -1;
+        }
+
+        expect(hasOptional).ok;
+      })
+
+    })
+
   });
 }
 

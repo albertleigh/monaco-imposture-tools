@@ -28,6 +28,7 @@ AzLogicAppExpressionLang.inLexicalDebugMode = false;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;
 AzLogicAppExpressionLang.inSemanticDebugMode = true;
 AzLogicAppExpressionLang.emitBinaryTokens = true;
+// AzLogicAppExpressionLang.caseMode = 'CASE_INSENSITIVE';
 
 let ST_GENERATOR_SEED = 1;
 
@@ -200,11 +201,9 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-// @pipeline().optionalPackage?.oneOptionalString
-// @pipeline().globalParameters?.|
-// @pipeline().globalParameters?.
+// @pipeline().optionalPackage?.|
 
-const sampleCodes = `@pipeline()?.optionalPackage.oneOptionalString`;
+const sampleCodes = `@piPeline()['optionalpackage']?.oneoptionalString`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

@@ -2,7 +2,8 @@ const chai = require('chai');
 const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
-  triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, delay, clearPageErrors, seizePageErrors
+  triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, delay, clearPageErrors, seizePageErrors,
+  seizeCurExpWarnings, seizeCurExpHints
 } = require("./utils");
 
 function generateValidationTests(openOnePage, closeOnePage) {
@@ -44,6 +45,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@pipeline().globalParameters?.firstGlobalStrPara",
         "@pipeline().optionalPackage?.oneOptionalString",
         "@pipeline()?.TriggeredByPipelineName",
+        "@piPeline()?.optionalpackage?.oneOptionalString",
+        "@piPeline()['optionalpackage']?.oneoptionalString",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -936,6 +939,90 @@ pipeline().globalParameters.oneGlobalFloat
         expect(problems[0].startPos.character).eq(13);
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].endPos.character).eq(29);
+      })
+
+    })
+
+
+    describe('MISMATCHED_CASES_FOUND 0X201', ()=>{
+
+      it ('triple mismatched cases v1', async ()=>{
+        let nextText, content, problems, warnings, allCompletionList;
+
+        nextText = `@piPeline()['optionalpackage']?.oneoptionalString`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(0);
+        expect(warnings.length).eq(3);
+
+        expect(warnings[0].code).eq(0x201);
+        expect(warnings[0].startPos.line).eq(0);
+        expect(warnings[0].startPos.character).eq(1);
+        expect(warnings[0].endPos.line).eq(0);
+        expect(warnings[0].endPos.character).eq(11);
+
+        expect(warnings[1].code).eq(0x201);
+        expect(warnings[1].startPos.line).eq(0);
+        expect(warnings[1].startPos.character).eq(11);
+        expect(warnings[1].endPos.line).eq(0);
+        expect(warnings[1].endPos.character).eq(30);
+
+        expect(warnings[2].code).eq(0x201);
+        expect(warnings[2].startPos.line).eq(0);
+        expect(warnings[2].startPos.character).eq(30);
+        expect(warnings[2].endPos.line).eq(0);
+        expect(warnings[2].endPos.character).eq(49);
+      })
+
+      it ('triple mismatched cases v2', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@piPeLine()?.optionalpackage?.oneOptionalstring`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
+        hints = await seizeCurExpHints(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(0);
+        expect(warnings.length).eq(3);
+        expect(hints.length).eq(1);
+
+        expect(warnings[0].code).eq(0x201);
+        expect(warnings[0].startPos.line).eq(0);
+        expect(warnings[0].startPos.character).eq(1);
+        expect(warnings[0].endPos.line).eq(0);
+        expect(warnings[0].endPos.character).eq(11);
+
+        expect(warnings[1].code).eq(0x201);
+        expect(warnings[1].startPos.line).eq(0);
+        expect(warnings[1].startPos.character).eq(11);
+        expect(warnings[1].endPos.line).eq(0);
+        expect(warnings[1].endPos.character).eq(28);
+
+        expect(warnings[2].code).eq(0x201);
+        expect(warnings[2].startPos.line).eq(0);
+        expect(warnings[2].startPos.character).eq(28);
+        expect(warnings[2].endPos.line).eq(0);
+        expect(warnings[2].endPos.character).eq(47);
+
+
+        expect(hints[0].code).eq(0x801);
+        expect(hints[0].startPos.line).eq(0);
+        expect(hints[0].startPos.character).eq(11);
+        expect(hints[0].endPos.line).eq(0);
+        expect(hints[0].endPos.character).eq(13);
       })
 
     })
