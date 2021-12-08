@@ -160,6 +160,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
               startColumn: one.startPos.character + 1,
               endColumn: one.endPos.character + 1,
               endLineNumber: one.endPos.line + 1,
+              source: one.source
             }))
           );
 

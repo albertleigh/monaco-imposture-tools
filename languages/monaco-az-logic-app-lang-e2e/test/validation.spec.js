@@ -40,6 +40,12 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@pipeline()['DataFactory']",
         "@activity('Get Metadata1').output.childItems[0].name",
         "@item().one.two.three",
+        "@item()?.one.two.three",
+        "@item().one?.two.three",
+        "@item().one.two?.three",
+        "@item()?.one?.two.three",
+        "@item().one?.two?.three",
+        "@item()?.one?.two?.three",
         "@item().one['two'].three",
         "@contains( [pipeline().DataFactory], [pipeline().GroupId] )",
         "@pipeline().globalParameters?.firstGlobalStrPara",
@@ -51,6 +57,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, [])",
         "@concat('Baba', '''s ', 'book store')",
         "@if(contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int'),'','''')",
+        "@equals(pipeline().globalParameters.firstGlobalStrPara,  '0')",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -1014,17 +1021,17 @@ pipeline().globalParameters.oneGlobalFloat
         expect(warnings[0].startPos.line).eq(0);
         expect(warnings[0].startPos.character).eq(1);
         expect(warnings[0].endPos.line).eq(0);
-        expect(warnings[0].endPos.character).eq(11);
+        expect(warnings[0].endPos.character).eq(9);
 
         expect(warnings[1].code).eq(0x201);
         expect(warnings[1].startPos.line).eq(0);
-        expect(warnings[1].startPos.character).eq(11);
+        expect(warnings[1].startPos.character).eq(13);
         expect(warnings[1].endPos.line).eq(0);
-        expect(warnings[1].endPos.character).eq(30);
+        expect(warnings[1].endPos.character).eq(28);
 
         expect(warnings[2].code).eq(0x201);
         expect(warnings[2].startPos.line).eq(0);
-        expect(warnings[2].startPos.character).eq(30);
+        expect(warnings[2].startPos.character).eq(32);
         expect(warnings[2].endPos.line).eq(0);
         expect(warnings[2].endPos.character).eq(49);
       })
@@ -1051,17 +1058,17 @@ pipeline().globalParameters.oneGlobalFloat
         expect(warnings[0].startPos.line).eq(0);
         expect(warnings[0].startPos.character).eq(1);
         expect(warnings[0].endPos.line).eq(0);
-        expect(warnings[0].endPos.character).eq(11);
+        expect(warnings[0].endPos.character).eq(9);
 
         expect(warnings[1].code).eq(0x201);
         expect(warnings[1].startPos.line).eq(0);
-        expect(warnings[1].startPos.character).eq(11);
+        expect(warnings[1].startPos.character).eq(13);
         expect(warnings[1].endPos.line).eq(0);
         expect(warnings[1].endPos.character).eq(28);
 
         expect(warnings[2].code).eq(0x201);
         expect(warnings[2].startPos.line).eq(0);
-        expect(warnings[2].startPos.character).eq(28);
+        expect(warnings[2].startPos.character).eq(30);
         expect(warnings[2].endPos.line).eq(0);
         expect(warnings[2].endPos.character).eq(47);
 

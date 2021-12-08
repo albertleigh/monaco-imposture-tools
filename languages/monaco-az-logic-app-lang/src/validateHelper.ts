@@ -1,5 +1,5 @@
 import {CodeDocument, Position} from '@monaco-imposture-tools/core';
-import {AzLogicAppNode, AzLogicAppLangConstants} from './base';
+import {AzLogicAppNode} from './base';
 import {SymbolTable} from './values';
 
 export enum ErrorCode {
@@ -22,7 +22,6 @@ export enum ErrorCode {
   INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
   IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL,
   Q_STRING_DOUBLE_IS_NOT_ALLOWED,
-  // todo add a new one, no qstring-dbl in expression
 
   // warnings 0x200
   MISMATCHED_CASES_FOUND = 0X201,
@@ -47,6 +46,7 @@ export interface Problem {
   startPos: Position;
   endPos: Position;
   node: AzLogicAppNode;
+  source?: any;
   data?: any;
 }
 

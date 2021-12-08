@@ -312,6 +312,25 @@ export class FunctionCallNode extends SyntaxNode{
     parameters.parent = this;
   }
 
+  get targetOffset(){
+    let result = this.astNode.offset;
+    if (this.supportFunctionCallIdentifiers.length){
+      result = this.supportFunctionCallIdentifiers[0].offset;
+    }
+    return result;
+  }
+
+  get targetLength(){
+    const targetOffset = this.targetOffset;
+    let result = 0;
+    if (this.supportFunctionCallIdentifiers.length){
+      result = this.supportFunctionCallIdentifiers[this.supportFunctionCallIdentifiers.length -1].offset;
+      result += this.supportFunctionCallIdentifiers[this.supportFunctionCallIdentifiers.length -1].length;
+      result -= targetOffset;
+    }
+    return result;
+  }
+
   public get children():SyntaxNode[]{
     if (!this._cachedChildren){
       this._cachedChildren = [...this.supportFunctionCallIdentifiers, this.parameters];
@@ -1417,6 +1436,9 @@ function _collect_identifiers_w_punctuation(
           startPos: ctx.vr.codeDocument.positionAt(startPos),
           endPos: ctx.vr.codeDocument.positionAt(endPos),
           node: previousSyntaxNode.astNode as any,
+          data: {
+            optionalAccessorStartPos: theIdentifierNodeWithPunctuation.prefixAccessor.offset
+          }
         });
       }
       // check if any mismatched cases found
@@ -1424,13 +1446,20 @@ function _collect_identifiers_w_punctuation(
         PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' &&
         curVdPath.name !== curSymbol.identifierName
       ){
+        const problemOffset = theIdentifierNodeWithPunctuation.isOptional?
+          theIdentifierNodeWithPunctuation.offset+2:
+          theIdentifierNodeWithPunctuation.offset+1;
+        const problemLength = theIdentifierNodeWithPunctuation.isOptional?
+            theIdentifierNodeWithPunctuation.length-2:
+            theIdentifierNodeWithPunctuation.length-1;
         ctx.vr.problems.push({
           severity: DiagnosticSeverity.Warning,
           code: ErrorCode.MISMATCHED_CASES_FOUND,
           message: `Identifier ${curSymbol.identifierName} would be regarded as ${curVdPath.name}`,
-          startPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset),
-          endPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset + theIdentifierNodeWithPunctuation.length),
+          startPos: ctx.vr.codeDocument.positionAt(problemOffset),
+          endPos: ctx.vr.codeDocument.positionAt(problemOffset + problemLength),
           node: theIdentifierNodeWithPunctuation.astNode as any,
+          source: curVdPath.name
         });
       }
 
@@ -1501,17 +1530,26 @@ function _collect_identifiers_w_punctuation(
         }
         // check if any mismatched cases found for a literal array of one literal property
         if(
+          theIdentifierNodeInBracketNotation.literalArrayNode.itemSize &&
           _curSymbol.isPropertyLiteral &&
           PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' &&
           curVdPath.name !== _curSymbol.identifierName
         ){
+          const firstPara = theIdentifierNodeInBracketNotation.literalArrayNode.item(0);
+          let problemOffset = firstPara.offset;
+          let problemLength = firstPara.length;
+          if (firstPara instanceof  LiteralStringNode){
+            problemOffset += 1;
+            problemLength -= 2;
+          }
           ctx.vr.problems.push({
             severity: DiagnosticSeverity.Warning,
             code: ErrorCode.MISMATCHED_CASES_FOUND,
             message: `Literal property ${_curSymbol.identifierName} would be regarded as ${curVdPath.name}`,
-            startPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeInBracketNotation.offset),
-            endPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeInBracketNotation.offset + theIdentifierNodeInBracketNotation.length),
+            startPos: ctx.vr.codeDocument.positionAt(problemOffset),
+            endPos: ctx.vr.codeDocument.positionAt(problemOffset + problemLength),
             node: theIdentifierNodeInBracketNotation.astNode as any,
+            source: curVdPath.name
           });
         }
 
@@ -1940,9 +1978,10 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
               severity: DiagnosticSeverity.Warning,
               code: ErrorCode.MISMATCHED_CASES_FOUND,
               message: `Function call target ${functionCallFullNameContent} would be regarded as ${expectedFunctionCallTargetContent}`,
-              startPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.offset),
-              endPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.offset + theFunctionCallNode.length),
+              startPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.targetOffset),
+              endPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.targetOffset + theFunctionCallNode.targetLength),
               node: theFunctionCallNode.astNode as any,
+              source: expectedFunctionCallTargetContent
             });
           }
 
