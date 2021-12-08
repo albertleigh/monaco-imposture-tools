@@ -164,6 +164,55 @@ function generateCompletionTests(openOnePage, closeOnePage) {
           value.match(/^\./)
         )).ok
       })
+
+      it('suggest w/ unrecognized identifier', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@concat( p , \'\' )';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(8);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(9);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(10);
+
+        //move to @concat(pipeline().DataFactory, pipeline()|
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+
+        // trigger ctrl + space
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(750);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+        expect(allCompletionList.every(value =>
+          value.match(/^p/)
+        )).ok
+
+        await page.keyboard.press('Enter');
+
+        await delay(750);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq('@concat( pipeline().DataFactory , \'\' )');
+        expect(problems.length).eq(0);
+      })
+
     })
 
     describe('constant parameter completion', ()=>{

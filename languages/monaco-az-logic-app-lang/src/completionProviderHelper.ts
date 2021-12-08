@@ -694,7 +694,8 @@ export function generateCompletion(
                     const result = generateCompletionListByNonCompositeType(
                       theParamType,
                       contentRange,
-                      (paramIndex < paramTypes.length - 1) || (paramIndex < parenthesesNode.parameterSize -1 ),
+                      paramIndex >= parenthesesNode.parameterSize &&
+                      ((paramIndex < paramTypes.length - 1) || (paramIndex < parenthesesNode.parameterSize -1 )),
                       theLgcExpDocEditor.valueDescriptionDict
                     );
                     if (result) {
