@@ -71,7 +71,26 @@ function generateValidationTests(openOnePage, closeOnePage) {
           expect(content).eq(nextText);
           expect(problems.length).eq(0);
         })
-      })
+      });
+
+      [
+        '@activity(\'Get Metadata1\').output.value[2].whatever.again.another',
+        '@activity(\'Get Metadata1\').anyOutput.value[2].whatever.again.another'
+      ].forEach((value, index)=>{
+        it(`Strict Valid expression ${index}`, async ()=>{
+          let nextText, content, problems;
+
+          nextText = value
+
+          await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+          content = await seizeCurExpTxt(page);
+          problems = await seizeCurExpAllProb(page);
+          expect(content).eq(nextText);
+          expect(problems.length).eq(0);
+        })
+      });
+
     })
 
     describe('Handle the dynamic value descriptor', ()=>{

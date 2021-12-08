@@ -1694,7 +1694,7 @@ export class SymbolTable {
       if (!SymbolTable.isValueDescriptor(cur)) return;
       if (cur instanceof ReferenceValueDescription && cur._$valueType.isAnyObject){
         // terminal any type
-        yield new ValueDescriptionPath(
+        nextPath = yield new ValueDescriptionPath(
           nextPath,
           createRefValDesc([
             `${SymbolTable.covertCollectedPathsIntoString(collectedPaths)}:any`

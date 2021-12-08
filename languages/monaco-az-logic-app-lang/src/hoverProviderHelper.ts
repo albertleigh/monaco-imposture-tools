@@ -1,6 +1,6 @@
 import {languages} from './editor.api';
 import {
-  DescriptionType,
+  DescriptionType, ReferenceValueDescription,
 } from './values';
 import {
   SyntaxNode,
@@ -9,7 +9,13 @@ import {
   CommaPunctuator,
   ParenthesisNode,
   FunctionCallNode,
-  FunctionCallTarget, IdentifierNode, EscapedAtSymbolNode, RootFunctionCallNode, AccessorPunctuator
+  FunctionCallTarget,
+  IdentifierNode,
+  EscapedAtSymbolNode,
+  RootFunctionCallNode,
+  AccessorPunctuator,
+  IdentifierNodeWithPunctuation,
+  IdentifierNodeInBracketNotation
 } from './parser';
 
 export function generateHover(node: SyntaxNode | undefined, _azLgcExpDocument: AzLgcExpDocument): languages.Hover | undefined {
@@ -83,6 +89,19 @@ export function generateHover(node: SyntaxNode | undefined, _azLgcExpDocument: A
 
     }
 
+    if (
+      (
+        node instanceof IdentifierNodeWithPunctuation ||
+        node instanceof IdentifierNodeInBracketNotation
+      ) &&
+      node.target instanceof ReferenceValueDescription &&
+      node.target._$valueType.isAnyObject
+    ){
+      return {
+        contents: [{value: `${node.identifierName}:${node.target._$valueType.label}`}]
+      }
+    }
+
     if (node instanceof IdentifierNode){
       const theDesc = node.target;
       if (theDesc && theDesc._$type && theDesc._$desc.length) {
@@ -141,9 +160,11 @@ export function generateHover(node: SyntaxNode | undefined, _azLgcExpDocument: A
     }
 
     if (node.astNode.$impostureLang?.dataType) {
-      return {
-        contents: [{value: `${node.astNode.$impostureLang?.dataType}`, isTrusted: true}],
-      };
+      // return {
+      //   contents: [{value: `${node.astNode.$impostureLang?.dataType}`, isTrusted: true}],
+      // };
+      // emmm better not print any hover message for any un-handled defined ast node
+      return {contents:[]};
     }
 
     return {

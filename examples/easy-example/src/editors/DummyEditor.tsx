@@ -201,7 +201,7 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-const sampleCodes = `@concat( p , '' )`;
+const sampleCodes = `@activity('Get Metadata1').output.value[2].whatever.again.another`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
