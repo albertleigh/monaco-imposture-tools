@@ -1293,6 +1293,9 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
             startPos: ctx.vr.codeDocument.positionAt(startPos),
             endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
             node: rootFunctionCall.astNode as any,
+            data:{
+              code: 'UNRECOGNIZED_TOKENS_#1'
+            }
           });
         }
         if (
@@ -1309,6 +1312,9 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
             startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
             endPos: ctx.vr.codeDocument.positionAt( endPos ),
             node: rootFunctionCall.astNode as any,
+            data:{
+              code: 'UNRECOGNIZED_TOKENS_#2'
+            }
           });
         }
 
@@ -1397,8 +1403,18 @@ function _collect_identifiers_w_punctuation(
         curVdPath.vd as any,
         new AccessorPunctuator(curSymbol.node.children[0])
       );
-      // check whether its accessor must be optional over here
-      if (previousVdPath.vd._$isOptional && !theIdentifierNodeWithPunctuation.isOptional){
+
+      if (curVdPath.vd.isUnrecognizedReference()){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.INVALID_FUNCTION_IDENTIFIER_CHAIN,
+          message: `Unrecognized identifier ${curSymbol.identifierName}`,
+          startPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset),
+          endPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset+theIdentifierNodeWithPunctuation.length),
+          node: theIdentifierNodeWithPunctuation.astNode as any,
+        });
+      }else if (previousVdPath.vd._$isOptional && !theIdentifierNodeWithPunctuation.isOptional){
+        // check whether its accessor must be optional over here
         let startPos = previousSyntaxNode.offset;
         const endPos = previousSyntaxNode.offset + previousSyntaxNode.length + 1;
         let previousSyntaxNodeLabel = 'Return value';
@@ -1420,6 +1436,7 @@ function _collect_identifiers_w_punctuation(
           node: previousSyntaxNode.astNode as any,
         });
       }else if (!previousVdPath.vd._$isOptional && theIdentifierNodeWithPunctuation.isOptional){
+        // check whether its optional accessor is redundant or not
         const prefixAccessor = theIdentifierNodeWithPunctuation.prefixAccessor;
         const startPos = prefixAccessor.offset;
         const endPos = prefixAccessor.offset + prefixAccessor.length;
@@ -1561,6 +1578,9 @@ function _collect_identifiers_w_punctuation(
           startPos: ctx.vr.codeDocument.positionAt(curSymbol.node.offset),
           endPos: ctx.vr.codeDocument.positionAt(curSymbol.node.offset + (curSymbol.node.length || 0)),
           node: curSymbol.node as any,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#3'
+          }
         });
       }
     }else{
@@ -1597,6 +1617,9 @@ function _collect_function_call_identifiers(
         startPos: ctx.vr.codeDocument.positionAt(functionCallNode.offset),
         endPos: ctx.vr.codeDocument.positionAt(functionCallNode.offset + functionCallNode.length),
         node: functionCallNode,
+        data:{
+          code: 'UNRECOGNIZED_TOKENS_#4'
+        }
       });
     }else if (funCallTargetChildren.length){
       const startPos = functionCallNode.offset;
@@ -1617,6 +1640,9 @@ function _collect_function_call_identifiers(
           startPos: ctx.vr.codeDocument.positionAt(startPos),
           endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
           node: functionCallNode,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#5'
+          }
         });
       }
       if (
@@ -1633,6 +1659,9 @@ function _collect_function_call_identifiers(
           startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
           endPos: ctx.vr.codeDocument.positionAt( endPos ),
           node: functionCallNode,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#6'
+          }
         });
       }
     }
@@ -1698,14 +1727,32 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
 
     // convert identifiers chain to nodes
     if (
-      vdPathArr.length
+      vdPathArr.length &&
+      !(
+        vdPathArr[0].vd instanceof ReferenceValueDescription &&
+        vdPathArr[0].vd._$valueType === IdentifierType.UNRECOGNIZED
+      )
     ){
       // push one identifier node into nodes
-      nodes.push( new IdentifierNode(
+      const theIdentifierNode = new IdentifierNode(
         node,
         (postIdChain.chain[0] as IdentifierReturnChainType).identifierName,
         vdPathArr[0].vd
-      ))
+      );
+      nodes.push(theIdentifierNode);
+      if(
+        vdPathArr[0].vd._$type === DescriptionType.OverloadedFunctionValue ||
+        vdPathArr[0].vd._$type === DescriptionType.FunctionValue
+      ){
+        ctx.vr.problems.push({
+          severity: DiagnosticSeverity.Error,
+          code: ErrorCode.INVALID_IDENTIFIER_CHAIN,
+          message: `Missing invocation of the function`,
+          startPos: ctx.vr.codeDocument.positionAt(theIdentifierNode.offset),
+          endPos: ctx.vr.codeDocument.positionAt(theIdentifierNode.offset + theIdentifierNode.length),
+          node,
+        });
+      }
 
       _collect_identifiers_w_punctuation(ctx, nodes, postIdChain.chain, vdPathArr);
 
@@ -2064,6 +2111,9 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
         startPos: ctx.vr.codeDocument.positionAt(expressionTemplate.offset + 2),
         endPos: ctx.vr.codeDocument.positionAt(expressionTemplate.offset + expressionTemplate.length -1),
         node,
+        data:{
+          code: 'UNRECOGNIZED_TOKENS_#7'
+        }
       });
     }else if (
       templateChildren.length
@@ -2086,6 +2136,9 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
           startPos: ctx.vr.codeDocument.positionAt(startPos),
           endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
           node,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#8'
+          }
         });
       }
       if (
@@ -2102,6 +2155,9 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
           startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
           endPos: ctx.vr.codeDocument.positionAt( endPos ),
           node,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#9'
+          }
         });
       }
     }
@@ -2140,6 +2196,9 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
         startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + 1),
         endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length - 1),
         node,
+        data:{
+          code: 'UNRECOGNIZED_TOKENS_#10'
+        }
       });
     }else if (literalArrayChildren.length){
       const startPos = literalArrayNode.offset + 1;
@@ -2160,6 +2219,9 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
           startPos: ctx.vr.codeDocument.positionAt(startPos),
           endPos: ctx.vr.codeDocument.positionAt( firstChild.offset ),
           node,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#11'
+          }
         });
       }
       if (
@@ -2176,6 +2238,9 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
           startPos: ctx.vr.codeDocument.positionAt(lastChild.offset + lastChild.length),
           endPos: ctx.vr.codeDocument.positionAt( endPos ),
           node,
+          data:{
+            code: 'UNRECOGNIZED_TOKENS_#12'
+          }
         });
       }
     }
@@ -2241,6 +2306,9 @@ function _parse_children(node: AzLogicAppNode, ctx: ValidationIntermediateContex
                 startPos: ctx.vr.codeDocument.positionAt(lastNode.offset + lastNode.length),
                 endPos: ctx.vr.codeDocument.positionAt(oneNode.offset),
                 node,
+                data:{
+                  code: 'UNRECOGNIZED_TOKENS_#13'
+                }
               });
             }
           }
@@ -2458,6 +2526,9 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             startPos: ctx.vr.codeDocument.positionAt(parenthesisNode.offset + 1),
             endPos: ctx.vr.codeDocument.positionAt(parenthesisNode.offset + parenthesisNode.length -1),
             node,
+            data:{
+              code: 'UNRECOGNIZED_TOKENS_#14'
+            }
           });
         }else if (parenthesesChildren.length){
           if (
@@ -2473,6 +2544,9 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
               startPos: ctx.vr.codeDocument.positionAt(parenthesisNode.offset + 1),
               endPos: ctx.vr.codeDocument.positionAt( parenthesesChildren[0].offset ),
               node,
+              data:{
+                code: 'UNRECOGNIZED_TOKENS_#15'
+              }
             });
           }
           if (
@@ -2494,6 +2568,9 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
                 parenthesisNode.offset + parenthesisNode.length - 1
               ),
               node,
+              data:{
+                code: 'UNRECOGNIZED_TOKENS_#16'
+              }
             });
           }
         }

@@ -211,6 +211,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         problems = await seizeCurExpProb(page);
         expect(content).eq('@concat( pipeline().DataFactory , \'\' )');
         expect(problems.length).eq(0);
+
       })
 
     })

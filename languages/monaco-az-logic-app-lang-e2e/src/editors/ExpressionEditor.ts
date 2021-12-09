@@ -38,12 +38,37 @@ function generateNextSymbolTable() {
         IdentifierType.Number
       ),
       activity: createOverloadedFunValDesc([
-          'Activity get Metedata 1'
+          '***activity(activity name)***',
+          'Retrieve an activity and its output.',
         ],
         [
-          [IdentifierType.CONSTANT('Get Metadata1')]
+          [IdentifierType.CONSTANT('Get Default 1')],
+          [IdentifierType.CONSTANT('Get Default 2')],
+
+          [IdentifierType.CONSTANT('Lookup 1 first row only')],
+          [IdentifierType.CONSTANT('Lookup 2 first row only')],
+          [IdentifierType.CONSTANT('Lookup 3')],
+          [IdentifierType.CONSTANT('Lookup 4')],
+
+          [IdentifierType.CONSTANT('GetMetadata 1')],
+          [IdentifierType.CONSTANT('GetMetadata 2')],
+
+          [IdentifierType.CONSTANT('Get Default 3')],
         ],
-        [IdentifierType.FUNCTION_RETURN_TYPE(['activity'])]
+        [
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
+
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'firstRowOnly'], 'First-row-only lookup activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'firstRowOnly'], 'First-row-only lookup activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'defaultReturnValue'], 'Lookup activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'defaultReturnValue'], 'Lookup activity return type'),
+
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'defaultReturnValue'], 'GetMetaData activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'defaultReturnValue'], 'GetMetaData activity return type'),
+
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
+        ]
       ),
       variables: createOverloadedFunValDesc([
           'Variable one',
@@ -136,12 +161,120 @@ function generateNextSymbolTable() {
             }
           )
         }),
-        activity: createPkgValDesc(['**Return package activity**', 'Package activity'], {
-          output: createRefValDesc(
-            ['output'],
-            IdentifierType.Any
-          )
-        }, {allowAdditionalAnyProperties: true})
+        activityPackage: createPkgValDesc([], {
+          defaultActivity:createPkgValDesc(['**Return package activity**', 'Package activity'], {
+            output: createRefValDesc(
+              [
+                '***output:any***',
+                'Activity output'
+              ],
+              IdentifierType.Any
+            )
+          }, {allowAdditionalAnyProperties: true}),
+          lookupActivity:createPkgValDesc(['Package Lookup activity'], {
+            rowItem: createRefValDesc([
+              '***rowItem:any***',
+              'data of the first row'
+            ], IdentifierType.Any),
+            defaultReturnValue:createPkgValDesc(['**Return value of a lookup activity**', 'Lookup activity'], {
+              output: createPkgValDesc(
+                [
+                  '***output:any & { count, value }***',
+                  'Lookup activity output'
+                ],
+                {
+                  count: createRefValDesc([
+                    '***count:number***',
+                    'count of the row'
+                  ], IdentifierType.Number),
+                  value: createRefValDesc([
+                    '***value:any[]***',
+                    'array of row data'
+                  ], IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'lookupActivity', 'rowItem'], 'row data value'))
+                },  {allowAdditionalAnyProperties: true}
+              )
+            }, {allowAdditionalAnyProperties: true}),
+            firstRowOnly:createPkgValDesc(['**Return value of a lookup activity[firstRowOnly]**', 'Lookup activity for the first only'], {
+              output: createPkgValDesc(
+                [
+                  '***output:any &{ firstRow }***',
+                  'First-row-only lookup activity output'
+                ],
+                {
+                  firstRow: createRefValDesc([
+                    '***firstRow:any[]***',
+                    'data of the first row'
+                  ], IdentifierType.Any)
+                },  {allowAdditionalAnyProperties: true}
+              )
+            }, {allowAdditionalAnyProperties: true}),
+          }),
+          getMetaDataActivity:createPkgValDesc(['Package GetMetadata activity'], {
+            itemType: createPkgValDesc(['Medata item type'], {
+              name: createRefValDesc(['name of the item'], IdentifierType.String),
+              type: createRefValDesc(['type of the item data'], IdentifierType.String),
+            },{allowAdditionalAnyProperties: true}),
+            defaultReturnValue:createPkgValDesc(['**Return value of a getMetadata activity**', 'GetMetadata activity'], {
+              output: createPkgValDesc(
+                [
+                  '***output:any***',
+                  'GetMetadata activity output'
+                ],
+                {
+                  exist: createRefValDesc(
+                    [
+                      '***exist:boolean***',
+                      "Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won't fail even if the file, folder, or table doesn't exist. Instead, exists: false is returned in the output."
+                    ],
+                    IdentifierType.Boolean
+                  ),
+                  itemName: createRefValDesc([
+                    '***itemName:string***',
+                    'Name of the file or folder.'
+                  ], IdentifierType.String),
+                  itemType: createRefValDesc([
+                    '***itemType:string***',
+                    "Type of the file or folder. Returned value is File or Folder."
+                  ], IdentifierType.String),
+                  size: createRefValDesc([
+                    '***size:number***',
+                    "Size of the file, in bytes. Applicable only to files."
+                  ], IdentifierType.Number),
+                  columnCount: createRefValDesc([
+                    '***columnCount:number***',
+                    "Number of columns in the file or relational table."
+                  ], IdentifierType.Number),
+                  lastModified: createRefValDesc([
+                    '***lastModified:string***',
+                    "Last modified datetime of the file or folder."
+                  ], IdentifierType.String),
+                  created: createRefValDesc([
+                    '***created:string***',
+                    'Created datetime of the file or folder.'
+                  ], IdentifierType.String),
+                  contentMD5: createRefValDesc([
+                    '***contentMD5:string***',
+                    'MD5 of the file. Applicable only to files.'
+                  ], IdentifierType.String),
+                  structure: createRefValDesc(
+                    [
+                      '***structure:{name, type}[]***',
+                      'Data structure of the file or relational database table. Returned value is a list of column names and column types.'
+                    ],
+                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'structure return type')
+                  ),
+                  childItems: createRefValDesc(
+                    [
+                      '***childItems:{name, type}[]***',
+                      "List of subfolders and files in the given folder. Applicable only to folders. Returned value is a list of the name and type of each child item."
+                    ],
+                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'childItems return type')
+                  )
+                },  {allowAdditionalAnyProperties: true}
+              )
+            }, {allowAdditionalAnyProperties: true}),
+          })
+        }),
       })
     )
   );

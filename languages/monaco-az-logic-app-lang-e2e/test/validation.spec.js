@@ -33,12 +33,12 @@ function generateValidationTests(openOnePage, closeOnePage) {
       [
         '@addHours(utcNow(),-5)',
         '@take([string(1), string(1)], 2)',
-        "@activity('Get Metadata1').output2fewfwelf",
-        "@activity('Get Metadata1').output[string(1)]",
+        "@activity('Get Default 1').output2fewfwelf",
+        "@activity('Get Default 1').output[string(1)]",
         "@pipeline()['TriggeredByPipelineName']",
-        "@activity('Get Metadata1').output[string(1)]",
+        "@activity('Get Default 1').output[string(1)]",
         "@pipeline()['DataFactory']",
-        "@activity('Get Metadata1').output.childItems[0].name",
+        "@activity('Get Default 1').output.childItems[0].name",
         "@item().one.two.three",
         "@item()?.one.two.three",
         "@item().one?.two.three",
@@ -74,8 +74,11 @@ function generateValidationTests(openOnePage, closeOnePage) {
       });
 
       [
-        '@activity(\'Get Metadata1\').output.value[2].whatever.again.another',
-        '@activity(\'Get Metadata1\').anyOutput.value[2].whatever.again.another'
+        '@activity(\'Get Default 1\').output.value[2].whatever.again.another',
+        '@activity(\'Get Default 1\').anyOutput.value[2].whatever.again.another',
+        '@activity(\'Get Default 1\').output.value[add(1, 1)].whatever.again.another',
+        '@activity(\'Lookup 3\').output.value[1].anything.whatsoever',
+        '@activity(\'Lookup 3\').whatever[2].and.anything.you[\'want\'][2]',
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -523,11 +526,13 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
     describe('INVALID_IDENTIFIER 0x07 0x08 0x09', ()=>{
       it('invalid identifier chain 1#', async ()=>{
-        const nextText = '@pipeline().DataFactory2';
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@pipeline().DataFactory2';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(1);
         // Unrecognized identifiers of the function result
@@ -539,19 +544,28 @@ function generateValidationTests(openOnePage, closeOnePage) {
       })
 
       it('invalid identifier chain 2# w/o function call', async ()=>{
-        const nextText = '@pipeline.DataFactory2';
+
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@pipeline.DataFactory2';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
-        expect(problems.length).eq(1);
-        // Unrecognized identifiers of the function result
+        expect(problems.length).eq(2);
+        // Missing invocation of the function
         expect(problems[0].code).eq(8);
         expect(problems[0].startPos.line).eq(0);
         expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(0);
-        expect(problems[0].endPos.character).lessThanOrEqual(22);
+        expect(problems[0].startPos.character).greaterThanOrEqual(1);
+        expect(problems[0].endPos.character).lessThanOrEqual(9);
+        // Unrecognized identifier DataFactory2
+        expect(problems[1].code).eq(9);
+        expect(problems[1].startPos.line).eq(0);
+        expect(problems[1].endPos.line).eq(0);
+        expect(problems[1].startPos.character).greaterThanOrEqual(9);
+        expect(problems[1].endPos.character).lessThanOrEqual(22);
       })
     })
 
@@ -819,7 +833,7 @@ pipeline().globalParameters.oneGlobalFloat
       it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v1', async ()=>{
         let nextText, content, problems, allCompletionList;
 
-        nextText = `@activity('Get Metadata1').output[string(1), string(1)]`;
+        nextText = `@activity('Get Default 1').output[string(1), string(1)]`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -861,7 +875,7 @@ pipeline().globalParameters.oneGlobalFloat
       it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v3', async ()=>{
         let nextText, content, problems, allCompletionList;
 
-        nextText = `@activity('Get Metadata1').output[].one.two.tree`;
+        nextText = `@activity('Get Default 1').output[].one.two.tree`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -883,7 +897,7 @@ pipeline().globalParameters.oneGlobalFloat
         let nextText, content, problems, allCompletionList;
 
         nextText =
-          `@activity('Get Metadata1').output[
+          `@activity('Get Default 1').output[
     string(1), string(1)
 `;
 

@@ -96,6 +96,7 @@ export interface DescriptorCollection<T extends ValueDescriptionPath[] = ValueDe
 
 
 export enum IdentifierTypeName {
+  UNRECOGNIZED = 0xfff,
   Any = 0x001,
   Boolean,
   String,
@@ -114,6 +115,7 @@ export enum IdentifierTypeName {
   CONSTANT, // todo what if we gonna multi constants vals for one return type
   FUNCTION_RETURN_TYPE,
   OBJECT,
+  ARRAY_OF_TYPE,
 
   INTERNAL_PKG_REF,
   INTERNAL_FUN_REF,
@@ -141,6 +143,7 @@ export class IdentifierType {
   }
 
   // static constructors
+  static UNRECOGNIZED = new IdentifierType(IdentifierTypeName.UNRECOGNIZED);
   static Any = new IdentifierType(IdentifierTypeName.Any);
   static Boolean = new IdentifierType(IdentifierTypeName.Boolean);
   static String = new IdentifierType(IdentifierTypeName.String);
@@ -160,11 +163,19 @@ export class IdentifierType {
     new IdentifierType(IdentifierTypeName.FUNCTION, {functionParameterTypes, functionReturnType});
   static OBJECT = (objValTypChainList: string[]) => new IdentifierType(IdentifierTypeName.OBJECT, {objValTypChainList});
   static CONSTANT = (constantValue:  string | number | null) => new IdentifierType(IdentifierTypeName.CONSTANT, {constantValue});
-  static FUNCTION_RETURN_TYPE = (chainList: string[]) =>
+  static FUNCTION_RETURN_TYPE = (chainList: string[], returnTypeLabel = 'Return type') =>
     new IdentifierType(IdentifierTypeName.FUNCTION_RETURN_TYPE, {
       returnTypeChainList:[
         SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME, ...chainList
-      ]
+      ],
+      returnTypeLabel
+    });
+  static ARRAY_OF_TYPE = (chainList: string[], arrayItemTypeLabel = 'Array item type') =>
+    new IdentifierType(IdentifierTypeName.ARRAY_OF_TYPE, {
+      arrayItemTypeChainList:[
+        SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME, ...chainList
+      ],
+      arrayItemTypeLabel
     });
 
   static INTERNAL_PKG_REF = (packageDescription:PackageDescription)=>
@@ -178,6 +189,10 @@ export class IdentifierType {
   public readonly constantValue?: string | number | null;
   // FUNCTION_RETURN_TYPE
   public readonly returnTypeChainList?: string[];
+  public readonly returnTypeLabel?:string;
+  // ARRAY_OF_TYPE
+  public readonly arrayItemTypeChainList?: string[];
+  public readonly arrayItemTypeLabel?:string;
   // Function
   public readonly functionParameterTypes?: IdentifierType[];
   public readonly functionReturnType?: IdentifierType;
@@ -198,6 +213,10 @@ export class IdentifierType {
       constantValue:  string | number | null;
       // FUNCTION_RETURN_TYPE
       returnTypeChainList: string[];
+      returnTypeLabel:string;
+      // ARRAY_OF_TYPE
+      arrayItemTypeChainList: string[];
+      arrayItemTypeLabel:string;
       // Function
       functionParameterTypes: IdentifierType[];
       functionReturnType: IdentifierType;
@@ -267,6 +286,8 @@ export class IdentifierType {
 
   get label(): string {
     switch (this.type) {
+      case IdentifierTypeName.UNRECOGNIZED:
+        return 'unknown';
       case IdentifierTypeName.Any:
         return 'any';
       case IdentifierTypeName.Boolean:
@@ -302,7 +323,9 @@ export class IdentifierType {
       case IdentifierTypeName.CONSTANT:
         return this.constantStringValue;
       case IdentifierTypeName.FUNCTION_RETURN_TYPE:
-        return 'Return type';
+        return this.returnTypeLabel;
+      case IdentifierTypeName.ARRAY_OF_TYPE:
+        return this.arrayItemTypeLabel;
       case IdentifierTypeName.INTERNAL_PKG_REF:
         return `package::${this.packageDescription._$desc[0]}`
       case IdentifierTypeName.INTERNAL_FUN_REF:
@@ -327,7 +350,8 @@ export class IdentifierType {
       this.type === IdentifierTypeName.FUNCTION ||
       this.type === IdentifierTypeName.OBJECT ||
       this.type === IdentifierTypeName.CONSTANT ||
-      this.type === IdentifierTypeName.FUNCTION_RETURN_TYPE
+      this.type === IdentifierTypeName.FUNCTION_RETURN_TYPE ||
+      this.type === IdentifierTypeName.ARRAY_OF_TYPE
     );
   }
 
@@ -355,7 +379,8 @@ export class IdentifierType {
       this.type === IdentifierTypeName.Any ||
       this.type === IdentifierTypeName.Array ||
       this.type === IdentifierTypeName.StringArray ||
-      this.type === IdentifierTypeName.NumberArray
+      this.type === IdentifierTypeName.NumberArray ||
+      this.type === IdentifierTypeName.ARRAY_OF_TYPE
     );
   }
 
@@ -404,6 +429,7 @@ export class IdentifierType {
           return [IdentifierType.Any, IdentifierType.StringArray, IdentifierType.StringArrayList];
         case IdentifierTypeName.NumberArray:
           return [IdentifierType.Any, IdentifierType.NumberArray, IdentifierType.NumberArrayList];
+        case IdentifierTypeName.ARRAY_OF_TYPE:
         default:
           return [IdentifierType.Any, this];
       }
@@ -419,7 +445,10 @@ export class IdentifierType {
    */
   assignableTo(target?: IdentifierType): boolean {
     if (!this) return false;
+    if (this === IdentifierType.UNRECOGNIZED) return false;
     if (!target) return false;
+    if (target === IdentifierType.UNRECOGNIZED) return false;
+
     if (this === IdentifierType.Any || target === IdentifierType.Any) {
       return true;
     }
@@ -456,7 +485,25 @@ export class IdentifierType {
       return true;
     }
 
-    // todo: implement the deep comparison b/w CONSTANT and FUNCTION_RETURN_TYPE types
+    if (this.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && target.type === IdentifierTypeName.FUNCTION_RETURN_TYPE){
+      return this.returnTypeChainList.length &&
+        this.returnTypeChainList.length === target.returnTypeChainList.length &&
+        this.returnTypeChainList.every((value, index) => (
+          this.returnTypeChainList[index] === target.returnTypeChainList[index]
+        ))
+    }
+
+    if (this.type === IdentifierTypeName.ARRAY_OF_TYPE && target.type === IdentifierTypeName.ARRAY_OF_TYPE){
+      return this.arrayItemTypeChainList.length &&
+        this.arrayItemTypeChainList.length === target.arrayItemTypeChainList.length &&
+        this.arrayItemTypeChainList.every((value, index) => (
+          this.arrayItemTypeChainList[index] === target.arrayItemTypeChainList[index]
+        ))
+    }
+
+    if (this.type === IdentifierTypeName.CONSTANT && target.type === IdentifierTypeName.CONSTANT){
+      return this.constantValue === target.constantValue;
+    }
 
     return this === target;
   }
@@ -507,6 +554,11 @@ export abstract class AbstractValueDescription{
     public readonly _$desc: string[],
     public readonly _$isOptional: boolean
   ) {
+  }
+
+  isUnrecognizedReference():boolean{
+    return this instanceof  ReferenceValueDescription &&
+      this._$valueType === IdentifierType.UNRECOGNIZED
   }
 
   get label(){
@@ -761,14 +813,16 @@ export class PackageDescription extends AbstractValueDescription {
     let cur = this as ValueDescription;
     if (paths.length) {
       let curPath = paths.shift();
-      while (cur && curPath && cur instanceof PackageDescription) {
+      while (
+        cur && curPath && cur instanceof PackageDescription && cur.has(curPath)
+      ) {
         cur = cur.get(curPath);
         valueDescriptionPaths.push(new ValueDescriptionPath(curPath, cur));
         curPath = paths.shift();
       }
     }
     if (
-      paths.length === 0 && cur
+      cur
     ) {
       cur.collectAllPathBeneath(valueDescriptionPaths, collector);
     }
@@ -1684,44 +1738,103 @@ export class SymbolTable {
     return  [];
   }
 
-  * iterateByPath()
-    : Generator<ValueDescriptionPath,undefined,string>{
+
+
+  * iterateByRetChainTyp(codeDocument: CodeDocument)
+    : Generator<
+      ValueDescriptionPath, undefined,
+      FunctionCallReturnChainType | IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType | undefined
+    >{
     const collectedPaths:string[] = [];
     let cur = this.rootPkgDesc as ValueDescription;
-    let nextPath =  yield new ValueDescriptionPath('', cur);
-    collectedPaths.push(nextPath);
-    while (cur && nextPath){
+    let nextRetChainType =  yield new ValueDescriptionPath('', cur);
+    collectedPaths.push(nextRetChainType.label)
+    while (cur && nextRetChainType){
       if (!SymbolTable.isValueDescriptor(cur)) return;
       if (cur instanceof ReferenceValueDescription && cur._$valueType.isAnyObject){
         // terminal any type
-        nextPath = yield new ValueDescriptionPath(
-          nextPath,
+        nextRetChainType = yield new ValueDescriptionPath(
+          nextRetChainType.label,
           createRefValDesc([
             `${SymbolTable.covertCollectedPathsIntoString(collectedPaths)}:any`
           ], IdentifierType.Any)
         );
-      }else if (nextPath === SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME && cur === this.rootPkgDesc){
-        cur = this.funRetPkgDesc;
-      }else if (cur instanceof PackageDescription ){
-        if (!(cur.has(nextPath)) && cur._$allowAdditionalAnyProperties){
+      }else if (
+        nextRetChainType instanceof IdentifierInBracketNotationReturnChainType &&
+        cur instanceof ReferenceValueDescription &&
+        cur._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
+      ){
+        cur = this.findByPath(cur._$valueType.arrayItemTypeChainList);
+      }else if (
+        nextRetChainType instanceof FunctionCallReturnChainType
+      ){
+        // only the first item of the retChain could be of the FunctionCallReturnChainType, otherwise it would be a flaw
+        if (cur !== this.rootPkgDesc) return
+        const functionFullName = nextRetChainType.functionFullName;
+        const theFunDescPaths = this.findAllByPath(functionFullName.split('.'));
+        if (theFunDescPaths.length) {
+          const functionFullNameCodes = ValueDescriptionPath.buildPathString(
+            theFunDescPaths.filter(one => one.name !== SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME)
+          );
+          const retTyp: IdentifierType | undefined = this.determineReturnIdentifierTypeOfFunction(
+            codeDocument,
+            nextRetChainType.node as any,
+            theFunDescPaths[theFunDescPaths.length -1 ].vd
+          );
+          if (retTyp){
+            if (retTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retTyp.returnTypeChainList?.length) {
+              cur = this.findByPath(retTyp.returnTypeChainList);
+            }else{
+              cur = createRefValDesc(
+                [`Return value of ${functionFullName}`],
+                retTyp
+              );
+            }
+            nextRetChainType = yield new ValueDescriptionPath(functionFullNameCodes,cur);
+            collectedPaths.push(functionFullNameCodes || '');
+            continue;
+          }else{
+            return;
+          }
+        }else {
+          return;
+        }
+      }else if (
+        (
+          nextRetChainType instanceof IdentifierInBracketNotationReturnChainType ||
+          nextRetChainType instanceof IdentifierReturnChainType
+        ) &&
+        cur instanceof PackageDescription
+      ){
+        let found = false;
+        let identifierName = nextRetChainType.identifierName;
+        if (!(cur.has(identifierName)) && cur._$allowAdditionalAnyProperties){
           cur = createRefValDesc([
             `${SymbolTable.covertCollectedPathsIntoString(collectedPaths)}:any`
-          ], IdentifierType.Any)
+          ], IdentifierType.Any);
+          found = true;
         }else{
           if (
             PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' ||
             PackageDescription.CASE_MODE === 'CASE_INSENSITIVE'
           ){
-            nextPath = cur.getCaseSensitiveKeyIfExisted(nextPath);
+            identifierName = cur.getCaseSensitiveKeyIfExisted(identifierName);
           }
-          cur = cur.get(nextPath);
+          cur = cur.get(identifierName);
+          if (cur) {
+            found = true;
+          }
+        }
+        if (found){
+          nextRetChainType = yield new ValueDescriptionPath(identifierName, cur);
+          collectedPaths.push(identifierName || '');
+        }else {
+          return ;
         }
       }else{
         // no way to continue
         return
       }
-      nextPath = yield new ValueDescriptionPath(nextPath, cur);
-      nextPath && (collectedPaths.push(nextPath));
     }
     return
   }
@@ -1862,7 +1975,7 @@ export class SymbolTable {
           });
           break;
         case DescriptionType.ReferenceValue:
-          if (vd._$valueType.type === IdentifierTypeName.OBJECT) {
+          if (vd._$valueType.isComposite) {
             const dynamicReturnType = vd._$valueType;
             const targetResult = (
               result.has(dynamicReturnType) ? result.get(dynamicReturnType) : []
@@ -1940,107 +2053,17 @@ export class SymbolTable {
     codeDocument: CodeDocument,
     idChain: ReturnChainType[]
   ): IdentifierType | undefined{
-    if (idChain.length === 0) return;
-    if (idChain[0].type === 'function-call-complete') {
-      const functionFullName = idChain[0].functionFullName;
-      const theFunDesc = this.findByPath(functionFullName.split('.'));
 
-      if (theFunDesc) {
-        const retIdTyp: IdentifierType | undefined = this.determineReturnIdentifierTypeOfFunction(
-          codeDocument,
-          idChain[0].node as any,
-          theFunDesc
-        );
-
-        if (retIdTyp) {
-          if (retIdTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retIdTyp.returnTypeChainList?.length) {
-
-            const funRetChainTyp = idChain[0];
-            const interpretedChainList = IdentifierType.interpretFunctionChainList(idChain, retIdTyp, funRetChainTyp);
-
-            const funPathVdIterator = this.iterateByPath();
-            let funPathIndex = 0;
-            let nextOne = funPathVdIterator.next();
-            let curVdPath: ValueDescriptionPath = nextOne.value;
-            while (!nextOne.done && curVdPath.vd){
-              if (funPathIndex > interpretedChainList.length -1){
-                funPathVdIterator.next('');
-                break;
-              }
-              // need to survive any type of dynamic array bracket
-              if (
-                interpretedChainList[funPathIndex]?.retChainTyp.type === 'array-literal' &&
-                ! (interpretedChainList[funPathIndex]?.retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
-              ){
-                // force to return an unknown any value
-                return IdentifierType.Any;
-              }
-              nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
-              curVdPath = nextOne.value;
-            }
-
-            let funRes:IdentifierType|undefined = undefined;
-            if (curVdPath.vd instanceof ReferenceValueDescription) {
-              funRes = curVdPath.vd._$valueType;
-            }else if (
-              // check em all in case we gonna support more
-              curVdPath.vd instanceof FunctionValueDescription ||
-              curVdPath.vd instanceof OverloadedFunctionValueDescription ||
-              curVdPath.vd instanceof PackageDescription
-            ){
-              funRes = curVdPath.vd._$identifierType;
-            }
-            if (funPathIndex<interpretedChainList.length && funRes && funRes.isAnyObject){
-              return IdentifierType.Any;
-            }else if(funPathIndex === interpretedChainList.length){
-              return funRes;
-            }
-            return
-
-          } else if (
-            !retIdTyp.isComposite
-          ) {
-            if (idChain.length ==1){
-              return retIdTyp;
-            }else if (retIdTyp.isAnyObject){
-              return IdentifierType.Any;
-            }
-          }
-        }
-      }
-    } else if ('identifierName' in idChain[0] && idChain[0].identifierName) {
-
-
-      const interpretedChainList = AbstractReturnChainType.interpretIdentifierChainList(idChain);
-      const identifierPathVdIterator = this.iterateByPath();
-
-      let funPathIndex = 0;
-      let nextOne = identifierPathVdIterator.next();
-      let curVdPath: ValueDescriptionPath = nextOne.value;
-      while (!nextOne.done && curVdPath.vd){
-        if (funPathIndex > interpretedChainList.length -1){
-          identifierPathVdIterator.next('');
-          break;
-        }
-        // need to survive any type of dynamic array bracket
-        if (
-          interpretedChainList[funPathIndex].retChainTyp.type === 'array-literal' &&
-          ! (interpretedChainList[funPathIndex].retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
-        ){
-          // force to return an unknown any value
-          return IdentifierType.Any;
-        }
-        nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
-        curVdPath = nextOne.value;
-      }
-
-      if (curVdPath.vd instanceof ReferenceValueDescription) {
-        if (curVdPath.vd._$valueType.type === IdentifierTypeName.OBJECT) {
-          // todo: ooops, currently we cannot support non-primitive identifier type
-          // will be fixed once we switched from enum id type to class based identifier type
-        } else if (!curVdPath.vd._$valueType.isComposite) {
-          return curVdPath.vd._$valueType;
-        }
+    const vd = this.findValueDescriptionFromChain(codeDocument, idChain);
+    if (vd){
+      if (
+        vd instanceof FunctionValueDescription ||
+        vd instanceof OverloadedFunctionValueDescription ||
+        vd instanceof PackageDescription
+      ){
+        return vd._$identifierType;
+      }else{
+        return vd._$valueType
       }
     }
     if (idChain.length === 1){
@@ -2157,70 +2180,9 @@ export class SymbolTable {
     codeDocument: CodeDocument,
     idChain: ReturnChainType[]
   ): ValueDescription | undefined{
-    if (idChain.length === 0) return;
-
-    if (idChain[0].type === 'function-call-complete') {
-      const functionFullName = idChain[0].functionFullName;
-      const theFunDesc = this.findByPath(functionFullName.split('.'));
-      if (theFunDesc) {
-        const retTyp: IdentifierType | undefined = this.determineReturnIdentifierTypeOfFunction(
-          codeDocument,
-          idChain[0].node as any,
-          theFunDesc
-        );
-        if (retTyp && retTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retTyp.returnTypeChainList?.length) {
-
-          const funRetChainTyp = idChain[0];
-          const interpretedChainList = IdentifierType.interpretFunctionChainList(idChain, retTyp, funRetChainTyp);
-
-          const funPathVdIterator = this.iterateByPath();
-          let funPathIndex = 0;
-          let nextOne = funPathVdIterator.next();
-          let curVdPath: ValueDescriptionPath = nextOne.value;
-          while (!nextOne.done && curVdPath.vd){
-            if (funPathIndex > interpretedChainList.length -1){
-              funPathVdIterator.next('');
-              break;
-            }
-            // need to survive any type of dynamic array bracket
-            if (
-              interpretedChainList[funPathIndex]?.retChainTyp.type === 'array-literal' &&
-              ! (interpretedChainList[funPathIndex]?.retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
-            ){
-              // force to return an unknown any value
-              return createRefValDesc([], IdentifierType.Any);
-            }
-            nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
-            curVdPath = nextOne.value;
-          }
-          return curVdPath.vd;
-        }
-      }
-    } else if ('identifierName' in idChain[0] && idChain[0].identifierName) {
-
-      const interpretedChainList = AbstractReturnChainType.interpretIdentifierChainList(idChain);
-      const identifierPathVdIterator = this.iterateByPath();
-
-      let funPathIndex = 0;
-      let nextOne = identifierPathVdIterator.next();
-      let curVdPath: ValueDescriptionPath = nextOne.value;
-      while (!nextOne.done && curVdPath.vd){
-        if (funPathIndex > interpretedChainList.length -1){
-          identifierPathVdIterator.next('');
-          break;
-        }
-        // need to survive any type of dynamic array bracket
-        if (
-          interpretedChainList[funPathIndex].retChainTyp.type === 'array-literal' &&
-          ! (interpretedChainList[funPathIndex].retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
-        ){
-          // force to return an unknown any value
-          return createRefValDesc([], IdentifierType.Any);
-        }
-        nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
-        curVdPath = nextOne.value;
-      }
-      return curVdPath.vd;
+    const arrRes = this.findValDescArrFromChain(codeDocument, idChain);
+    if (arrRes.length){
+      return arrRes[arrRes.length-1].vd;
     }
     return;
   }
@@ -2230,179 +2192,63 @@ export class SymbolTable {
     idChain: ReturnChainType[],
   ):ValueDescriptionPath[]{
     if (idChain.length === 0) return [];
-    if (idChain[0].type === 'function-call-complete') {
-      const functionFullName = idChain[0].functionFullName;
-      const theFunDescPaths = this.findAllByPath(functionFullName.split('.'));
-      if (theFunDescPaths.length) {
-        const functionFullNameCodes = ValueDescriptionPath.buildPathString(
-          theFunDescPaths.filter(one => one.name !== SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME)
-        );
-        const retTyp: IdentifierType | undefined = this.determineReturnIdentifierTypeOfFunction(
-          codeDocument,
-          idChain[0].node as any,
-          theFunDescPaths[theFunDescPaths.length -1 ].vd
-        );
-        if (retTyp){
-          if (retTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retTyp.returnTypeChainList?.length) {
-
-            const funResult:ValueDescriptionPath[] = [];
-
-            const funRetChainTyp = idChain[0];
-            const interpretedChainList = IdentifierType.interpretFunctionChainList(idChain, retTyp, funRetChainTyp);
-
-            const funPathVdIterator = this.iterateByPath()
-            let funPathIndex = 0;
-            let nextOne = funPathVdIterator.next();
-            let curVdPath: ValueDescriptionPath = nextOne.value;
-            while (!nextOne.done && curVdPath.vd){
-
-              if ( !(curVdPath.vd instanceof PackageDescription) || !curVdPath.vd._$isInternal){
-                funResult.push(curVdPath);
-              }
-
-              if (funPathIndex > interpretedChainList.length -1){
-                funPathVdIterator.next('');
-                break;
-              }
-              // need to survive any type of dynamic array bracket
-              if (
-                interpretedChainList[funPathIndex]?.retChainTyp.type === 'array-literal' &&
-                ! (interpretedChainList[funPathIndex]?.retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
-              ){
-                // force to return an unknown any value
-                funResult.push(new ValueDescriptionPath(
-                  interpretedChainList[funPathIndex].path,
-                  createRefValDesc([], IdentifierType.Any)
-                ));
-                break;
-              }
-              nextOne = funPathVdIterator.next(interpretedChainList[funPathIndex++].path);
-              curVdPath = nextOne.value;
-            }
-
-            // if the last one is of type any then populate the rest according to the symbol chain
-            if (
-              funResult.length &&
-              funResult.length < interpretedChainList.length &&
-              funResult[funResult.length-1].vd instanceof ReferenceValueDescription &&
-              (funResult[funResult.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
-            ){
-              // populate the rest with any vd
-              while(funResult.length < interpretedChainList.length){
-                funResult.push(
-                  new ValueDescriptionPath(
-                    interpretedChainList[funResult.length].path,
-                    createRefValDesc([], IdentifierType.Any)
-                  )
-                );
-              }
-            }
-
-
-            if (funResult.length >= retTyp.returnTypeChainList.length){
-              // returnTypeChainList is consisted of internal reserved one return type key word, the function call return type
-              // and the path to the function call return type; thus we only need to remove the path to
-              // the function call return type, which is  *retTyp.returnTypeChainList.length - 2*
-              return funResult.slice(retTyp.returnTypeChainList.length - 2);
-            }else {
-              return []
-            }
-          }else {
-            // regular ret typ, just create a reference vd
-            const funResult = [
-              new ValueDescriptionPath(
-                functionFullNameCodes,
-                createRefValDesc(
-                  [`Return value of ${functionFullName}`],
-                  retTyp
-                )
-              )
-            ];
-            // if the last one is of type any then populate the rest according to the symbol chain
-            if (
-              funResult.length &&
-              funResult.length < idChain.length &&
-              funResult[funResult.length-1].vd instanceof ReferenceValueDescription &&
-              (funResult[funResult.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
-            ){
-              // populate the rest with any vd
-              while(funResult.length < idChain.length){
-                funResult.push(
-                  new ValueDescriptionPath(
-                    idChain[funResult.length].label,
-                    createRefValDesc([], IdentifierType.Any)
-                  )
-                );
-              }
-            }
-            return funResult;
-          }
-        }
-      }
-    } else if ('identifierName' in idChain[0] && idChain[0].identifierName) {
-
-      const identifierResult:ValueDescriptionPath[] = [];
-
-      const interpretedChainList = AbstractReturnChainType.interpretIdentifierChainList(idChain);
-      const identifierPathVdIterator = this.iterateByPath()
-
-      let funPathIndex = 0;
-      let nextOne = identifierPathVdIterator.next();
-      let curVdPath: ValueDescriptionPath = nextOne.value;
-      while (!nextOne.done && curVdPath.vd){
-
-        if (!(curVdPath.vd instanceof PackageDescription) || !curVdPath.vd._$isInternal){
-          identifierResult.push(curVdPath);
-        }
-
-        if (funPathIndex > interpretedChainList.length -1){
-          identifierPathVdIterator.next('');
-          break;
-        }
-        // need to survive any type of dynamic array bracket
-        if (
-          interpretedChainList[funPathIndex].retChainTyp.type === 'array-literal' &&
-          ! (interpretedChainList[funPathIndex].retChainTyp as IdentifierInBracketNotationReturnChainType).isPropertyLiteral
-        ){
-          // force to return an unknown any value
-          identifierResult.push(new ValueDescriptionPath(
-            interpretedChainList[funPathIndex].path,
-            createRefValDesc([], IdentifierType.Any)
-          ));
-          // populate the rest with any vd
-          while(identifierResult.length < interpretedChainList.length){
-            identifierResult.push(
-              new ValueDescriptionPath(
-                interpretedChainList[identifierResult.length].path,
-                createRefValDesc([], IdentifierType.Any)
-              )
-            );
-          }
-          break;
-        }
-        nextOne = identifierPathVdIterator.next(interpretedChainList[funPathIndex++].path);
-        curVdPath = nextOne.value;
-      }
-      // if the last one is of type any then populate the rest according to the symbol chain
-      if (
-        identifierResult.length &&
-        identifierResult.length < idChain.length &&
-        identifierResult[identifierResult.length-1].vd instanceof ReferenceValueDescription &&
-        (identifierResult[identifierResult.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
-      ){
-        // populate the rest with any vd
-        while(identifierResult.length < idChain.length){
-          identifierResult.push(
-            new ValueDescriptionPath(
-              idChain[identifierResult.length].label,
-              createRefValDesc([], IdentifierType.Any)
-            )
-          );
-        }
-      }
-      return identifierResult;
+    if (idChain.some(one => (
+      !(
+        one instanceof FunctionCallReturnChainType ||
+        one instanceof IdentifierInBracketNotationReturnChainType ||
+        one instanceof IdentifierReturnChainType
+      )
+    ))){
+      return [];
     }
-    return [];
+    const theIdChain = idChain.slice() as Array<FunctionCallReturnChainType|IdentifierInBracketNotationReturnChainType|IdentifierReturnChainType>;
+
+    const result:ValueDescriptionPath[] = [];
+    const vdPathIterator = this.iterateByRetChainTyp(codeDocument);
+    let nextVdPath = vdPathIterator.next();
+    let curVdPath: ValueDescriptionPath = nextVdPath.value;
+    while (!nextVdPath.done && curVdPath.vd){
+      if ( !(curVdPath.vd instanceof PackageDescription) || !curVdPath.vd._$isInternal){
+        result.push(curVdPath);
+      }
+
+      if (result.length >= theIdChain.length){
+        vdPathIterator.next();
+        break;
+      }
+
+      nextVdPath = vdPathIterator.next(theIdChain[result.length]);
+      curVdPath = nextVdPath.value;
+    }
+
+    // if the last one is of type any then populate the rest according to the symbol chain
+    if (
+      result.length &&
+      result.length < idChain.length &&
+      result[result.length-1].vd instanceof ReferenceValueDescription &&
+      (result[result.length-1].vd as ReferenceValueDescription)._$valueType.isAnyObject
+    ){
+      // populate the rest with any vd
+      while(result.length < idChain.length){
+        result.push(
+          new ValueDescriptionPath(
+            idChain[result.length].label,
+            createRefValDesc([`${idChain[result.length].label}:any`], IdentifierType.Any)
+          )
+        );
+      }
+    }
+
+    while(result.length < idChain.length){
+      result.push(
+        new ValueDescriptionPath(
+          idChain[result.length].label,
+          createRefValDesc([`${idChain[result.length].label}:unknown`], IdentifierType.UNRECOGNIZED)
+        )
+      );
+    }
+
+    return result;
   }
 
 }
