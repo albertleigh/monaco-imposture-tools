@@ -3,7 +3,7 @@ const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
   collectMonacoListRowsAriaLabels, triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, clearPageErrors,
-  seizePageErrors, delay
+  seizePageErrors, delay, seizeCurExpAllProb
 } = require("./utils");
 
 function generateCompletionTests(openOnePage, closeOnePage) {
@@ -70,7 +70,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
       await delay(250);
 
       content = await seizeCurExpTxt(page);
-      problems = await seizeCurExpProb(page);
+      problems = await seizeCurExpAllProb(page);
       expect(content).eq('@pipeline()');
       expect(problems.length).eq(0);
 
@@ -102,7 +102,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
       await delay(250);
 
       content = await seizeCurExpTxt(page);
-      problems = await seizeCurExpProb(page);
+      problems = await seizeCurExpAllProb(page);
       expect(content.trim()).eq('@pipeline().globalParameters.firstGlobalStrPara');
       expect(problems.length).eq(0);
     })
@@ -164,6 +164,56 @@ function generateCompletionTests(openOnePage, closeOnePage) {
           value.match(/^\./)
         )).ok
       })
+
+      it('suggest w/ unrecognized identifier', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@concat( p , \'\' )';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(8);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(9);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(10);
+
+        //move to @concat(pipeline().DataFactory, pipeline()|
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+
+        // trigger ctrl + space
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(750);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+        expect(allCompletionList.every(value =>
+          value.match(/^p/)
+        )).ok
+
+        await page.keyboard.press('Enter');
+
+        await delay(750);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq('@concat( pipeline().DataFactory , \'\' )');
+        expect(problems.length).eq(0);
+
+      })
+
     })
 
     describe('constant parameter completion', ()=>{
@@ -187,7 +237,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@variables(\'firstVar\')');
         expect(problems.length).eq(0);
 
@@ -232,7 +282,7 @@ function generateCompletionTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
 
         expect(content).eq('@variables(\'secondVar\')');
         expect(problems.length).eq(0);
@@ -452,7 +502,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
@@ -496,6 +546,422 @@ pipeline().globalParameters.firstGlobalStrPara`;
           value.indexOf('s') > -1
         )).ok;
 
+      })
+
+    })
+
+    describe('post optional accessor completion', ()=>{
+
+      it('suggest completion list right after one optional accessor v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@pipeline().optionalPackage?.`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+
+        expect(allCompletionList.length>0).ok;
+
+        let hasOptional;
+        for (const oneCompletion of allCompletionList){
+          hasOptional = hasOptional || oneCompletion.indexOf('optionalPackage') > -1;
+        }
+
+        expect(hasOptional).ok;
+      })
+
+    })
+
+    describe('suggest completion list for a package allow additional properties of any', ()=>{
+
+      it ('allowAdditionalAnyProperties v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('Lookup 3').output.v`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+        await triggerCompletionOfCurrentCursor(page);
+
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.output.value') > -1
+        )).ok;
+      })
+
+    })
+
+    describe('suggest completion list for array of type', ()=>{
+
+      it ('literal inner count v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 1').output.structure[].name`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(1);
+        expect(problems[0].code).eq(16);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(43);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(45);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('_$ValueDescriptionDictionaryFunctionKey') > -1
+        )).not.ok;
+      })
+
+      it('post array of type item v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 1').output.structure[add(1,2)]`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(0);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.name') > -1 ||
+          value.indexOf('.type') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq('@activity(\'GetMetadata 1\').output.structure[add(1,2)].name');
+        expect(problems.length).eq(0);
+      })
+
+      it('post array of type item v2', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 1').output.structure[add(1,2)].`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(1);
+        expect(problems[0].code).eq(14);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(53);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(54);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.name') > -1 ||
+          value.indexOf('.type') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq('@activity(\'GetMetadata 1\').output.structure[add(1,2)].name');
+        expect(problems.length).eq(0);
+      })
+
+      it('post array of type item v3', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 2').output.structure[1].`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(1);
+        expect(problems[0].code).eq(14);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(46);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(47);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.name') > -1 ||
+          value.indexOf('.type') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq('@activity(\'GetMetadata 2\').output.structure[1].name');
+        expect(problems.length).eq(0);
+      })
+
+      it('post array of type item v4', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 2').output.structure[add(1,2)].na`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(0);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.name') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq('@activity(\'GetMetadata 2\').output.structure[add(1,2)].name');
+        expect(problems.length).eq(0);
+      })
+
+      it('post array of type item v5', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 2').output.structure[1].na`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(0);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.name') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq('@activity(\'GetMetadata 2\').output.structure[1].name');
+        expect(problems.length).eq(0);
+      })
+
+      it('completion list containing the array of type item v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 2').output`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(0);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('.structure') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq("@activity('GetMetadata 2').output.childItems");
+        expect(problems.length).eq(0);
+      })
+
+      it('completion list containing the array of type item v2', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('GetMetadata 2').output.`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(1);
+        expect(problems[0].code).eq(14);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(33);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(34);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('structure') > -1
+        )).ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq("@activity('GetMetadata 2').output.childItems");
+        expect(problems.length).eq(0);
+      })
+
+      it('completion list not containing the array of type item v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('Get Default 1')`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(0);
+
+        await page.keyboard.press('Escape');
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('structure') > -1
+        )).not.ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq("@activity('Get Default 1').output");
+        expect(problems.length).eq(0);
+      })
+
+      it('completion list not containing the array of type item v2', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@activity('Get Default 2').`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        problems = await seizeCurExpProb(page);
+        expect(problems.length).eq(1);
+        expect(problems[0].code).eq(14);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(26);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(27);
+
+        await triggerCompletionOfCurrentCursor(page);
+
+        await delay(250);
+
+        allCompletionList = await collectMonacoListRowsAriaLabels(page);
+        expect(allCompletionList.length>=1).ok;
+
+        expect(allCompletionList.some(value =>
+          value.indexOf('structure') > -1
+        )).not.ok;
+
+        await page.keyboard.press('Enter');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpAllProb(page);
+        expect(content).eq("@activity('Get Default 2').output");
+        expect(problems.length).eq(0);
       })
 
     })

@@ -3,7 +3,7 @@ const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
   collectMonacoListRowsAriaLabels, clearPageErrors, seizePageErrors,
-  seizeCurExpProb, seizeCurExpTxt, hoverOneSpanContaining, triggerCompletionOfCurrentCursor, delay
+  seizeCurExpProb, seizeCurExpTxt, hoverOneSpanContaining, triggerCompletionOfCurrentCursor, delay, seizeCurExpAllProb
 } = require("./utils");
 
 function generateAtSymbolTests(openOnePage, closeOnePage) {
@@ -57,7 +57,7 @@ function generateAtSymbolTests(openOnePage, closeOnePage) {
       const allCompletionList = await collectMonacoListRowsAriaLabels(page);
       expect(allCompletionList.length>0).ok;
 
-      const problems = await seizeCurExpProb(page);
+      const problems = await seizeCurExpAllProb(page);
       // Invalid symbol @ which missed following identifiers
       expect(problems.length).eq(0);
 

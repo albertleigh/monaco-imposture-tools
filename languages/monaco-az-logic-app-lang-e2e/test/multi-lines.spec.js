@@ -4,7 +4,7 @@ const {clearUpMonacoEditor, clearPageErrors, seizePageErrors,
   delay,
   typeInMonacoEditor,
   EXPRESSION_EDITOR_ID,
-  seizeCurExpProb
+  seizeCurExpProb, seizeCurExpAllProb
 } = require("./utils");
 
 function generateMultilineTests(openOnePage, closeOnePage) {
@@ -33,7 +33,7 @@ function generateMultilineTests(openOnePage, closeOnePage) {
     const nextText = '@add(\n1,\n2';
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-    const problems = await seizeCurExpProb(page);
+    const problems = await seizeCurExpAllProb(page);
     expect(problems.length).eq(0);
   })
 
@@ -50,7 +50,7 @@ function generateMultilineTests(openOnePage, closeOnePage) {
     // pause for effect
     await delay(750);
 
-    const problems = await seizeCurExpProb(page);
+    const problems = await seizeCurExpAllProb(page);
     expect(problems.length).eq(0);
   })
 

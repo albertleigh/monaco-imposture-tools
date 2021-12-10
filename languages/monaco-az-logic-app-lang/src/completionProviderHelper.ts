@@ -1,30 +1,27 @@
 import {CancellationToken, editor, languages, Position, Range} from './editor.api';
+import {AzLogicAppLangConstants, AzLogicAppNode,} from './base';
 import {
-  AzLogicAppLangConstants,
-  AzLogicAppNode,
+  AbstractReturnChainType,
+  IdentifierInBracketNotationReturnChainType,
+  IdentifierReturnChainType,
+  ReturnChainType,
+} from './azLgcNodesUtils';
+import {
   DescCollItem,
   DescCollItemTyp,
   DescriptionType,
   DescriptorCollection,
-  IdentifierInBracketNotationReturnChainType,
-  IdentifierReturnChainType,
   IdentifierType,
   IdentifierTypeName,
   OlFunDescCollItem,
-  ReturnChainType,
+  PackageDescription,
+  ReferenceValueDescription,
   SymbolTable,
   ValueDescription,
   ValueDescriptionDictionary,
-  ValueDescriptionDictionaryFunctionKey
-} from './base';
-import {
-  determineReturnIdentifierTypeOfFunction,
-  findAllPathAmongOneDescriptor,
-  findAllRootPackageOfOneDescriptor,
-  findAmongOneDescriptor,
-  findCompleteIdentifiersChain,
-  findValueDescriptionFromChain,
-} from './utils';
+  ValueDescriptionDictionaryFunctionKey,
+  ValueDescriptionPath
+} from './values';
 import {
   AccessorPunctuator,
   AtSymbolNode,
@@ -34,7 +31,10 @@ import {
   FunctionCallNode,
   FunctionCallTarget,
   IdentifierNode,
-  IdentifierNodeInBracketNotation, LiteralArrayNode, LiteralNumberNode, LiteralStringNode,
+  IdentifierNodeInBracketNotation,
+  LiteralArrayNode,
+  LiteralNumberNode,
+  LiteralStringNode,
   ParenthesisNode,
   RootFunctionCallNode
 } from "./parser";
@@ -58,8 +58,8 @@ function getFunctionParaCntFromDc(dci: DescCollItemTyp): number {
   return 0;
 }
 
-function buildFunctionLabelWithPara(paths: string[], dci: DescCollItemTyp): string {
-  const pathName = paths.join('.');
+function buildFunctionLabelWithPara(paths: ValueDescriptionPath[], dci: DescCollItemTyp): string {
+  const pathName = ValueDescriptionPath.buildPathString(paths);
   let result = pathName;
   if (dci.type === 'basic' && dci.vd._$type === DescriptionType.FunctionValue) {
     const funVd = dci.vd;
@@ -80,7 +80,7 @@ function buildFunctionLabelWithPara(paths: string[], dci: DescCollItemTyp): stri
   } else if (dci.type == 'emptyParaFunctionReturn'){
     const retPath = dci.returnPath || [];
     if (retPath.length){
-      result = `${pathName}().${retPath.join('.')}`
+      result = `${pathName}().${ValueDescriptionPath.buildPathString(retPath)}`
     }else{
       result = `${pathName}()`
     }
@@ -103,7 +103,7 @@ function buildCompletionItemKindFromValueDescription(vd: ValueDescription): lang
 
 function buildCompletionItemFromDescriptorCollectionEntry(
   contentRange: Range,
-  dciPaths: string[],
+  dciPaths: ValueDescriptionPath[],
   dci: DescCollItemTyp,
   option: Partial<{
     endWithComma: boolean;
@@ -116,7 +116,7 @@ function buildCompletionItemFromDescriptorCollectionEntry(
     const returnVd = dci.returnVd;
     // const funVdDesc = vdCi.funVd?._$desc!
     // const isOlFun = typeof vdCi.overloadedFunParaIndex === 'number';
-    const pathsStr = `${dciPaths.join('.')}().${dci.returnPath.join('.')}`;
+    const pathsStr = `${ValueDescriptionPath.buildPathString(dciPaths)}().${ValueDescriptionPath.buildPathString(dci.returnPath)}`;
     return {
       label: pathsStr,
       kind: buildCompletionItemKindFromValueDescription(dci.funVd),
@@ -129,7 +129,7 @@ function buildCompletionItemFromDescriptorCollectionEntry(
     dci.type === 'overloadedFunction' ||
     (dci.type === 'basic' && dci.vd._$type === DescriptionType.FunctionValue)
   ) {
-    const paths = dciPaths.join('.');
+    const paths = ValueDescriptionPath.buildPathString(dciPaths);
     const innerParaCommas =
       dci.areAllParaConstant?
         dci.functionParameters.map(value => value.constantStringValue).join(', '):
@@ -142,12 +142,12 @@ function buildCompletionItemFromDescriptorCollectionEntry(
     };
   } else {
     // primitive basic
-    const label = dciPaths.join('.');
+    const label = ValueDescriptionPath.buildPathString(dciPaths);
     const vd = dci.vd;
     return {
       label,
       kind: buildCompletionItemKindFromValueDescription(vd),
-      insertText: vd._$type === DescriptionType.FunctionValue ? `${label}()${paramComma}` : `${label}${paramComma}`,
+      insertText: `${label}${paramComma}`,
       detail: vd._$desc.length? vd._$desc[0]: undefined,
       documentation: vd._$desc.length? vd._$desc.join('\n'): undefined,
       range: contentRange,
@@ -263,7 +263,7 @@ export function generateCompletion(
     if (allFunctionCollection.length) {
       const result = {
         suggestions: allFunctionCollection.map((value) => {
-          const paths = value.paths.join('.');
+          const paths = ValueDescriptionPath.buildPathString(value.paths);
           const valDci = value.valDescCollItem as (DescCollItem|OlFunDescCollItem);
           // const vd = value.valueDescription;
           const paraCommas =
@@ -345,7 +345,7 @@ export function generateCompletion(
         node.innerFunctionCallNode.offset + node.innerFunctionCallNode.length <= offset
       ){
         functionCall = node.innerFunctionCallNode;
-        const chain = findCompleteIdentifiersChain(functionCall.astNode as any, azLgcExpDoc.codeDocument);
+        const chain = AbstractReturnChainType.findCompleteIdentifiersChain(functionCall.astNode as any, azLgcExpDoc.codeDocument);
         if (chain.chain.length) {
           identifiersChain = chain.chain;
           completionKind = CompletionType.PROPERTY;
@@ -365,7 +365,7 @@ export function generateCompletion(
         if (allFunctionCollection.length) {
           const result = {
             suggestions: allFunctionCollection.map((value) => {
-              const paths = value.paths.join('.');
+              const paths = ValueDescriptionPath.buildPathString(value.paths);
               const valDci = value.valDescCollItem as (DescCollItem|OlFunDescCollItem);
               // const vd = value.valueDescription;
               const paraCommas =
@@ -423,12 +423,16 @@ export function generateCompletion(
       node.offset+node.length === offset
     ){
       functionCall = node;
-      const chain = findCompleteIdentifiersChain(node.astNode as any, azLgcExpDoc.codeDocument);
+      const chain = AbstractReturnChainType.findCompleteIdentifiersChain(node.astNode as any, azLgcExpDoc.codeDocument);
       if (chain.chain.length) {
         identifiersChain = chain.chain;
         completionKind = CompletionType.PROPERTY;
       }
-    }else if (node instanceof IdentifierNodeInBracketNotation){
+    }else if (
+      node instanceof IdentifierNodeInBracketNotation &&
+      node.offset < offset &&
+      node.offset + node.length > offset
+    ){
       // if (node.elderSibling){
       //   const chain = findCompleteIdentifiersChain(node.elderSibling.astNode as any, azLgcExpDoc.codeDocument);
       //   if (chain.chain.length){
@@ -440,7 +444,7 @@ export function generateCompletion(
       // function call target must have been turned into CompletionType.FUNCTION_CALL
       node instanceof IdentifierNode
     ){
-      const chain = findCompleteIdentifiersChain(node.astNode as any, azLgcExpDoc.codeDocument);
+      const chain = AbstractReturnChainType.findCompleteIdentifiersChain(node.astNode as any, azLgcExpDoc.codeDocument);
       if (chain.chain.length) {
         identifiersChain = chain.chain;
         completionKind = CompletionType.PROPERTY;
@@ -451,7 +455,7 @@ export function generateCompletion(
       functionFullName = node.functionFullName;
       if (completionKind === CompletionType.UNKNOWN) {
         // property
-        const chain = findCompleteIdentifiersChain(
+        const chain = AbstractReturnChainType.findCompleteIdentifiersChain(
           functionCall.astNode as any, azLgcExpDoc.codeDocument
         );
         if (chain.chain.length) {
@@ -460,6 +464,7 @@ export function generateCompletion(
         }
       }
     }else if (
+      // todo "identifiers-capture" might be inappropriate over here, consider changing it
       originalAstNode.$impostureLang.dataType === "identifiers-capture" &&
       originalAstNode.parent.$impostureLang.dataType === "identifiers:wPunctuation" &&
       !(node instanceof IdentifierNode) &&
@@ -471,7 +476,7 @@ export function generateCompletion(
     ){
       // incomplete identifier
       const thePara = node.parameter(node.paramIndexByOffset(offset));
-      const chain = findCompleteIdentifiersChain(
+      const chain = AbstractReturnChainType.findCompleteIdentifiersChain(
         thePara.astNode as any, azLgcExpDoc.codeDocument
       )
       if (chain.chain.length) {
@@ -504,7 +509,7 @@ export function generateCompletion(
     ){
       parenthesesNode = node;
       functionCall = node.parent;
-      const chain = findCompleteIdentifiersChain(functionCall.astNode as any, azLgcExpDoc.codeDocument);
+      const chain = AbstractReturnChainType.findCompleteIdentifiersChain(functionCall.astNode as any, azLgcExpDoc.codeDocument);
       if (chain.chain.length) {
         identifiersChain = chain.chain;
         completionKind = CompletionType.PROPERTY;
@@ -517,7 +522,7 @@ export function generateCompletion(
       paramIndex = parenthesesNode.parameterSize -1;
       if (parenthesesNode.parameter(paramIndex)){
         // property
-        const chain = findCompleteIdentifiersChain(
+        const chain = AbstractReturnChainType.findCompleteIdentifiersChain(
           parenthesesNode.parameter(paramIndex).astNode as any, azLgcExpDoc.codeDocument
         );
         if (chain.chain.length) {
@@ -565,7 +570,7 @@ export function generateCompletion(
               // cannot use buildCompletionItemFromDescriptorCollectionEntry, as we only wanna
               // suggest function names over here
               suggestions: allFunctionCollection.map((value) => {
-                const paths = value.paths.join('.');
+                const paths = ValueDescriptionPath.buildPathString(value.paths);
                 // const vd = value.valueDescription;
                 return {
                   label: buildFunctionLabelWithPara(value.paths, value.valDescCollItem),
@@ -694,7 +699,8 @@ export function generateCompletion(
                     const result = generateCompletionListByNonCompositeType(
                       theParamType,
                       contentRange,
-                      (paramIndex < paramTypes.length - 1) || (paramIndex < parenthesesNode.parameterSize -1 ),
+                      paramIndex >= parenthesesNode.parameterSize &&
+                      ((paramIndex < paramTypes.length - 1) || (paramIndex < parenthesesNode.parameterSize -1 )),
                       theLgcExpDocEditor.valueDescriptionDict
                     );
                     if (result) {
@@ -721,7 +727,87 @@ export function generateCompletion(
         break;
       case CompletionType.PROPERTY:
         if (identifiersChain) {
+          const vdPathArr = theLgcExpDocEditor.rootSymbolTable.findValDescArrFromChain(azLgcExpDoc.codeDocument, identifiersChain);
           if (
+            identifiersChain.length > 0 &&
+            identifiersChain.some((value, index) => (
+              index !== 0 &&
+              value instanceof IdentifierInBracketNotationReturnChainType &&
+              vdPathArr[index -1].vd instanceof ReferenceValueDescription &&
+              (vdPathArr[index -1].vd as ReferenceValueDescription)._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
+            ))
+          ){
+            // post any array of type completion suggestion
+            let identifierInBracketNotationIndex = identifiersChain.length -1;
+            while (
+              identifierInBracketNotationIndex > -1 &&
+              !(
+                identifierInBracketNotationIndex !== 0 &&
+                identifiersChain[identifierInBracketNotationIndex] instanceof IdentifierInBracketNotationReturnChainType &&
+                vdPathArr[identifierInBracketNotationIndex -1].vd instanceof ReferenceValueDescription &&
+                (vdPathArr[identifierInBracketNotationIndex -1].vd as ReferenceValueDescription)._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
+              )
+            ){
+              identifierInBracketNotationIndex--
+            }
+
+
+            if (
+              // in range
+              identifierInBracketNotationIndex >= 0 &&
+              identifierInBracketNotationIndex < identifiersChain.length &&
+              // not an unrecognized type
+              !(
+                vdPathArr[identifierInBracketNotationIndex] instanceof ReferenceValueDescription &&
+                (vdPathArr[identifierInBracketNotationIndex].vd as ReferenceValueDescription)._$valueType.type === IdentifierTypeName.UNRECOGNIZED
+              )
+            ){
+              const firstChainNode = identifiersChain[identifierInBracketNotationIndex];
+              const lastPropertyNode = identifiersChain[identifiersChain.length - 1].node;
+              const startOffset = firstChainNode.node.offset + firstChainNode.node.length;
+              const endOffset = lastPropertyNode.offset + lastPropertyNode.length;
+              const startPos = model.getPositionAt(startOffset);
+              const endPos = model.getPositionAt(endOffset);
+              const contentRange = new AzLogicAppLangConstants._monaco.Range(
+                startPos.lineNumber,
+                startPos.column,
+                endPos.lineNumber,
+                endPos.column
+              );
+              const content = model.getValueInRange(contentRange);
+              let result:languages.CompletionList;
+
+              const theReturnValueDescCollection: DescriptorCollection[] = [];
+              vdPathArr[identifierInBracketNotationIndex].vd.collectAllPathBeneath([], theReturnValueDescCollection)
+              if (theReturnValueDescCollection.length){
+                result = {
+                  suggestions: theReturnValueDescCollection.map(value => {
+                    return buildCompletionItemFromDescriptorCollectionEntry(
+                      contentRange,
+                      [
+                        new ValueDescriptionPath('', vdPathArr[identifierInBracketNotationIndex-1].vd),
+                        ...value.paths
+                      ],
+                      value.valDescCollItem
+                    )
+                  })
+                }
+              }
+
+              AzLogicAppLangConstants.inSemanticDebugMode &&
+              console.log(
+                '[generateCompletion::PROPERTY] post array of type',
+                content,
+                result,
+                offset,
+                startOffset,
+                endOffset,
+                identifiersChain,
+                vdPathArr
+              );
+              return result;
+            }
+          }else if (
             identifiersChain.length > 0 &&
             originalAstNode.$impostureLang?.dataType === 'punctuation-capture' &&
             originalAstNode.offset + 1 === offset &&
@@ -746,9 +832,9 @@ export function generateCompletion(
             const content = model.getValueInRange(contentRange);
             let theReturnValueDescCollection: DescriptorCollection[] = [];
 
-            const curRetVd = findValueDescriptionFromChain(theLgcExpDocEditor.rootSymbolTable, azLgcExpDoc.codeDocument, identifiersChain);
-            if (curRetVd) {
-              theReturnValueDescCollection = findAllPathAmongOneDescriptor(curRetVd, []);
+            const curRetVd = theLgcExpDocEditor.rootSymbolTable.findValueDescriptionFromChain(azLgcExpDoc.codeDocument, identifiersChain);
+            if (curRetVd && curRetVd instanceof  PackageDescription) {
+              theReturnValueDescCollection = curRetVd.findAndCollectAllBeneath([]);
             }
             if (theReturnValueDescCollection.length) {
               const result = {
@@ -775,6 +861,7 @@ export function generateCompletion(
               return result;
             }
           } else if (identifiersChain.length > 1) {
+            // todo consider to directly infer after current identifier and suggest its completions
             // infer the whole chain and suggest completions from the second node of the chain
 
             // todo multiple properties, find all path beneath the package
@@ -798,12 +885,11 @@ export function generateCompletion(
               // alright, if the first node were of function call type,
               // we gonna infer from function call return type
               const functionFullName = firstChainNode.functionFullName;
-              const theFunDesc = findAmongOneDescriptor(azLgcExpDoc.globalSymbolTable,functionFullName.split('.'));
+              const theFunDesc = azLgcExpDoc.globalSymbolTable.findByPath(functionFullName.split('.'));
               if (theFunDesc) {
-                const funRetTyp = determineReturnIdentifierTypeOfFunction(
-                  theLgcExpDocEditor.rootSymbolTable,
+                const funRetTyp = theLgcExpDocEditor.rootSymbolTable.determineReturnIdentifierTypeOfFunction(
                   azLgcExpDoc.codeDocument,
-                  firstChainNode as any,
+                  firstChainNode.node as AzLogicAppNode,
                   theFunDesc
                 );
 
@@ -813,23 +899,22 @@ export function generateCompletion(
                   funRetTyp.returnTypeChainList?.length
                 ) {
                   theReturnValueDescCollectionPathSliceStartIndex = funRetTyp.returnTypeChainList.length;
-                  theReturnValueDescCollection = findAllPathAmongOneDescriptor(
-                    theLgcExpDocEditor.rootSymbolTable,
+                  theReturnValueDescCollection = theLgcExpDocEditor.rootSymbolTable.findAndCollectAllBeneath(
                     [
-                    ...funRetTyp.returnTypeChainList,
-                    ...(
-                      identifiersChain.slice(1) as (
-                        | IdentifierInBracketNotationReturnChainType
-                        | IdentifierReturnChainType
-                      )[]
-                    ).map((value) => value.identifierName),
-                  ]);
+                      ...funRetTyp.returnTypeChainList,
+                      ...(
+                        identifiersChain.slice(1) as (
+                          | IdentifierInBracketNotationReturnChainType
+                          | IdentifierReturnChainType
+                          )[]
+                      ).map((value) => value.identifierName),
+                    ]
+                  );
                 }
               }
             } else if ('identifierName' in firstChainNode && firstChainNode.identifierName) {
               // or it's just a regular package reference
-              theReturnValueDescCollection = findAllPathAmongOneDescriptor(
-                theLgcExpDocEditor.rootSymbolTable,
+              theReturnValueDescCollection = theLgcExpDocEditor.rootSymbolTable.findAndCollectAllBeneath(
                 (identifiersChain as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
                   (value) => value.identifierName
                 )
@@ -841,7 +926,10 @@ export function generateCompletion(
                 suggestions: theReturnValueDescCollection.map((value) => {
                   return buildCompletionItemFromDescriptorCollectionEntry(
                     contentRange,
-                    ['', ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)],
+                    [
+                      new ValueDescriptionPath('', value.paths[theReturnValueDescCollectionPathSliceStartIndex-1].vd),
+                      ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)
+                    ],
                     value.valDescCollItem
                   );
                 }),
@@ -883,12 +971,11 @@ export function generateCompletion(
 
             if (identifiersChain[0].type === 'function-call-complete'){
               const functionFullName = identifiersChain[0].functionFullName;
-              const theFunDesc = findAmongOneDescriptor(azLgcExpDoc.globalSymbolTable,functionFullName.split('.'));
+              const theFunDesc = azLgcExpDoc.globalSymbolTable.findByPath(functionFullName.split('.'));
               if (theFunDesc) {
-                const funRetTyp = determineReturnIdentifierTypeOfFunction(
-                  theLgcExpDocEditor.rootSymbolTable,
+                const funRetTyp = theLgcExpDocEditor.rootSymbolTable.determineReturnIdentifierTypeOfFunction(
                   azLgcExpDoc.codeDocument,
-                  identifiersChain[0] as any,
+                  identifiersChain[0].node as AzLogicAppNode,
                   theFunDesc
                 );
 
@@ -898,8 +985,7 @@ export function generateCompletion(
                   funRetTyp.returnTypeChainList?.length
                 ) {
                   theReturnValueDescCollectionPathSliceStartIndex = funRetTyp.returnTypeChainList.length;
-                  theReturnValueDescCollection = findAllPathAmongOneDescriptor(
-                    theLgcExpDocEditor.rootSymbolTable,
+                  theReturnValueDescCollection = theLgcExpDocEditor.rootSymbolTable.findAndCollectAllBeneath(
                     [
                       ...funRetTyp.returnTypeChainList,
                       ...(
@@ -930,13 +1016,16 @@ export function generateCompletion(
                suggestions: theReturnValueDescCollection.map((value) => {
                  return buildCompletionItemFromDescriptorCollectionEntry(
                    contentRange,
-                   ['', ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)],
+                   [
+                     new ValueDescriptionPath('', value.paths[theReturnValueDescCollectionPathSliceStartIndex-1].vd),
+                     ...value.paths.slice(theReturnValueDescCollectionPathSliceStartIndex)
+                   ],
                    value.valDescCollItem
                  );
                }),
              };
            }else{
-              const allRootPackages = findAllRootPackageOfOneDescriptor(theLgcExpDocEditor.rootSymbolTable);
+              const allRootPackages = theLgcExpDocEditor.rootSymbolTable.findAllRootPackage();
               result = {
                 suggestions: allRootPackages
                   .filter((value) => value.valDescCollItem.type !== 'emptyParaFunctionReturn')
@@ -990,11 +1079,12 @@ export function generateCompletion(
               elderVd._$type === DescriptionType.ReferenceValue &&
               elderVd._$valueType.type === IdentifierTypeName.FUNCTION_RETURN_TYPE
             ){
-              elderVd = findAmongOneDescriptor(theLgcExpDocEditor.rootSymbolTable, elderVd._$valueType.returnTypeChainList || []);
+              elderVd = theLgcExpDocEditor.rootSymbolTable.findByPath(elderVd._$valueType.returnTypeChainList || []);
             }
             if (elderVd?._$type === DescriptionType.PackageReference){
-              Object.keys(elderVd._$subDescriptor).filter(one => !one.match(/^_\$.*/))
-                .forEach(oneField => {
+              // Object.keys(elderVd._$subDescriptor)
+              Array.from(elderVd.iterator()).filter(([key]) => !key.match(/^_\$.*/))
+                .forEach(([oneField]) => {
                   suggestions.push({
                     label: `'${oneField}'`,
                     insertText: `'${oneField}'`,

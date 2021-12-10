@@ -18,8 +18,8 @@ import {conf, language} from './languageConfiguration';
 import {generateCodeActions} from './codeActionProviderHelper';
 import {themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
-import {AzLogicAppLangConstants, ErrorHandler, SymbolTable, ValueDescriptionDictionary} from "./base";
-import {generateValueDescriptionDictionary} from "./utils";
+import {AzLogicAppLangConstants, ErrorHandler} from "./base";
+import {SymbolTable, ValueDescriptionDictionary, PackageDescription} from './values';
 
 class TokenizerState implements languages.IState {
   constructor(private _ruleStack: StackElement) {}
@@ -69,6 +69,10 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
   public static set globalErrorHandler(handler:ErrorHandler|undefined){
     AzLogicAppLangConstants.globalErrorHandler = handler;
+  }
+
+  public static set caseMode(mode:typeof PackageDescription.CASE_MODE){
+    PackageDescription.CASE_MODE=mode;
   }
 
   public static get init() {
@@ -156,6 +160,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
               startColumn: one.startPos.character + 1,
               endColumn: one.endPos.character + 1,
               endLineNumber: one.endPos.line + 1,
+              source: one.source
             }))
           );
 
@@ -475,10 +480,10 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
   public set rootSymbolTable(symbolTable:SymbolTable){
     this._rootSymbolTable = symbolTable;
-    if (this._rootSymbolTable === AzLogicAppLangConstants.globalSymbolTable){
-      this._valueDescriptionDict = AzLogicAppLangConstants.globalValueDescriptionDict;
+    if (this._rootSymbolTable === SymbolTable.globalSymbolTable){
+      this._valueDescriptionDict = SymbolTable.globalValueDescriptionDict;
     }else {
-      this._valueDescriptionDict = generateValueDescriptionDictionary(symbolTable);
+      this._valueDescriptionDict = symbolTable.generateValueDescriptionDictionary();
     }
     // force re-parsing if the editor existed
     if(this.standaloneCodeEditor){
@@ -496,7 +501,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
     public readonly domeElement: HTMLDivElement,
     standaloneEditorConstructionOptions?: Omit<editor.IStandaloneEditorConstructionOptions, 'language' | 'model'>,
     public readonly editorId: string = AzLogicAppLangConstants.DEFAULT_EDITOR_ID,
-    _rootSymbolTable: SymbolTable = AzLogicAppLangConstants.globalSymbolTable
+    _rootSymbolTable: SymbolTable = SymbolTable.globalSymbolTable
   ) {
 
     try{

@@ -12,6 +12,7 @@ import {clone} from './utils';
 import {
   DEFAULT_SEPARATOR,
   ASTNode,
+  CaptureRuleASTNode,
   BeginEndRuleASTNode,
   BeginWhileRuleASTNode,
   IncludeOnlyRuleASTNode,
@@ -562,14 +563,13 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     let prevState = new StackElement(null, this._rootId, -1, null, scopeList, scopeList);
     const textLength = text.length;
 
-    const rootNode: IncludeOnlyRuleASTNode = {
-      $impostureLang: rootRule.$impostureLang,
-      type: 'IncludeOnlyRule',
-      scopeName: rootScopeName,
-      offset: 0,
-      length: textLength,
-      children: [],
-    };
+    const rootNode = new IncludeOnlyRuleASTNode(
+      rootScopeName,
+      0,
+      textLength,
+     )
+    rootNode.$impostureLang = rootRule.$impostureLang;
+
     const codeDocuments = new CodeDocument(text, option.separator, rootNode);
     let workingNode: ASTNode = rootNode;
 
@@ -1157,15 +1157,14 @@ function _parseWhileConditions(
         const beginWhileRule = whileRule.rule;
         const scopeName = beginWhileRule.getName(lineText.toString(), r.captureIndices);
 
-        const beginWhileNode: BeginWhileRuleASTNode = {
-          $impostureLang: beginWhileRule.$impostureLang,
-          type: 'BeginWhileRule',
-          subType: 'while',
-          parent,
+        const beginWhileNode = new BeginWhileRuleASTNode(
+          'while',
           scopeName,
-          offset: lineOffset + r.captureIndices[0].start,
-          length: r.captureIndices[0].length,
-        };
+          lineOffset + r.captureIndices[0].start,
+          r.captureIndices[0].length,
+          parent
+        );
+        beginWhileNode.$impostureLang = beginWhileRule.$impostureLang;
         beginWhileNode.whileCaptureChildren = _parseCaptures(
           grammar,
           lineText,
@@ -1234,14 +1233,13 @@ function _parseCaptures(
     if (captureRule.retokenizeCapturedWithRuleId) {
       // the capture requires additional matching
       const scopeName = captureRule.getName(text.toString(), captureIndices);
-      const theOne: ASTNode = {
-        $impostureLang: captureRule.$impostureLang,
-        parent,
-        type: 'CaptureRule',
+      const theOne = new CaptureRuleASTNode(
         scopeName,
-        offset: lineOffset + captureIndex.start,
-        length: captureIndex.length,
-      };
+        lineOffset + captureIndex.start,
+        captureIndex.length,
+        parent
+      );
+      theOne.$impostureLang = captureRule.$impostureLang;
       const stackClone = stack.push(captureRule.retokenizeCapturedWithRuleId, captureIndex.start, null);
       _parseString(
         grammar,
@@ -1259,14 +1257,14 @@ function _parseCaptures(
     const captureRuleScopeName = captureRule.getName(text.toString(), captureIndices);
     if (captureRuleScopeName !== null) {
       // push
-      result.push({
-        $impostureLang: captureRule.$impostureLang,
-        parent,
-        type: 'CaptureRule',
-        scopeName: captureRuleScopeName,
-        offset: lineOffset + captureIndex.start,
-        length: captureIndex.length,
-      });
+      const toBePushed = new CaptureRuleASTNode(
+        captureRuleScopeName,
+        lineOffset + captureIndex.start,
+        captureIndex.length,
+        parent
+      )
+      toBePushed.$impostureLang = captureRule.$impostureLang;
+      result.push(toBePushed);
     }
   }
   return result;
@@ -1370,13 +1368,12 @@ function _parseString(
         if (debug.IN_DEBUG_MODE) {
           console.log('Parser   pushing ' + pushedRule.debugName + ' - ' + pushedRule.debugBeginRegExp);
         }
-        const beginEndNode: BeginEndRuleASTNode = {
-          $impostureLang: pushedRule.$impostureLang,
-          type: 'BeginEndRule',
-          parent: workingNode,
+        const beginEndNode = new BeginEndRuleASTNode(
           scopeName,
-          offset: lineOffset + captureIndices[0].start,
-        };
+          lineOffset + captureIndices[0].start
+        );
+        beginEndNode.parent = workingNode;
+        beginEndNode.$impostureLang = pushedRule.$impostureLang;
         beginEndNode.beginCaptureChildren = _parseCaptures(
           grammar,
           lineText,
@@ -1408,15 +1405,14 @@ function _parseString(
         if (debug.IN_DEBUG_MODE) {
           console.log('Parser   pushing ' + pushedRule.debugName);
         }
-        const beginWhileNode: BeginWhileRuleASTNode = {
-          $impostureLang: pushedRule.$impostureLang,
-          type: 'BeginWhileRule',
-          subType: 'begin',
-          parent: workingNode,
+        const beginWhileNode = new BeginWhileRuleASTNode(
+          'begin',
           scopeName,
-          offset: lineOffset + captureIndices[0].start,
-          length: captureIndices[0].length,
-        };
+          lineOffset + captureIndices[0].start,
+          captureIndices[0].length,
+          workingNode,
+        );
+        beginWhileNode.$impostureLang = pushedRule.$impostureLang;
         beginWhileNode.beginCaptureChildren = _parseCaptures(
           grammar,
           lineText,
@@ -1448,14 +1444,13 @@ function _parseString(
         if (debug.IN_DEBUG_MODE) {
           console.log('Parser   matched ' + matchingRule.debugName + ' - ' + matchingRule.debugMatchRegExp);
         }
-        const matchingNode: MatchRuleASTNode = {
-          $impostureLang: matchingRule.$impostureLang,
-          type: 'MatchRule',
-          parent: workingNode,
+        const matchingNode = new MatchRuleASTNode(
           scopeName,
-          offset: lineOffset + captureIndices[0].start,
-          length: captureIndices[0].length,
-        };
+          lineOffset + captureIndices[0].start,
+          captureIndices[0].length,
+          workingNode,
+        )
+        matchingNode.$impostureLang = matchingRule.$impostureLang;
         matchingNode.children = _parseCaptures(
           grammar,
           lineText,

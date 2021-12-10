@@ -244,8 +244,8 @@ export interface StackElement {
   equals(other: StackElement): boolean;
 }
 
+// todo consider moving those below into a syntax model or somewhere
 
-// todo rename into GenASTNode
 /**
  * **IMPORTANT** - Readonly!
  */
@@ -256,34 +256,87 @@ export type ASTNode =
   | BeginWhileRuleASTNode
   | BeginEndRuleASTNode;
 
-export interface BaseASTNode extends ILocatable {
-  readonly type: 'CaptureRule' | 'MatchRule' | 'IncludeOnlyRule' | 'BeginWhileRule' | 'BeginEndRule';
-  parent?: ASTNode;
-  scopeName: string;
-  offset: number;
-  length?: number;
-  children?: ASTNode[];
+export abstract class BaseASTNode implements ILocatable{
+  public $impostureLang?: ImpostureLang;
+  public $impostureLangMeta?: ImpostureLangMeta;
+ protected constructor(
+   public readonly type: 'CaptureRule' | 'MatchRule' | 'IncludeOnlyRule' | 'BeginWhileRule' | 'BeginEndRule',
+   public scopeName: string,
+   public offset: number,
+   public length: number = 0,
+   public parent?: ASTNode,
+   public children: ASTNode[] = []
+ ) {
+ }
+
+  findAnElderSibling<T extends BaseASTNode = ASTNode>():T|undefined{
+    if (this.parent) {
+      const theIndex = this.parent.children?.findIndex((value) => value === this);
+      if (typeof theIndex === 'number' && theIndex > 0) {
+        return this.parent.children![theIndex - 1] as T;
+      }
+    }
+    return;
+  }
+
+  findAYoungerSibling<T extends BaseASTNode = ASTNode>():T|undefined{
+    if (this.parent) {
+      const theIndex = this.parent.children?.findIndex((value) => value === this);
+      if (typeof theIndex === 'number' && theIndex < this.parent.children!.length - 1) {
+        return this.parent.children![theIndex + 1] as T;
+      }
+    }
+    return;
+  }
+
 }
 
-export interface CaptureRuleASTNode extends BaseASTNode {
+export class CaptureRuleASTNode extends BaseASTNode {
   readonly type: 'CaptureRule';
+  constructor(scopeName: string, offset: number, length?: number, parent?: ASTNode, children?: ASTNode[]) {
+    super('CaptureRule', scopeName, offset, length, parent, children);
+  }
 }
-export interface MatchRuleASTNode extends BaseASTNode {
+
+export class MatchRuleASTNode extends BaseASTNode {
   readonly type: 'MatchRule';
+  constructor(scopeName: string, offset: number, length?: number, parent?: ASTNode, children?: ASTNode[]) {
+    super('MatchRule', scopeName, offset, length, parent, children);
+  }
 }
-export interface IncludeOnlyRuleASTNode extends BaseASTNode {
+
+export class IncludeOnlyRuleASTNode extends BaseASTNode {
   readonly type: 'IncludeOnlyRule';
+  constructor(scopeName: string, offset: number, length?: number, parent?: ASTNode, children?: ASTNode[]) {
+    super('IncludeOnlyRule', scopeName, offset, length, parent, children);
+  }
 }
-export interface BeginWhileRuleASTNode extends BaseASTNode {
+
+export class BeginWhileRuleASTNode extends BaseASTNode {
   readonly type: 'BeginWhileRule';
-  readonly subType: 'begin' | 'while';
-  beginCaptureChildren?: ASTNode[];
-  whileCaptureChildren?: ASTNode[];
+  constructor(
+    readonly subType: 'begin' | 'while',
+    scopeName: string, offset: number,
+    length?: number, parent?: ASTNode,
+    children?: ASTNode[],
+    public beginCaptureChildren: ASTNode[] = [],
+    public whileCaptureChildren: ASTNode[] = [],
+  ) {
+    super('BeginWhileRule', scopeName, offset, length, parent, children);
+  }
 }
-export interface BeginEndRuleASTNode extends BaseASTNode {
+
+export class BeginEndRuleASTNode extends BaseASTNode {
   readonly type: 'BeginEndRule';
-  beginCaptureChildren?: ASTNode[];
-  endCaptureChildren?: ASTNode[];
+  constructor(
+    scopeName: string, offset: number,
+    length?: number, parent?: ASTNode,
+    children?: ASTNode[],
+    public beginCaptureChildren: ASTNode[] = [],
+    public endCaptureChildren: ASTNode[] = [],
+  ) {
+    super('BeginEndRule', scopeName, offset, length, parent, children);
+  }
 }
 
 export class Position {

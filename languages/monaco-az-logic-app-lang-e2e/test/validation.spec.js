@@ -2,7 +2,8 @@ const chai = require('chai');
 const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
-  triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, delay, clearPageErrors, seizePageErrors
+  triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, delay, clearPageErrors, seizePageErrors,
+  seizeCurExpWarnings, seizeCurExpHints, seizeCurExpAllProb
 } = require("./utils");
 
 function generateValidationTests(openOnePage, closeOnePage) {
@@ -32,15 +33,31 @@ function generateValidationTests(openOnePage, closeOnePage) {
       [
         '@addHours(utcNow(),-5)',
         '@take([string(1), string(1)], 2)',
-        "@activity('Get Metadata1').output2fewfwelf",
-        "@activity('Get Metadata1').output[string(1)]",
+        "@activity('Get Default 1').output2fewfwelf",
+        "@activity('Get Default 1').output[string(1)]",
         "@pipeline()['TriggeredByPipelineName']",
-        "@activity('Get Metadata1').output[string(1)]",
+        "@activity('Get Default 1').output[string(1)]",
         "@pipeline()['DataFactory']",
-        "@activity('Get Metadata1').output.childItems[0].name",
+        "@activity('Get Default 1').output.childItems[0].name",
         "@item().one.two.three",
+        "@item()?.one.two.three",
+        "@item().one?.two.three",
+        "@item().one.two?.three",
+        "@item()?.one?.two.three",
+        "@item().one?.two?.three",
+        "@item()?.one?.two?.three",
         "@item().one['two'].three",
         "@contains( [pipeline().DataFactory], [pipeline().GroupId] )",
+        "@pipeline().globalParameters?.firstGlobalStrPara",
+        "@pipeline().optionalPackage?.oneOptionalString",
+        "@pipeline()?.TriggeredByPipelineName",
+        "@piPeline()?.optionalpackage?.oneOptionalString",
+        "@piPeline()['optionalpackage']?.oneoptionalString",
+        "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int')",
+        "@contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, [])",
+        "@concat('Baba', '''s ', 'book store')",
+        "@if(contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int'),'','''')",
+        "@equals(pipeline().globalParameters.firstGlobalStrPara,  '0')",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -54,12 +71,36 @@ function generateValidationTests(openOnePage, closeOnePage) {
           expect(content).eq(nextText);
           expect(problems.length).eq(0);
         })
-      })
+      });
+
+      [
+        '@activity(\'Get Default 1\').output.value[2].whatever.again.another',
+        '@activity(\'Get Default 1\').anyOutput.value[2].whatever.again.another',
+        '@activity(\'Get Default 1\').output.value[add(1, 1)].whatever.again.another',
+        '@activity(\'GetMetadata 1\').output.structure[add(1,2)].name',
+        '@activity(\'Lookup 3\').output.value[1].anything.whatsoever',
+        '@activity(\'Lookup 3\').whatever[2].and.anything.you[\'want\'][2]',
+        '@activity(\'Lookup 3\').whatever[2].and[266].anything.you[\'want\'][2]',
+      ].forEach((value, index)=>{
+        it(`Strict Valid expression ${index}`, async ()=>{
+          let nextText, content, problems;
+
+          nextText = value
+
+          await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+          content = await seizeCurExpTxt(page);
+          problems = await seizeCurExpAllProb(page);
+          expect(content).eq(nextText);
+          expect(problems.length).eq(0);
+        })
+      });
+
     })
 
     describe('Handle the dynamic value descriptor', ()=>{
       it('@dynamic# v1', async ()=>{
-        let nextText, content, problems;
+        let nextText, content, problems, warnings;
 
         nextText = '@dynamic';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
@@ -69,8 +110,10 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq('@dynamic1(1)');
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
         await page.evaluate(() => {
           window.regenerateNextSymbolTable();
@@ -98,76 +141,96 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq('@dynamic2(2)');
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
       })
     })
 
     describe('Handle any object flawlessly', ()=>{
 
       it('regular identifiers v1', async ()=>{
-        const nextText = '@item()';
+        let nextText, content, problems, warnings;
+        nextText = '@item()';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('regular identifiers v2', async ()=>{
-        const nextText = '@item().one';
+        let nextText, content, problems, warnings;
+        nextText = '@item().one';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('regular identifiers v3', async ()=>{
-        const nextText = '@item().one.two.three';
+        let nextText, content, problems, warnings;
+        nextText = '@item().one.two.three';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('bracket identifiers v1', async ()=>{
-        const nextText = "@item()['one']";
+        let nextText, content, problems, warnings;
+        nextText = "@item()['one']";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('bracket identifiers v2', async ()=>{
-        const nextText = "@item()['one']['two']";
+        let nextText, content, problems, warnings;
+        nextText = "@item()['one']['two']";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
 
       })
 
       it('bracket identifiers v3', async ()=>{
-        const nextText = "@item().one['two'].three";
+        let nextText, content, problems, warnings;
+        nextText = "@item().one['two'].three";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
+        expect(warnings.length).eq(0);
       })
 
     })
@@ -198,7 +261,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -208,7 +271,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
         // Miss a preceding @ for the function call at root statement
@@ -233,11 +296,13 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
     describe('UNKNOWN_FUNCTION_NAME 0x04', ()=>{
       it('found unrecognized a function name:: root level', async ()=>{
-        const nextText = '@add2(1, 233)';
+        let nextText, content, problems, allCompletionList;
+
+        nextText = '@add2(1, 233)';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(1);
         // Unknown function name
@@ -301,7 +366,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@concat()');
         expect(problems.length).eq(0);
 
@@ -315,7 +380,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@concat(pipeline().DataFactory)');
         expect(problems.length).eq(0);
 
@@ -329,7 +394,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await delay(250);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq('@concat(pipeline().DataFactory, pipeline().globalParameters.firstGlobalStrPara)');
 
         expect(problems.length).eq(0);
@@ -386,7 +451,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         nextText = '@add(1, 2)';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -410,7 +475,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         nextText = '@concat(\'1\', \'2\' )';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -421,7 +486,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
@@ -431,17 +496,17 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
         await clearUpMonacoEditor(page);
 
-        nextText = '@take("onestring", 2 )';
+        nextText = "@take('onestring', 2 )";
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         content = await seizeCurExpTxt(page);
-        problems = await seizeCurExpProb(page);
+        problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
 
@@ -463,11 +528,13 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
     describe('INVALID_IDENTIFIER 0x07 0x08 0x09', ()=>{
       it('invalid identifier chain 1#', async ()=>{
-        const nextText = '@pipeline().DataFactory2';
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@pipeline().DataFactory2';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(1);
         // Unrecognized identifiers of the function result
@@ -479,19 +546,28 @@ function generateValidationTests(openOnePage, closeOnePage) {
       })
 
       it('invalid identifier chain 2# w/o function call', async ()=>{
-        const nextText = '@pipeline.DataFactory2';
+
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@pipeline.DataFactory2';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
-        const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
-        expect(problems.length).eq(1);
-        // Unrecognized identifiers of the function result
+        expect(problems.length).eq(2);
+        // Missing invocation of the function
         expect(problems[0].code).eq(8);
         expect(problems[0].startPos.line).eq(0);
         expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(0);
-        expect(problems[0].endPos.character).lessThanOrEqual(22);
+        expect(problems[0].startPos.character).greaterThanOrEqual(1);
+        expect(problems[0].endPos.character).lessThanOrEqual(9);
+        // Unrecognized identifier DataFactory2
+        expect(problems[1].code).eq(9);
+        expect(problems[1].startPos.line).eq(0);
+        expect(problems[1].endPos.line).eq(0);
+        expect(problems[1].startPos.character).greaterThanOrEqual(9);
+        expect(problems[1].endPos.character).lessThanOrEqual(22);
       })
     })
 
@@ -547,7 +623,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -558,7 +634,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -569,7 +645,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
-        const problems = await seizeCurExpProb(page);
+        const problems = await seizeCurExpAllProb(page);
         expect(content).eq(nextText);
         expect(problems.length).eq(0);
       })
@@ -759,7 +835,7 @@ pipeline().globalParameters.oneGlobalFloat
       it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v1', async ()=>{
         let nextText, content, problems, allCompletionList;
 
-        nextText = `@activity('Get Metadata1').output[string(1), string(1)]`;
+        nextText = `@activity('Get Default 1').output[string(1), string(1)]`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -801,7 +877,7 @@ pipeline().globalParameters.oneGlobalFloat
       it('one line INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER v3', async ()=>{
         let nextText, content, problems, allCompletionList;
 
-        nextText = `@activity('Get Metadata1').output[].one.two.tree`;
+        nextText = `@activity('Get Default 1').output[].one.two.tree`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -823,7 +899,7 @@ pipeline().globalParameters.oneGlobalFloat
         let nextText, content, problems, allCompletionList;
 
         nextText =
-          `@activity('Get Metadata1').output[
+          `@activity('Get Default 1').output[
     string(1), string(1)
 `;
 
@@ -887,6 +963,156 @@ pipeline().globalParameters.oneGlobalFloat
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].endPos.character).lessThanOrEqual(15);
 
+      })
+
+    })
+
+    describe('IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL 0x12', ()=>{
+
+      it ('the accessor for an optional value also has to be optional v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline().optionalPackage.oneOptionalString`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(18);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).eq(12);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).eq(28);
+      })
+
+      it ('the accessor for an optional value also has to be optional v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@pipeline()?.optionalPackage.oneOptionalString`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(18);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).eq(13);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).eq(29);
+      })
+
+    })
+
+    describe('Q_STRING_DOUBLE_IS_NOT_ALLOWED 0x13', ()=>{
+      it ('double quoted string is not allowed v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText = `@concat("okay..''..")`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+        // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+        expect(problems[0].code).eq(19);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).eq(8);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).eq(20);
+      })
+    })
+
+
+    describe('MISMATCHED_CASES_FOUND 0X201', ()=>{
+
+      it ('triple mismatched cases v1', async ()=>{
+        let nextText, content, problems, warnings, allCompletionList;
+
+        nextText = `@piPeline()['optionalpackage']?.oneoptionalString`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(0);
+        expect(warnings.length).eq(3);
+
+        expect(warnings[0].code).eq(0x201);
+        expect(warnings[0].startPos.line).eq(0);
+        expect(warnings[0].startPos.character).eq(1);
+        expect(warnings[0].endPos.line).eq(0);
+        expect(warnings[0].endPos.character).eq(9);
+
+        expect(warnings[1].code).eq(0x201);
+        expect(warnings[1].startPos.line).eq(0);
+        expect(warnings[1].startPos.character).eq(13);
+        expect(warnings[1].endPos.line).eq(0);
+        expect(warnings[1].endPos.character).eq(28);
+
+        expect(warnings[2].code).eq(0x201);
+        expect(warnings[2].startPos.line).eq(0);
+        expect(warnings[2].startPos.character).eq(32);
+        expect(warnings[2].endPos.line).eq(0);
+        expect(warnings[2].endPos.character).eq(49);
+      })
+
+      it ('triple mismatched cases v2', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = `@piPeLine()?.optionalpackage?.oneOptionalstring`;
+
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        warnings = await seizeCurExpWarnings(page);
+        hints = await seizeCurExpHints(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(0);
+        expect(warnings.length).eq(3);
+        expect(hints.length).eq(1);
+
+        expect(warnings[0].code).eq(0x201);
+        expect(warnings[0].startPos.line).eq(0);
+        expect(warnings[0].startPos.character).eq(1);
+        expect(warnings[0].endPos.line).eq(0);
+        expect(warnings[0].endPos.character).eq(9);
+
+        expect(warnings[1].code).eq(0x201);
+        expect(warnings[1].startPos.line).eq(0);
+        expect(warnings[1].startPos.character).eq(13);
+        expect(warnings[1].endPos.line).eq(0);
+        expect(warnings[1].endPos.character).eq(28);
+
+        expect(warnings[2].code).eq(0x201);
+        expect(warnings[2].startPos.line).eq(0);
+        expect(warnings[2].startPos.character).eq(30);
+        expect(warnings[2].endPos.line).eq(0);
+        expect(warnings[2].endPos.character).eq(47);
+
+
+        expect(hints[0].code).eq(0x801);
+        expect(hints[0].startPos.line).eq(0);
+        expect(hints[0].startPos.character).eq(11);
+        expect(hints[0].endPos.line).eq(0);
+        expect(hints[0].endPos.character).eq(13);
       })
 
     })

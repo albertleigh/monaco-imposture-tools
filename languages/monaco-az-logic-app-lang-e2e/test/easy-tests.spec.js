@@ -4,8 +4,8 @@ const expect = chai.expect;
 const puppeteer = require('puppeteer');
 
 const {delay, typeInMonacoEditor, EXPRESSION_EDITOR_ID, hoverOneSpanContaining, collectMonacoListRowsAriaLabels,
-  seizeCurExpTxt, seizeCurExpProb,
-  clearUpMonacoEditor, triggerCompletionOfCurrentCursor
+  seizeCurExpTxt, seizeCurExpProb, seizeCurExpWarnings, seizeCurExpHints,
+  clearUpMonacoEditor, triggerCompletionOfCurrentCursor, seizeCurExpAllProb
 } = require('./utils');
 
 const IS_CI = process.env.CI === 'true';
@@ -31,38 +31,36 @@ describe('e2e easy test', () => {
 
     await clearUpMonacoEditor(page);
 
-    let nextText, content, problems, allCompletionList;
+    let nextText, content, problems, warnings, hints, allCompletionList;
 
-    nextText =
-`@concat(
-  pipeline(),
-pipeline().globalParameters.firstGlobalStrPara`;
+    nextText = `@activity('Get Default 1')`;
 
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
     await delay(250);
 
-    // await page.keyboard.press('Escape');
+    problems = await seizeCurExpProb(page);
+    expect(problems.length).eq(0);
 
-    await page.keyboard.press('Enter');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('End');
-    await page.keyboard.press('ArrowLeft');
+    await triggerCompletionOfCurrentCursor(page);
 
     await delay(250);
 
-    await triggerCompletionOfCurrentCursor(page);
     allCompletionList = await collectMonacoListRowsAriaLabels(page);
     expect(allCompletionList.length>=1).ok;
 
     expect(allCompletionList.some(value =>
-      value.indexOf('DataFactory') > -1
-    )).ok
+      value.indexOf('structure') > -1
+    )).not.ok;
 
-    expect(allCompletionList.some(value =>
-      value.indexOf('globalParameters') > -1
-    )).ok
+    await page.keyboard.press('Enter');
+
+    await delay(250);
+
+    content = await seizeCurExpTxt(page);
+    problems = await seizeCurExpAllProb(page);
+    expect(content).eq("@activity('Get Default 1').output");
+    expect(problems.length).eq(0);
 
   });
 });
