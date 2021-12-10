@@ -202,7 +202,7 @@ function generateNextSymbolTable() {
                 ],
                 {
                   firstRow: createRefValDesc([
-                    '***firstRow:any[]***',
+                    '***firstRow:any***',
                     'data of the first row'
                   ], IdentifierType.Any)
                 },  {allowAdditionalAnyProperties: true}

@@ -209,7 +209,7 @@ function generateNextSymbolTable() {
                 ],
                 {
                   firstRow: createRefValDesc([
-                    '***firstRow:any[]***',
+                    '***firstRow:any***',
                     'data of the first row'
                   ], IdentifierType.Any)
                 },  {allowAdditionalAnyProperties: true}
@@ -334,11 +334,9 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-// @activity('Lookup 3').output.v|
-// @activity('Lookup 3').output.value[1].anything.whatsoever
 
 const sampleCodes =
-`@activity('Lookup 3').output.v`;
+`@activity('GetMetadata 2').output.structure[1].`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
@@ -447,7 +445,7 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
         <MonacoEditorDiv ref={monacoEditorDiv} />
       </div>
       <div className={clazz.btnCtn}>
-        <Button color='primary' variant='contained' size='small' onClick={regenerateSymbolTable}>Change ST</Button>
+        <Button color='primary' variant='contained' size='small' onClick={regenerateSymbolTable}>Chg ST</Button>
       </div>
     </div>
   );

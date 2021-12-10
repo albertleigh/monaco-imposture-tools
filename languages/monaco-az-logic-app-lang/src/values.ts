@@ -575,6 +575,11 @@ export abstract class AbstractValueDescription{
     return [];
   }
 
+  isInternal(){
+    return this instanceof PackageDescription &&
+      this._$isInternal;
+  }
+
   abstract traverse(
     paths: ValueDescriptionPath[],
     cb: (paths: ValueDescriptionPath[], vd: ValueDescription) => void
@@ -1764,7 +1769,10 @@ export class SymbolTable {
         cur instanceof ReferenceValueDescription &&
         cur._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
       ){
+        const literalArrayContent = codeDocument.getNodeContent(nextRetChainType.node);
         cur = this.findByPath(cur._$valueType.arrayItemTypeChainList);
+        nextRetChainType = yield new ValueDescriptionPath(literalArrayContent, cur);
+        collectedPaths.push(literalArrayContent || '');
       }else if (
         nextRetChainType instanceof FunctionCallReturnChainType
       ){
@@ -1861,6 +1869,7 @@ export class SymbolTable {
     ]);
 
     function saveToDescriptionDictionary(paths: ValueDescriptionPath[], vd: ValueDescription) {
+      if (paths.some(one=> one.vd.isInternal())) return;
       switch (vd._$type) {
         case DescriptionType.FunctionValue:
           if (vd._$returnType.type === IdentifierTypeName.FUNCTION_RETURN_TYPE) {

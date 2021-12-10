@@ -1,8 +1,5 @@
 import {CancellationToken, editor, languages, Position, Range} from './editor.api';
-import {
-  AzLogicAppLangConstants,
-  AzLogicAppNode,
-} from './base';
+import {AzLogicAppLangConstants, AzLogicAppNode,} from './base';
 import {
   AbstractReturnChainType,
   IdentifierInBracketNotationReturnChainType,
@@ -18,6 +15,7 @@ import {
   IdentifierTypeName,
   OlFunDescCollItem,
   PackageDescription,
+  ReferenceValueDescription,
   SymbolTable,
   ValueDescription,
   ValueDescriptionDictionary,
@@ -33,7 +31,10 @@ import {
   FunctionCallNode,
   FunctionCallTarget,
   IdentifierNode,
-  IdentifierNodeInBracketNotation, LiteralArrayNode, LiteralNumberNode, LiteralStringNode,
+  IdentifierNodeInBracketNotation,
+  LiteralArrayNode,
+  LiteralNumberNode,
+  LiteralStringNode,
   ParenthesisNode,
   RootFunctionCallNode
 } from "./parser";
@@ -427,7 +428,11 @@ export function generateCompletion(
         identifiersChain = chain.chain;
         completionKind = CompletionType.PROPERTY;
       }
-    }else if (node instanceof IdentifierNodeInBracketNotation){
+    }else if (
+      node instanceof IdentifierNodeInBracketNotation &&
+      node.offset < offset &&
+      node.offset + node.length > offset
+    ){
       // if (node.elderSibling){
       //   const chain = findCompleteIdentifiersChain(node.elderSibling.astNode as any, azLgcExpDoc.codeDocument);
       //   if (chain.chain.length){
@@ -722,7 +727,87 @@ export function generateCompletion(
         break;
       case CompletionType.PROPERTY:
         if (identifiersChain) {
+          const vdPathArr = theLgcExpDocEditor.rootSymbolTable.findValDescArrFromChain(azLgcExpDoc.codeDocument, identifiersChain);
           if (
+            identifiersChain.length > 0 &&
+            identifiersChain.some((value, index) => (
+              index !== 0 &&
+              value instanceof IdentifierInBracketNotationReturnChainType &&
+              vdPathArr[index -1].vd instanceof ReferenceValueDescription &&
+              (vdPathArr[index -1].vd as ReferenceValueDescription)._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
+            ))
+          ){
+            // post any array of type completion suggestion
+            let identifierInBracketNotationIndex = identifiersChain.length -1;
+            while (
+              identifierInBracketNotationIndex > -1 &&
+              !(
+                identifierInBracketNotationIndex !== 0 &&
+                identifiersChain[identifierInBracketNotationIndex] instanceof IdentifierInBracketNotationReturnChainType &&
+                vdPathArr[identifierInBracketNotationIndex -1].vd instanceof ReferenceValueDescription &&
+                (vdPathArr[identifierInBracketNotationIndex -1].vd as ReferenceValueDescription)._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
+              )
+            ){
+              identifierInBracketNotationIndex--
+            }
+
+
+            if (
+              // in range
+              identifierInBracketNotationIndex >= 0 &&
+              identifierInBracketNotationIndex < identifiersChain.length &&
+              // not an unrecognized type
+              !(
+                vdPathArr[identifierInBracketNotationIndex] instanceof ReferenceValueDescription &&
+                (vdPathArr[identifierInBracketNotationIndex].vd as ReferenceValueDescription)._$valueType.type === IdentifierTypeName.UNRECOGNIZED
+              )
+            ){
+              const firstChainNode = identifiersChain[identifierInBracketNotationIndex];
+              const lastPropertyNode = identifiersChain[identifiersChain.length - 1].node;
+              const startOffset = firstChainNode.node.offset + firstChainNode.node.length;
+              const endOffset = lastPropertyNode.offset + lastPropertyNode.length;
+              const startPos = model.getPositionAt(startOffset);
+              const endPos = model.getPositionAt(endOffset);
+              const contentRange = new AzLogicAppLangConstants._monaco.Range(
+                startPos.lineNumber,
+                startPos.column,
+                endPos.lineNumber,
+                endPos.column
+              );
+              const content = model.getValueInRange(contentRange);
+              let result:languages.CompletionList;
+
+              const theReturnValueDescCollection: DescriptorCollection[] = [];
+              vdPathArr[identifierInBracketNotationIndex].vd.collectAllPathBeneath([], theReturnValueDescCollection)
+              if (theReturnValueDescCollection.length){
+                result = {
+                  suggestions: theReturnValueDescCollection.map(value => {
+                    return buildCompletionItemFromDescriptorCollectionEntry(
+                      contentRange,
+                      [
+                        new ValueDescriptionPath('', vdPathArr[identifierInBracketNotationIndex-1].vd),
+                        ...value.paths
+                      ],
+                      value.valDescCollItem
+                    )
+                  })
+                }
+              }
+
+              AzLogicAppLangConstants.inSemanticDebugMode &&
+              console.log(
+                '[generateCompletion::PROPERTY] post array of type',
+                content,
+                result,
+                offset,
+                startOffset,
+                endOffset,
+                identifiersChain,
+                vdPathArr
+              );
+              return result;
+            }
+          }else if (
             identifiersChain.length > 0 &&
             originalAstNode.$impostureLang?.dataType === 'punctuation-capture' &&
             originalAstNode.offset + 1 === offset &&
@@ -804,7 +889,7 @@ export function generateCompletion(
               if (theFunDesc) {
                 const funRetTyp = theLgcExpDocEditor.rootSymbolTable.determineReturnIdentifierTypeOfFunction(
                   azLgcExpDoc.codeDocument,
-                  firstChainNode as any,
+                  firstChainNode.node as AzLogicAppNode,
                   theFunDesc
                 );
 
@@ -890,7 +975,7 @@ export function generateCompletion(
               if (theFunDesc) {
                 const funRetTyp = theLgcExpDocEditor.rootSymbolTable.determineReturnIdentifierTypeOfFunction(
                   azLgcExpDoc.codeDocument,
-                  identifiersChain[0] as any,
+                  identifiersChain[0].node as AzLogicAppNode,
                   theFunDesc
                 );
 

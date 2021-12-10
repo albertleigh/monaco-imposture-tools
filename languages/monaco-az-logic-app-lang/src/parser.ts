@@ -1,10 +1,8 @@
 import {ASTNode, CodeDocument} from "@monaco-imposture-tools/core";
+import {AzLogicAppNode, AzLogicAppNodeType,} from "./base";
 import {
-  AzLogicAppNode,
-  AzLogicAppNodeType,
-} from "./base";
-import {
-  AbstractReturnChainType, AzLogicAppNodeUtils,
+  AbstractReturnChainType,
+  AzLogicAppNodeUtils,
   IdentifierInBracketNotationReturnChainType,
   IdentifierReturnChainType,
   ReturnChainType,
@@ -19,7 +17,8 @@ import {
   PackageDescription,
   ReferenceValueDescription,
   SymbolTable,
-  ValueDescription, ValueDescriptionPath,
+  ValueDescription,
+  ValueDescriptionPath,
 } from './values'
 import {
   DiagnosticSeverity,
@@ -1549,6 +1548,10 @@ function _collect_identifiers_w_punctuation(
         if(
           theIdentifierNodeInBracketNotation.literalArrayNode.itemSize &&
           _curSymbol.isPropertyLiteral &&
+          !(
+            previousVdPath.vd instanceof ReferenceValueDescription &&
+            previousVdPath.vd._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
+          ) &&
           PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' &&
           curVdPath.name !== _curSymbol.identifierName
         ){

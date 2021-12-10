@@ -77,8 +77,10 @@ function generateValidationTests(openOnePage, closeOnePage) {
         '@activity(\'Get Default 1\').output.value[2].whatever.again.another',
         '@activity(\'Get Default 1\').anyOutput.value[2].whatever.again.another',
         '@activity(\'Get Default 1\').output.value[add(1, 1)].whatever.again.another',
+        '@activity(\'GetMetadata 1\').output.structure[add(1,2)].name',
         '@activity(\'Lookup 3\').output.value[1].anything.whatsoever',
         '@activity(\'Lookup 3\').whatever[2].and.anything.you[\'want\'][2]',
+        '@activity(\'Lookup 3\').whatever[2].and[266].anything.you[\'want\'][2]',
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;

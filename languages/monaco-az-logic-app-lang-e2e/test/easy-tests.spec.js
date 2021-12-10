@@ -5,7 +5,7 @@ const puppeteer = require('puppeteer');
 
 const {delay, typeInMonacoEditor, EXPRESSION_EDITOR_ID, hoverOneSpanContaining, collectMonacoListRowsAriaLabels,
   seizeCurExpTxt, seizeCurExpProb, seizeCurExpWarnings, seizeCurExpHints,
-  clearUpMonacoEditor, triggerCompletionOfCurrentCursor
+  clearUpMonacoEditor, triggerCompletionOfCurrentCursor, seizeCurExpAllProb
 } = require('./utils');
 
 const IS_CI = process.env.CI === 'true';
@@ -33,26 +33,34 @@ describe('e2e easy test', () => {
 
     let nextText, content, problems, warnings, hints, allCompletionList;
 
-    nextText = `@pipeline().optionalPackage?.`;
+    nextText = `@activity('Get Default 1')`;
 
     await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
     await delay(250);
+
+    problems = await seizeCurExpProb(page);
+    expect(problems.length).eq(0);
 
     await triggerCompletionOfCurrentCursor(page);
 
     await delay(250);
 
     allCompletionList = await collectMonacoListRowsAriaLabels(page);
+    expect(allCompletionList.length>=1).ok;
 
-    expect(allCompletionList.length>0).ok;
+    expect(allCompletionList.some(value =>
+      value.indexOf('structure') > -1
+    )).not.ok;
 
-    let hasOptional;
-    for (const oneCompletion of allCompletionList){
-      hasOptional = hasOptional || oneCompletion.indexOf('optionalPackage') > -1;
-    }
+    await page.keyboard.press('Enter');
 
-    expect(hasOptional).ok;
+    await delay(250);
+
+    content = await seizeCurExpTxt(page);
+    problems = await seizeCurExpAllProb(page);
+    expect(content).eq("@activity('Get Default 1').output");
+    expect(problems.length).eq(0);
 
   });
 });
