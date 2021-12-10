@@ -17,7 +17,7 @@
     "compile": "lerna run compile",
     "compile:debug": "lerna run compile:debug",
     "test": "lerna run test",
-    "coverage": "lerna run coverage",
+    "coverage": "lerna run coverage --stream",
     "report-coverage:text": "nyc report --reporter=text",
     "report-coverage:coveralls": "nyc report --reporter=text-lcov | coveralls",
     "lint:fix": "lerna run lint:fix",

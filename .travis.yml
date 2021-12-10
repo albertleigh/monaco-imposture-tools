@@ -18,7 +18,7 @@ script:
   - npm ci
   - npm run setup
   - npm run compile
-  - travis_wait 30 npm run coverage
+  - npm run coverage
 after_success:
   - npm run report-coverage:coveralls
 notifications:
