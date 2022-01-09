@@ -1468,12 +1468,12 @@ export class SymbolTable {
         '**max(...number[]):number**',
         'Return the highest value from a list or array with numbers that is inclusive at both ends.',
       ],
-      [IdentifierType.NumberArray],
+      [IdentifierType.NumberArrayList],
       IdentifierType.Number
     ),
     min: createFunValDesc(
       ['**min(...number[]):number**', 'Return the lowest value from a set of numbers or an array.'],
-      [IdentifierType.NumberArray],
+      [IdentifierType.NumberArrayList],
       IdentifierType.Number
     ),
     mod: createFunValDesc(
@@ -1498,7 +1498,7 @@ export class SymbolTable {
       IdentifierType.Number
     ),
     range: createFunValDesc(
-      ['**range(startIndex:number, count:number):number**', 'Return an integer array that starts from a specified integer.'],
+      ['**range(startIndex:number, count:number):number[]**', 'Return an integer array that starts from a specified integer.'],
       [IdentifierType.Number, IdentifierType.Number],
       IdentifierType.NumberArray
     ),

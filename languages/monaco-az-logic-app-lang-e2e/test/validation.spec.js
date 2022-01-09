@@ -58,6 +58,15 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@concat('Baba', '''s ', 'book store')",
         "@if(contains(json(item().DataLoadingBehaviorSettings).watermarkColumnType, 'Int'),'','''')",
         "@equals(pipeline().globalParameters.firstGlobalStrPara,  '0')",
+        "@array('abc', 'defg')",
+        "@union([1, 2, 3], [101, 2, 1, 10])",
+        "@min(pipeline().globalParameters.oneTypedObj.anotherGlobalFloat,activity('Lookup 3').output.firstRow.count)",
+        "@max(pipeline().globalParameters.oneTypedObj.anotherGlobalNumber,activity('Lookup 4').output.firstRow.count)",
+        "@coalesce(1,2,'',true, false, xml(''))",
+        "@createArray(1,2,'',true, false, json(''))",
+        "@float('0.777')",
+        "@subtractFromTime('',1, string( json('')))",
+        "@subtractFromTime('',1, string( json('')), 'another')",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
