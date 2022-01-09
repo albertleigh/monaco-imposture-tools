@@ -64,7 +64,7 @@ export function generateHover(node: SyntaxNode | undefined, _azLgcExpDocument: A
       })
     ){
       const funCall = node.parent;
-      const funVd = funCallTarget.target;
+      const funVd = funCallTarget?.target;
       // const funVd = funCall.functionValueDescription;
       if (
         funCallTarget &&

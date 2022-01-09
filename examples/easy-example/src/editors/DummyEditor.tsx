@@ -334,9 +334,8 @@ const useStyles = makeStyles((theme) => ({
 
 // @item().one['two'].
 
-
 const sampleCodes =
-`@activity('GetMetadata 2').output.structure[1].`;
+`@min(pipeline().globalParameters.oneTypedObj.anotherGlobalFloat,activity('Lookup 3').output.firstRow.count)`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

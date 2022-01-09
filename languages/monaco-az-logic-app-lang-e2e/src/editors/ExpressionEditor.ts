@@ -308,7 +308,7 @@ export const mount = (root:HTMLDivElement)=> {
     MONACO_EDITOR_ID,
     rootSymbolTable
   )
-  AzLogicAppExpressionLangMonacoEditor.init.then(()=>{
+  AzLogicAppExpressionLangMonacoEditor.init?.then(()=>{
     theEditor.azLgcExpDocEventEmitter?.subscribe(subscribeCodeDoc);
     theEditor.validationResultEventEmitter?.subscribe(subscribeValidateResult);
     (window as any).regenerateNextSymbolTable = function () {

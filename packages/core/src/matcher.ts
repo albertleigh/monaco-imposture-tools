@@ -23,7 +23,7 @@ export function createMatchers<T>(
       token = tokenizer.next();
     }
     const matcher = parseConjunction();
-    if (matcher) {
+    if (!!matcher) {
       results.push({matcher, priority});
     }
     if (token !== ',') {
@@ -33,11 +33,11 @@ export function createMatchers<T>(
   }
   return results;
 
-  function parseOperand(): Matcher<T> {
+  function parseOperand(): Matcher<T> | null {
     if (token === '-') {
       token = tokenizer.next();
       const expressionToNegate = parseOperand();
-      return (matcherInput) => expressionToNegate && !expressionToNegate(matcherInput);
+      return (matcherInput) => !!expressionToNegate && !expressionToNegate(matcherInput);
     }
     if (token === '(') {
       token = tokenizer.next();
@@ -50,7 +50,7 @@ export function createMatchers<T>(
     if (isIdentifier(token)) {
       const identifiers: string[] = [];
       do {
-        identifiers.push(token);
+        identifiers.push(token!);
         token = tokenizer.next();
       } while (isIdentifier(token));
       return (matcherInput) => matchesName(identifiers, matcherInput);
@@ -84,11 +84,11 @@ export function createMatchers<T>(
   }
 }
 
-function isIdentifier(token: string) {
+function isIdentifier(token: string | null) {
   return token && token.match(/[\w\.:]+/);
 }
 
-function newTokenizer(input: string): {next: () => string} {
+function newTokenizer(input: string): {next: () => (string | null) } {
   const regex = /([LR]:|[\w\.:][\w\.:\-]*|[\,\|\-\(\)])/g;
   let match = regex.exec(input);
   return {

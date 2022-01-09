@@ -92,13 +92,13 @@ function buildCompletionItemKindFromValueDescription(vd: ValueDescription): lang
   switch (vd._$type) {
     case DescriptionType.OverloadedFunctionValue:
     case DescriptionType.FunctionValue:
-      return AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Function;
+      return AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Function;
     case DescriptionType.ReferenceValue:
-      return AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Variable;
+      return AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Variable;
     case DescriptionType.PackageReference:
-      return AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Reference;
+      return AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Reference;
   }
-  return AzLogicAppLangConstants._monaco.languages.CompletionItemKind.User;
+  return AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.User;
 }
 
 function buildCompletionItemFromDescriptorCollectionEntry(
@@ -136,7 +136,7 @@ function buildCompletionItemFromDescriptorCollectionEntry(
         new Array(getFunctionParaCntFromDc(dci)).fill('').join(', ');
     return {
       label: buildFunctionLabelWithPara(dciPaths, dci),
-      kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Function,
+      kind: AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Function,
       insertText: `${paths}(${innerParaCommas})${paramComma}`,
       range: contentRange,
     };
@@ -201,7 +201,7 @@ function generateCompletionListByConstantArray(
       .map(value => ({
         label: value.constantStringValue,
         insertText: value.constantStringValue,
-        kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Constant,
+        kind: AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Constant,
         range: contentRange,
       }))
   }
@@ -252,7 +252,7 @@ export function generateCompletion(
     // populate the whole functions list directly
     const startPos = model.getPositionAt(offset);
     const endPos = model.getPositionAt(offset);
-    const contentRange = new AzLogicAppLangConstants._monaco.Range(
+    const contentRange = new AzLogicAppLangConstants._monaco!.Range(
       startPos.lineNumber,
       startPos.column,
       endPos.lineNumber,
@@ -272,7 +272,7 @@ export function generateCompletion(
               new Array(getFunctionParaCntFromDc(valDci)).fill('').join(', ');
           return {
             label: buildFunctionLabelWithPara(value.paths, value.valDescCollItem),
-            kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Function,
+            kind: AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Function,
             insertText: `${paths}(${paraCommas})`,
             range: contentRange,
           };
@@ -354,7 +354,7 @@ export function generateCompletion(
         // root function after at symbol
         const startPos = model.getPositionAt(node.atSymbolNode.offset + node.atSymbolNode.length);
         const endPos = model.getPositionAt(offset);
-        const contentRange = new AzLogicAppLangConstants._monaco.Range(
+        const contentRange = new AzLogicAppLangConstants._monaco!.Range(
           startPos.lineNumber,
           startPos.column,
           endPos.lineNumber,
@@ -374,7 +374,7 @@ export function generateCompletion(
                   new Array(getFunctionParaCntFromDc(valDci)).fill('').join(', ');
               return {
                 label: buildFunctionLabelWithPara(value.paths, value.valDescCollItem),
-                kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Function,
+                kind: AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Function,
                 insertText: `${paths}(${paraCommas})`,
                 range: contentRange,
               };
@@ -465,8 +465,8 @@ export function generateCompletion(
       }
     }else if (
       // todo "identifiers-capture" might be inappropriate over here, consider changing it
-      originalAstNode.$impostureLang.dataType === "identifiers-capture" &&
-      originalAstNode.parent.$impostureLang.dataType === "identifiers:wPunctuation" &&
+      originalAstNode.$impostureLang?.dataType === "identifiers-capture" &&
+      originalAstNode.parent?.$impostureLang?.dataType === "identifiers:wPunctuation" &&
       !(node instanceof IdentifierNode) &&
       node instanceof ParenthesisNode &&
       node.offset < offset &&
@@ -476,12 +476,14 @@ export function generateCompletion(
     ){
       // incomplete identifier
       const thePara = node.parameter(node.paramIndexByOffset(offset));
-      const chain = AbstractReturnChainType.findCompleteIdentifiersChain(
-        thePara.astNode as any, azLgcExpDoc.codeDocument
-      )
-      if (chain.chain.length) {
-        identifiersChain = chain.chain;
-        completionKind = CompletionType.PROPERTY;
+      if (thePara?.astNode){
+        const chain = AbstractReturnChainType.findCompleteIdentifiersChain(
+          thePara.astNode as any, azLgcExpDoc.codeDocument
+        )
+        if (chain.chain.length) {
+          identifiersChain = chain.chain;
+          completionKind = CompletionType.PROPERTY;
+        }
       }
     }else if(
       node instanceof ParenthesisNode &&
@@ -523,7 +525,7 @@ export function generateCompletion(
       if (parenthesesNode.parameter(paramIndex)){
         // property
         const chain = AbstractReturnChainType.findCompleteIdentifiersChain(
-          parenthesesNode.parameter(paramIndex).astNode as any, azLgcExpDoc.codeDocument
+          parenthesesNode.parameter(paramIndex)!.astNode as any, azLgcExpDoc.codeDocument
         );
         if (chain.chain.length) {
           identifiersChain = chain.chain;
@@ -557,7 +559,7 @@ export function generateCompletion(
           const lastFunCallId = functionCall.supportFunctionCallIdentifiers[functionCall.supportFunctionCallIdentifiers.length -1];
           const startPos = model.getPositionAt(firstFunCallId.offset);
           const endPos = model.getPositionAt(lastFunCallId.offset + lastFunCallId.length);
-          const contentRange = new AzLogicAppLangConstants._monaco.Range(
+          const contentRange = new AzLogicAppLangConstants._monaco!.Range(
             startPos.lineNumber,
             startPos.column,
             endPos.lineNumber,
@@ -574,7 +576,7 @@ export function generateCompletion(
                 // const vd = value.valueDescription;
                 return {
                   label: buildFunctionLabelWithPara(value.paths, value.valDescCollItem),
-                  kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Function,
+                  kind: AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Function,
                   insertText: paths,
                   range: contentRange,
                 };
@@ -607,7 +609,7 @@ export function generateCompletion(
           }
           let startPos = model.getPositionAt(startOffset);
           let endPos = model.getPositionAt(endOffset);
-          let contentRange = new AzLogicAppLangConstants._monaco.Range(
+          let contentRange = new AzLogicAppLangConstants._monaco!.Range(
             startPos.lineNumber,
             startPos.column,
             endPos.lineNumber,
@@ -619,7 +621,7 @@ export function generateCompletion(
             // all white space content, reset insert pos
             startPos = model.getPositionAt(offset);
             endPos = model.getPositionAt(offset);
-            contentRange = new AzLogicAppLangConstants._monaco.Range(
+            contentRange = new AzLogicAppLangConstants._monaco!.Range(
               startPos.lineNumber,
               startPos.column,
               endPos.lineNumber,
@@ -627,11 +629,11 @@ export function generateCompletion(
             );
             content = model.getValueInRange(contentRange);
           }else if (
-            originalAstNode.$impostureLang.dataType === "identifiers"
+            originalAstNode.$impostureLang?.dataType === "identifiers"
           ){
             startPos = model.getPositionAt(originalAstNode.offset);
             endPos = model.getPositionAt(originalAstNode.offset + originalAstNode.length || 0);
-            contentRange = new AzLogicAppLangConstants._monaco.Range(
+            contentRange = new AzLogicAppLangConstants._monaco!.Range(
               startPos.lineNumber,
               startPos.column,
               endPos.lineNumber,
@@ -670,10 +672,10 @@ export function generateCompletion(
                     if (theFunDesc._$type === DescriptionType.OverloadedFunctionValue){
                       theFunDesc._$parameterTypes.forEach((olParaTypes, olParaIndex) => {
                         if (
-                          olParaIndex !== functionCall.parameterSeq &&
-                          olParaTypes[functionCall.parameterSeq]?.type === IdentifierTypeName.CONSTANT
+                          olParaIndex !== functionCall!.parameterSeq &&
+                          olParaTypes[functionCall!.parameterSeq]?.type === IdentifierTypeName.CONSTANT
                         ){
-                          constantsIdTypes.push(olParaTypes[functionCall.parameterSeq]);
+                          constantsIdTypes.push(olParaTypes[functionCall!.parameterSeq]);
                         }
                       })
                     }
@@ -768,15 +770,16 @@ export function generateCompletion(
               const endOffset = lastPropertyNode.offset + lastPropertyNode.length;
               const startPos = model.getPositionAt(startOffset);
               const endPos = model.getPositionAt(endOffset);
-              const contentRange = new AzLogicAppLangConstants._monaco.Range(
+              const contentRange = new AzLogicAppLangConstants._monaco!.Range(
                 startPos.lineNumber,
                 startPos.column,
                 endPos.lineNumber,
                 endPos.column
               );
               const content = model.getValueInRange(contentRange);
-              let result:languages.CompletionList;
-
+              let result:languages.CompletionList = {
+                suggestions:[]
+              };
               const theReturnValueDescCollection: DescriptorCollection[] = [];
               vdPathArr[identifierInBracketNotationIndex].vd.collectAllPathBeneath([], theReturnValueDescCollection)
               if (theReturnValueDescCollection.length){
@@ -823,7 +826,7 @@ export function generateCompletion(
             const endOffset = offset;
             const startPos = model.getPositionAt(startOffset);
             const endPos = model.getPositionAt(endOffset);
-            const contentRange = new AzLogicAppLangConstants._monaco.Range(
+            const contentRange = new AzLogicAppLangConstants._monaco!.Range(
               startPos.lineNumber,
               startPos.column,
               endPos.lineNumber,
@@ -871,7 +874,7 @@ export function generateCompletion(
             const endOffset = lastPropertyNode.offset + (lastPropertyNode.length || 0);
             const startPos = model.getPositionAt(startOffset);
             const endPos = model.getPositionAt(endOffset);
-            const contentRange = new AzLogicAppLangConstants._monaco.Range(
+            const contentRange = new AzLogicAppLangConstants._monaco!.Range(
               startPos.lineNumber,
               startPos.column,
               endPos.lineNumber,
@@ -957,7 +960,7 @@ export function generateCompletion(
             let endOffset = thePropertyNode.offset + (thePropertyNode.length || 0);
             let startPos = model.getPositionAt(startOffset);
             let endPos = model.getPositionAt(endOffset);
-            let contentRange = new AzLogicAppLangConstants._monaco.Range(
+            let contentRange = new AzLogicAppLangConstants._monaco!.Range(
               startPos.lineNumber,
               startPos.column,
               endPos.lineNumber,
@@ -1005,7 +1008,7 @@ export function generateCompletion(
              endOffset = startOffset;
              startPos = model.getPositionAt(startOffset);
              endPos = model.getPositionAt(endOffset);
-             contentRange = new AzLogicAppLangConstants._monaco.Range(
+             contentRange = new AzLogicAppLangConstants._monaco!.Range(
                startPos.lineNumber,
                startPos.column,
                endPos.lineNumber,
@@ -1061,7 +1064,7 @@ export function generateCompletion(
 
           const startPos = model.getPositionAt(node.literalArrayNode.startPosOfItem(0));
           const endPos = model.getPositionAt(node.literalArrayNode.endPosOfItem(0));
-          const contentRange = new AzLogicAppLangConstants._monaco.Range(
+          const contentRange = new AzLogicAppLangConstants._monaco!.Range(
             startPos.lineNumber,
             startPos.column,
             endPos.lineNumber,
@@ -1074,10 +1077,10 @@ export function generateCompletion(
             node.elderSibling &&
             node.elderSibling.rValue
           ){
-            let elderVd = node.elderSibling.rValue;
+            let elderVd:ValueDescription | undefined = node.elderSibling.rValue;
             if (
-              elderVd._$type === DescriptionType.ReferenceValue &&
-              elderVd._$valueType.type === IdentifierTypeName.FUNCTION_RETURN_TYPE
+              elderVd?._$type === DescriptionType.ReferenceValue &&
+              elderVd?._$valueType.type === IdentifierTypeName.FUNCTION_RETURN_TYPE
             ){
               elderVd = theLgcExpDocEditor.rootSymbolTable.findByPath(elderVd._$valueType.returnTypeChainList || []);
             }
@@ -1088,7 +1091,7 @@ export function generateCompletion(
                   suggestions.push({
                     label: `'${oneField}'`,
                     insertText: `'${oneField}'`,
-                    kind: AzLogicAppLangConstants._monaco.languages.CompletionItemKind.Text,
+                    kind: AzLogicAppLangConstants._monaco!.languages.CompletionItemKind.Text,
                     range: contentRange,
                   })
                 })
@@ -1097,8 +1100,8 @@ export function generateCompletion(
 
           // seize all string and number function call
           const allFunctionsReturningStringAndNumber = [
-            ...theLgcExpDocEditor.valueDescriptionDict.get(IdentifierType.String),
-            ...theLgcExpDocEditor.valueDescriptionDict.get(IdentifierType.Number)
+            ...theLgcExpDocEditor.valueDescriptionDict.get(IdentifierType.String)!,
+            ...theLgcExpDocEditor.valueDescriptionDict.get(IdentifierType.Number)!
           ];
 
           if (allFunctionsReturningStringAndNumber.length){

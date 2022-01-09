@@ -37,7 +37,7 @@ export class DescCollItem implements IDescCollItem{
 
   get areAllParaConstant():boolean{
     return this.isFunction &&
-      (this.vd as FunctionValueDescription)._$parameterTypes.length &&
+      (this.vd as FunctionValueDescription)._$parameterTypes.length > 0 &&
       (this.vd as FunctionValueDescription)._$parameterTypes
         .every(value => value.type === IdentifierTypeName.CONSTANT) ;
   }
@@ -75,7 +75,7 @@ export class OlFunDescCollItem implements IDescCollItem {
   }
 
   get areAllParaConstant():boolean{
-    return this.overloadedFunVd._$parameterTypes[this.overloadedIndex].length &&
+    return this.overloadedFunVd._$parameterTypes[this.overloadedIndex].length > 0 &&
       this.overloadedFunVd._$parameterTypes[this.overloadedIndex].every(value =>
         value.type === IdentifierTypeName.CONSTANT
       )
@@ -133,7 +133,7 @@ export class IdentifierType {
 
   static interpretFunctionChainList(idChain: ReturnChainType[], retTyp: IdentifierType, funRetChainTyp: FunctionCallReturnChainType){
     let interpretedChainList: Array<{path:string, retChainTyp: FunctionCallReturnChainType | IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType}> =
-      retTyp.returnTypeChainList.map(one=> ({path:one, retChainTyp:funRetChainTyp}));
+      retTyp.returnTypeChainList?.map(one=> ({path:one, retChainTyp:funRetChainTyp})) || [];
     interpretedChainList = interpretedChainList.concat(
       (idChain.slice(1) as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
         (oneRetTyp) => ({path: oneRetTyp.identifierName, retChainTyp: oneRetTyp})
@@ -323,15 +323,15 @@ export class IdentifierType {
       case IdentifierTypeName.CONSTANT:
         return this.constantStringValue;
       case IdentifierTypeName.FUNCTION_RETURN_TYPE:
-        return this.returnTypeLabel;
+        return this.returnTypeLabel || '';
       case IdentifierTypeName.ARRAY_OF_TYPE:
-        return this.arrayItemTypeLabel;
+        return this.arrayItemTypeLabel || '';
       case IdentifierTypeName.INTERNAL_PKG_REF:
-        return `package::${this.packageDescription._$desc[0]}`
+        return `package::${this.packageDescription?._$desc[0]}`
       case IdentifierTypeName.INTERNAL_FUN_REF:
-        return `function::${this.functionValueDescription._$desc[0]}`
+        return `function::${this.functionValueDescription?._$desc[0]}`
       case IdentifierTypeName.INTERNAL_OL_FUN_REF:
-        return `function::${this.overloadedFunctionValueDescription._$desc[0]}`
+        return `function::${this.overloadedFunctionValueDescription?._$desc[0]}`
       default:
         return 'unknown';
     }
@@ -486,17 +486,19 @@ export class IdentifierType {
     }
 
     if (this.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && target.type === IdentifierTypeName.FUNCTION_RETURN_TYPE){
-      return this.returnTypeChainList.length &&
-        this.returnTypeChainList.length === target.returnTypeChainList.length &&
+      return !!(this.returnTypeChainList?.length) &&
+        this.returnTypeChainList.length === target.returnTypeChainList?.length &&
         this.returnTypeChainList.every((value, index) => (
+          this.returnTypeChainList && target.returnTypeChainList &&
           this.returnTypeChainList[index] === target.returnTypeChainList[index]
         ))
     }
 
     if (this.type === IdentifierTypeName.ARRAY_OF_TYPE && target.type === IdentifierTypeName.ARRAY_OF_TYPE){
-      return this.arrayItemTypeChainList.length &&
-        this.arrayItemTypeChainList.length === target.arrayItemTypeChainList.length &&
+      return !!(this.arrayItemTypeChainList?.length) &&
+        this.arrayItemTypeChainList.length === target.arrayItemTypeChainList?.length &&
         this.arrayItemTypeChainList.every((value, index) => (
+          this.arrayItemTypeChainList && target.arrayItemTypeChainList &&
           this.arrayItemTypeChainList[index] === target.arrayItemTypeChainList[index]
         ))
     }
@@ -542,7 +544,7 @@ export class ValueDescriptionPath{
   }
 
   get isOptional(){
-    return !!this.vd._$isOptional;
+    return this.vd._$isOptional;
   }
 
 }
@@ -815,14 +817,14 @@ export class PackageDescription extends AbstractValueDescription {
     const collector: DescriptorCollection[] = [];
     const valueDescriptionPaths:ValueDescriptionPath[] = [];
     paths = paths.slice();
-    let cur = this as ValueDescription;
+    let cur: ValueDescription | undefined = this as ValueDescription;
     if (paths.length) {
       let curPath = paths.shift();
       while (
         cur && curPath && cur instanceof PackageDescription && cur.has(curPath)
       ) {
         cur = cur.get(curPath);
-        valueDescriptionPaths.push(new ValueDescriptionPath(curPath, cur));
+        valueDescriptionPaths.push(new ValueDescriptionPath(curPath, cur!));
         curPath = paths.shift();
       }
     }
@@ -858,7 +860,7 @@ export class PackageDescription extends AbstractValueDescription {
 
   getCaseSensitiveKeyIfExisted(key:string){
     return this._$subDescLowerCaseKeyMap.has(key.toLowerCase())?
-      this._$subDescLowerCaseKeyMap.get(key.toLowerCase()):
+      this._$subDescLowerCaseKeyMap.get(key.toLowerCase())!:
       key;
   }
 
@@ -867,7 +869,7 @@ export class PackageDescription extends AbstractValueDescription {
     const caseInSensitiveWithWarningsRes =  !!caseSensitiveRes?
       caseSensitiveRes:
       this._$subDescLowerCaseKeyMap.has(key.toLowerCase())?
-        this._$subDescriptor[this._$subDescLowerCaseKeyMap.get(key.toLowerCase())]:
+        this._$subDescriptor[this._$subDescLowerCaseKeyMap.get(key.toLowerCase())!]:
         undefined;
     switch (PackageDescription.CASE_MODE) {
       case "CASE_INSENSITIVE":
@@ -1466,12 +1468,12 @@ export class SymbolTable {
         '**max(...number[]):number**',
         'Return the highest value from a list or array with numbers that is inclusive at both ends.',
       ],
-      [IdentifierType.NumberArray],
+      [IdentifierType.NumberArrayList],
       IdentifierType.Number
     ),
     min: createFunValDesc(
       ['**min(...number[]):number**', 'Return the lowest value from a set of numbers or an array.'],
-      [IdentifierType.NumberArray],
+      [IdentifierType.NumberArrayList],
       IdentifierType.Number
     ),
     mod: createFunValDesc(
@@ -1496,7 +1498,7 @@ export class SymbolTable {
       IdentifierType.Number
     ),
     range: createFunValDesc(
-      ['**range(startIndex:number, count:number):number**', 'Return an integer array that starts from a specified integer.'],
+      ['**range(startIndex:number, count:number):number[]**', 'Return an integer array that starts from a specified integer.'],
       [IdentifierType.Number, IdentifierType.Number],
       IdentifierType.NumberArray
     ),
@@ -1675,7 +1677,7 @@ export class SymbolTable {
 
     if (!valDesc) return;
 
-    let cur = valDesc;
+    let cur: ValueDescription | undefined = valDesc;
     let curPath = paths.shift();
     while (cur && curPath && cur instanceof PackageDescription) {
       cur = cur.get(curPath);
@@ -1697,7 +1699,7 @@ export class SymbolTable {
     if (!paths.length) return valDescPathArr;
     paths = paths.slice();
 
-    let firstPath = paths.shift();
+    let firstPath = paths.shift()!;
     if (!firstPath) return valDescPathArr;
     let valDesc: ValueDescription | undefined = undefined;
     if (firstPath === SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME && this.funRetPkgDesc) {
@@ -1714,7 +1716,7 @@ export class SymbolTable {
 
     if (!valDesc) return valDescPathArr;
 
-    let cur = valDesc;
+    let cur: ValueDescription | undefined = valDesc;
     valDescPathArr.push(
       firstPath === SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME?
         this.funRetPkgDescPath:
@@ -1729,8 +1731,10 @@ export class SymbolTable {
         curPath = cur.getCaseSensitiveKeyIfExisted(curPath);
       }
       cur = cur.get(curPath);
-      valDescPathArr.push(new ValueDescriptionPath(curPath, cur));
-      curPath = paths.shift();
+      if (cur){
+        valDescPathArr.push(new ValueDescriptionPath(curPath, cur));
+        curPath = paths.shift();
+      }
     }
     if (SymbolTable.isValueDescriptor(cur)) {
       if (cur instanceof ReferenceValueDescription) {
@@ -1751,8 +1755,9 @@ export class SymbolTable {
       FunctionCallReturnChainType | IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType | undefined
     >{
     const collectedPaths:string[] = [];
-    let cur = this.rootPkgDesc as ValueDescription;
+    let cur: ValueDescription | undefined = this.rootPkgDesc as ValueDescription;
     let nextRetChainType =  yield new ValueDescriptionPath('', cur);
+    if (!nextRetChainType) return;
     collectedPaths.push(nextRetChainType.label)
     while (cur && nextRetChainType){
       if (!SymbolTable.isValueDescriptor(cur)) return;
@@ -1770,7 +1775,12 @@ export class SymbolTable {
         cur._$valueType.type === IdentifierTypeName.ARRAY_OF_TYPE
       ){
         const literalArrayContent = codeDocument.getNodeContent(nextRetChainType.node);
-        cur = this.findByPath(cur._$valueType.arrayItemTypeChainList);
+        const arrayItemTypeChainList = cur._$valueType.arrayItemTypeChainList!;
+        cur = this.findByPath(arrayItemTypeChainList);
+        if (!cur){
+          // todo enhance this err clazz
+          throw new Error(`Cannot find ARRAY_OF_TYPE vd of ${arrayItemTypeChainList.join('.')}`)
+        }
         nextRetChainType = yield new ValueDescriptionPath(literalArrayContent, cur);
         collectedPaths.push(literalArrayContent || '');
       }else if (
@@ -1792,6 +1802,10 @@ export class SymbolTable {
           if (retTyp){
             if (retTyp.type === IdentifierTypeName.FUNCTION_RETURN_TYPE && retTyp.returnTypeChainList?.length) {
               cur = this.findByPath(retTyp.returnTypeChainList);
+              if (!cur){
+                // todo enhance this err clazz
+                throw new Error(`Cannot find FUNCTION_RETURN_TYPE vd of ${retTyp.returnTypeChainList.join('.')}`)
+              }
             }else{
               cur = createRefValDesc(
                 [`Return value of ${functionFullName}`],
@@ -1834,7 +1848,7 @@ export class SymbolTable {
           }
         }
         if (found){
-          nextRetChainType = yield new ValueDescriptionPath(identifierName, cur);
+          nextRetChainType = yield new ValueDescriptionPath(identifierName, cur!);
           collectedPaths.push(identifierName || '');
         }else {
           return ;
@@ -2215,8 +2229,8 @@ export class SymbolTable {
     const result:ValueDescriptionPath[] = [];
     const vdPathIterator = this.iterateByRetChainTyp(codeDocument);
     let nextVdPath = vdPathIterator.next();
-    let curVdPath: ValueDescriptionPath = nextVdPath.value;
-    while (!nextVdPath.done && curVdPath.vd){
+    let curVdPath: ValueDescriptionPath | undefined = nextVdPath.value;
+    while (!nextVdPath.done && curVdPath?.vd){
       if ( !(curVdPath.vd instanceof PackageDescription) || !curVdPath.vd._$isInternal){
         result.push(curVdPath);
       }

@@ -7,6 +7,7 @@
     "downlevelIteration": true,
     "noImplicitAny": false,
     "sourceMap": true,
+    "strictNullChecks": true,
     "declaration": true,
     "lib": ["esnext"]
   },
