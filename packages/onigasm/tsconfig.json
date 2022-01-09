@@ -5,6 +5,7 @@
     "sourceMap": true,
     "outDir": "lib",
     "declaration": true,
+    "strictNullChecks": true,
     "declarationDir": "lib/typings"
   },
   "exclude": ["node_modules"]

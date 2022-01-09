@@ -110,7 +110,7 @@ export interface RegistryOptions {
   captureMeta?:boolean;
   debug?:boolean;
   theme?: IRawTheme;
-  getGrammarDefinition(scopeName: string, dependentScope: string): Promise<IGrammarDefinition>;
+  getGrammarDefinition(scopeName: string, dependentScope?: string | null): Promise<IGrammarDefinition>;
   getInjections?(scopeName: string): string[];
 }
 

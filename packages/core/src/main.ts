@@ -19,8 +19,8 @@ export {ValueEventEmitter, ValueUpdateListener} from './ValueEventEmitter';
 export {CodeDocument} from './grammar';
 
 const DEFAULT_OPTIONS: RegistryOptions = {
-  getGrammarDefinition: (_scopeName: string) => null,
-  getInjections: (_scopeName: string) => null,
+  getGrammarDefinition: ((_scopeName: string) => null) as any,
+  getInjections: (_scopeName: string) => [],
 };
 
 export const INITIAL: StackElement = StackElementImpl.NULL;
@@ -30,7 +30,7 @@ export const INITIAL: StackElement = StackElementImpl.NULL;
  */
 export class Registry {
   private readonly _syncRegistry: SyncRegistry;
-  private readonly _installationQueue: Map<string, Promise<IGrammar>>;
+  private readonly _installationQueue: Map<string, Promise<IGrammar | null>>;
 
   constructor(private readonly _locator: RegistryOptions = DEFAULT_OPTIONS) {
     debug.CAPTURE_METADATA = !!_locator.captureMeta;
@@ -61,7 +61,7 @@ export class Registry {
     initialScopeName: string,
     initialLanguage: number,
     embeddedLanguages: IEmbeddedLanguagesMap
-  ): Promise<IGrammar> {
+  ): Promise<IGrammar|null> {
     return this.loadGrammarWithConfiguration(initialScopeName, initialLanguage, {embeddedLanguages});
   }
 
@@ -73,7 +73,7 @@ export class Registry {
     initialScopeName: string,
     initialLanguage: number,
     configuration: IGrammarConfiguration
-  ): Promise<IGrammar> {
+  ): Promise<IGrammar|null> {
     await this._loadGrammar(initialScopeName);
     return this.grammarForScopeName(
       initialScopeName,
@@ -89,30 +89,30 @@ export class Registry {
   public grammarForScopeName(
     scopeName: string,
     initialLanguage = 0,
-    embeddedLanguages: IEmbeddedLanguagesMap = null,
-    tokenTypes: ITokenTypeMap = null
-  ): IGrammar {
+    embeddedLanguages: IEmbeddedLanguagesMap | null = null,
+    tokenTypes: ITokenTypeMap | null = null
+  ): IGrammar | null {
     return this._syncRegistry.grammarForScopeName(scopeName, initialLanguage, embeddedLanguages, tokenTypes);
   }
 
   /**
    * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
    */
-  public async loadGrammar(initialScopeName: string): Promise<IGrammar> {
+  public async loadGrammar(initialScopeName: string): Promise<IGrammar | null> {
     return this._loadGrammar(initialScopeName);
   }
 
-  private async _loadGrammar(initialScopeName: string, dependentScope: string = null): Promise<IGrammar> {
+  private async _loadGrammar(initialScopeName: string, dependentScope: string | null | undefined = null): Promise<IGrammar | null> {
     // already installed
     if (this._syncRegistry.lookup(initialScopeName)) {
       return this.grammarForScopeName(initialScopeName);
     }
     // installation in progress
     if (this._installationQueue.has(initialScopeName)) {
-      return this._installationQueue.get(initialScopeName);
+      return this._installationQueue.get(initialScopeName)!;
     }
     // start installation process
-    const prom = new Promise<IGrammar>(async (resolve, _reject) => {
+    const prom = new Promise<IGrammar | null>(async (resolve, _reject) => {
       const grammarDefinition = await this._locator.getGrammarDefinition(initialScopeName, dependentScope);
       if (!grammarDefinition) {
         throw new Error(`A tmGrammar load was requested but registry host failed to provide grammar definition`);
@@ -135,7 +135,7 @@ export class Registry {
             : (grammarDefinition.content as IRawGrammar)
           : parsePLISTGrammar(grammarDefinition.content as string, `c://dummy/path/${initialScopeName}.plist`);
       const injections =
-        typeof this._locator.getInjections === 'function' && this._locator.getInjections(initialScopeName);
+        typeof this._locator.getInjections === 'function' ? this._locator.getInjections(initialScopeName) : undefined;
 
       (rawGrammar as any).scopeName = initialScopeName;
       const deps = this._syncRegistry.addGrammar(rawGrammar, injections);

@@ -40,7 +40,7 @@ export interface IRuleRegistry {
 }
 
 export interface IGrammarRegistry {
-  getExternalGrammar(scopeName: string, repository: IRawRepository): IRawGrammar;
+  getExternalGrammar(scopeName: string, repository: IRawRepository): IRawGrammar | undefined;
 }
 
 export interface IRuleFactoryHelper extends IRuleRegistry, IGrammarRegistry {}

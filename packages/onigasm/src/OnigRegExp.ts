@@ -53,11 +53,13 @@ class OnigRegExp {
       callback = startPosition;
       startPosition = 0;
     }
-    try {
-      const ret = this.searchSync(string, startPosition);
-      callback(null, ret);
-    } catch (error) {
-      callback(error);
+    if (callback){
+      try {
+        const ret = this.searchSync(string, startPosition);
+        callback(null, ret);
+      } catch (error) {
+        callback(error);
+      }
     }
   }
 

@@ -79,9 +79,9 @@ export class SyncRegistry implements IGrammarRepository, IThemeProvider {
   public grammarForScopeName(
     scopeName: string,
     initialLanguage: number,
-    embeddedLanguages: IEmbeddedLanguagesMap,
-    tokenTypes: ITokenTypeMap
-  ): IGrammar {
+    embeddedLanguages: IEmbeddedLanguagesMap | null | undefined,
+    tokenTypes: ITokenTypeMap | null | undefined
+  ): IGrammar | null {
     if (!this._grammars[scopeName]) {
       const rawGrammar = this._rawGrammars[scopeName];
       if (!rawGrammar) {

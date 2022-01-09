@@ -60,7 +60,7 @@ export class AzLogicAppLangConstants{
   static _init: Promise<any> | undefined = undefined;
   static _registry: Registry | undefined = undefined;
 
-  static _grammar: IGrammar | undefined = undefined;
+  static _grammar: IGrammar | null | undefined = undefined;
   static _theme: IRawTheme = themes['default'];
   static _usingBuiltInTheme = true;
 

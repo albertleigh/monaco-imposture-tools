@@ -140,7 +140,7 @@ export abstract class AbstractReturnChainType {
       let isPropertyLiteral = false;
       if (node.children?.length){
         firstChildAstNode = node.children[0] as AzLogicAppNode;
-        switch (firstChildAstNode.$impostureLang.dataType) {
+        switch (firstChildAstNode.$impostureLang?.dataType) {
           case 'string':
             identifierName = codeDocument.getNodeContent(firstChildAstNode).replace(/'/gm, '');
             label = identifierName;

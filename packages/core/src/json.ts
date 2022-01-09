@@ -9,13 +9,13 @@ function doFail(streamState: JSONStreamState, msg: string): void {
 export function parse(source: string, filename: string, withMetadata: boolean): any {
   const streamState = new JSONStreamState(source);
   const token = new JSONToken();
-  let state = JSONState.ROOT_STATE;
+  let state: JSONState|undefined = JSONState.ROOT_STATE;
   let cur: any = null;
   const stateStack: JSONState[] = [];
   const objStack: any[] = [];
 
   function pushState(): void {
-    stateStack.push(state);
+    stateStack.push(state!);
     objStack.push(cur);
   }
 
@@ -75,7 +75,7 @@ export function parse(source: string, filename: string, withMetadata: boolean): 
       }
 
       if (token.type === JSONTokenType.STRING) {
-        const keyValue = token.value;
+        const keyValue = token.value!;
 
         if (!nextJSONToken(streamState, token) || /*TS bug*/ <any>token.type !== JSONTokenType.COLON) {
           fail('expected colon');
@@ -103,7 +103,7 @@ export function parse(source: string, filename: string, withMetadata: boolean): 
           continue;
         }
         if (token.type === JSONTokenType.NUMBER) {
-          cur[keyValue] = parseFloat(token.value);
+          cur[keyValue] = parseFloat(token.value!);
           continue;
         }
         if (token.type === JSONTokenType.LEFT_SQUARE_BRACKET) {
@@ -169,7 +169,7 @@ export function parse(source: string, filename: string, withMetadata: boolean): 
         continue;
       }
       if (token.type === JSONTokenType.NUMBER) {
-        cur.push(parseFloat(token.value));
+        cur.push(parseFloat(token.value!));
         continue;
       }
 
@@ -285,7 +285,7 @@ const enum ChCode {
 }
 
 class JSONToken {
-  value: string;
+  value: string | null;
   type: JSONTokenType;
 
   offset: number;
@@ -397,7 +397,7 @@ function nextJSONToken(_state: JSONStreamState, _out: JSONToken): boolean {
       .replace(/\\u([0-9A-Fa-f]{4})/g, (_, m0) => {
         return (<any>String).fromCodePoint(parseInt(m0, 16));
       })
-      .replace(/\\(.)/g, (_, m0) => {
+      .replace(/\\(.)/g, ((_, m0) => {
         switch (m0) {
           case '"':
             return '"';
@@ -418,7 +418,7 @@ function nextJSONToken(_state: JSONStreamState, _out: JSONToken): boolean {
           default:
             doFail(_state, 'invalid escape sequence');
         }
-      });
+      }) as any);
   } else if (chCode === ChCode.LEFT_SQUARE_BRACKET) {
     _out.type = JSONTokenType.LEFT_SQUARE_BRACKET;
     pos++;

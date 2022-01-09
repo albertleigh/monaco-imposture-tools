@@ -14,7 +14,7 @@
   "scripts": {
     "postinstall": "lerna bootstrap --ci",
     "setup": "lerna run setup",
-    "compile": "lerna run compile",
+    "compile": "lerna run compile --stream",
     "compile:debug": "lerna run compile:debug",
     "test": "lerna run test",
     "coverage": "lerna run coverage --stream",

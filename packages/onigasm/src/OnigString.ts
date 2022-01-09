@@ -28,13 +28,13 @@ class OnigString {
     if (!this._utf8Bytes) {
       this.encode();
     }
-    return this._utf8Bytes;
+    return this._utf8Bytes!;
   }
 
   /**
    * Returns `null` if all utf8 offsets match utf-16 offset (content has no multi byte characters)
    */
-  private get utf8Indexes(): UintArray {
+  private get utf8Indexes(): UintArray | null {
     if (!this._utf8Bytes) {
       this.encode();
     }
@@ -66,7 +66,7 @@ class OnigString {
       return 0;
     }
     const utf8Array = this._utf8Bytes;
-    if (utf8Offset >= utf8Array.length - 1) {
+    if (utf8Offset >= utf8Array!.length - 1) {
       return this.source.length;
     }
 
@@ -83,7 +83,7 @@ class OnigString {
     if (utf16Offset < 0) {
       return 0;
     }
-    const utf8Array = this._utf8Bytes;
+    const utf8Array = this._utf8Bytes!;
     if (utf16Offset >= this.source.length) {
       return utf8Array.length - 1;
     }
@@ -98,7 +98,7 @@ class OnigString {
   private encode(): void {
     const str = this.source;
     const n = str.length;
-    let utf16OffsetToUtf8: UintArray;
+    let utf16OffsetToUtf8: UintArray| undefined = undefined;
     let utf8Offset = 0;
     let mappingTableStartOffset = 0;
     function createOffsetTable(startOffset: number) {
@@ -124,7 +124,7 @@ class OnigString {
       const c = str.charCodeAt(i);
 
       if (utf16OffsetToUtf8) {
-        utf16OffsetToUtf8[utf8Offset++] = ptrHead - mappingTableStartOffset;
+        (utf16OffsetToUtf8 as UintArray)[utf8Offset++] = ptrHead - mappingTableStartOffset;
       }
 
       if (c < 0xd800 || c > 0xdfff) {
@@ -149,7 +149,7 @@ class OnigString {
             codepoint = 0x10000 + (a << 10) + b;
             i += 1;
 
-            utf16OffsetToUtf8[utf8Offset++] = ptrHead - mappingTableStartOffset;
+            utf16OffsetToUtf8![utf8Offset++] = ptrHead - mappingTableStartOffset;
           } else {
             codepoint = 0xfffd;
           }

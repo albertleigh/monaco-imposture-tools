@@ -65,8 +65,8 @@ export abstract class SyntaxNode {
 
   public readonly siblings = {
     [Symbol.iterator]: ()=>{
-      let cur = this.eldestSibling;
-      const ret:Iterator<SyntaxNode> =  {
+      let cur: SyntaxNode|undefined = this.eldestSibling;
+      const ret:Iterator<SyntaxNode|undefined> =  {
         return(value?: any): IteratorResult<SyntaxNode, any> {
           cur = undefined;
           return {value: undefined, done: true};
@@ -74,9 +74,9 @@ export abstract class SyntaxNode {
         next(...args): IteratorResult<SyntaxNode, any> {
           const value = cur;
           cur = cur?.youngerSibling;
-          return {
-            value, done: !value
-          }
+          return !!value ?
+            {value, done:false}:
+            {value, done: true}
         }
       };
       return ret;
@@ -242,7 +242,7 @@ export class ParenthesisNode extends SyntaxNode{
   public comma(index:number):CommaPunctuator|undefined{
     this._ensureCommaIndicesPopulated();
     if (index >= 0 && index < this._cachedCommaIndices.length){
-      return this.content[this._cachedCommaIndices[index]];
+      return this.content[this._cachedCommaIndices[index]] as CommaPunctuator;
     }
     return undefined;
   }
@@ -478,7 +478,7 @@ export class LiteralStringNode extends LiteralValueNode{
   }
 
   isDoubleQuoted(){
-    return this.astNode.$impostureLang.type === "qstring-double";
+    return this.astNode.$impostureLang?.type === "qstring-double";
   }
 }
 // number
@@ -549,7 +549,7 @@ export class LiteralArrayNode extends LiteralValueNode{
       const value = content[index];
       if(
         !value.hasReturnValue ||
-        value.returnValue._$type !== DescriptionType.ReferenceValue
+        value.returnValue?._$type !== DescriptionType.ReferenceValue
       ){
         break;
       }
@@ -680,7 +680,7 @@ export class LiteralArrayNode extends LiteralValueNode{
   public comma(index:number):CommaPunctuator|undefined{
     this._ensureCommaIndicesPopulated();
     if (index >= 0 && index < this._cachedCommaIndices.length){
-      return this.content[this._cachedCommaIndices[index]];
+      return this.content[this._cachedCommaIndices[index]] as CommaPunctuator;
     }
     return undefined;
   }
@@ -739,7 +739,7 @@ export class IdentifierNode extends SyntaxNode{
   constructor(
     astNode: ASTNode,
     public readonly identifierName: string,
-    public target: ValueDescription
+    public target: ValueDescription | undefined
   ) {
     super(astNode);
   }
@@ -767,7 +767,7 @@ export class FunctionCallTarget extends IdentifierNode{
   constructor(
     astNode: ASTNode,
     identifierName: string,
-    target: FunctionValueDescription | OverloadedFunctionValueDescription,
+    target: FunctionValueDescription | OverloadedFunctionValueDescription | undefined,
     private _prefixAccessor?: AccessorPunctuator
   ) {
     super(astNode, identifierName, target);
@@ -894,27 +894,27 @@ export class Punctuator extends SyntaxNode{
 export class AccessorPunctuator extends Punctuator{
 
   get isObjectIdentifierCapture():boolean{
-    return this.astNode.$impostureLang.dataType === 'object-identifiers-captures';
+    return this.astNode.$impostureLang?.dataType === 'object-identifiers-captures';
   }
 
   get isIdentifierCapture():boolean{
-    return this.astNode.$impostureLang.dataType === 'identifiers-capture';
+    return this.astNode.$impostureLang?.dataType === 'identifiers-capture';
   }
 
   get isStandalone():boolean{
-    return this.astNode.$impostureLang.type === 'punctuation-accessor' &&
+    return this.astNode.$impostureLang?.type === 'punctuation-accessor' &&
     this.astNode.$impostureLang.dataType === 'punctuation';
   }
 
   get isOptional():boolean{
     if (this.isIdentifierCapture || this.isObjectIdentifierCapture){
       return this.astNode.scopeName.indexOf('optional') > -1 ||
-        this.astNode.$impostureLang.type === 'identifiers-p2-c2' ||
-        this.astNode.$impostureLang.type === 'object-identifiers-p0-c2';
+        this.astNode.$impostureLang?.type === 'identifiers-p2-c2' ||
+        this.astNode.$impostureLang?.type === 'object-identifiers-p0-c2';
     }else if(this.isStandalone){
       return this.astNode.children.some(value =>
         value.scopeName.indexOf('optional') > -1 ||
-        value.$impostureLang.type === 'punctuation-accessor-c2'
+        value.$impostureLang?.type === 'punctuation-accessor-c2'
       )
     }
     return false;
@@ -987,6 +987,8 @@ export class RootFunctionCallNode extends SyntaxNode{
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
   readonly hasReturnValue: boolean = true;
+
+  protected _cachedChildren:SyntaxNode[];
 
   constructor(
     astNode: ASTNode,
@@ -1259,8 +1261,9 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
 
         // need ensure the offset of the atsymbol and start of the function-call are the same position
         if (
+          !!innerFunctionCallNode &&
           atSymbolNode.offset + atSymbolNode.length !==
-          innerFunctionCallNode.offset
+          (innerFunctionCallNode as FunctionCallNode).offset
         ){
           ctx.vr.problems.push({
             severity: DiagnosticSeverity.Error,
@@ -1555,7 +1558,7 @@ function _collect_identifiers_w_punctuation(
           PackageDescription.CASE_MODE === 'CASE_INSENSITIVE_WITH_WARNINGS' &&
           curVdPath.name !== _curSymbol.identifierName
         ){
-          const firstPara = theIdentifierNodeInBracketNotation.literalArrayNode.item(0);
+          const firstPara = theIdentifierNodeInBracketNotation.literalArrayNode.item(0)!;
           let problemOffset = firstPara.offset;
           let problemLength = firstPara.length;
           if (firstPara instanceof  LiteralStringNode){
@@ -1806,10 +1809,11 @@ function _parse_function_call_target(node: AzLogicAppNode, ctx: ValidationInterm
   const nodes:SyntaxNode[] = [];
   const returnCtx = {...ctx};
 
-  if (node.$impostureLang.dataType === 'function-call-target'){
+  if (node.$impostureLang?.dataType === 'function-call-target'){
     nodes.push(new FunctionCallTarget(
       node,
       ctx.vr.codeDocument.getNodeContent(node),
+      // todo fix this seize its type
       undefined,
     ))
   }
@@ -1824,7 +1828,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
   const nodes:SyntaxNode[] = [];
   const returnCtx = {...ctx, hasFunctionCall: true};
 
-  if (node.$impostureLang.dataType === 'function-call-complete'){
+  if (node.$impostureLang?.dataType === 'function-call-complete'){
     let wrappedInRootAndPrecededByAtSymbol = false;
     if (ctx.directWrapperType === WrapperType.ROOT_FUNCTION_CALL) {
       const theElderSibling = node.findAnElderSibling();
@@ -2287,7 +2291,7 @@ function _parse_children(node: AzLogicAppNode, ctx: ValidationIntermediateContex
       // we gotta node
       if (!!nodeArr.length){
         while (nodeArr.length){
-          const oneNode = nodeArr.shift();
+          const oneNode = nodeArr.shift()!;
           // handle elder and younger siblings for the oneParsedRes.node
           if (nodes.length){
             // more than one node pushed already
@@ -2645,7 +2649,7 @@ export function parseAzLgcExpDocument(
   codeDocument:CodeDocument,
   globalSymbolTable:SymbolTable
 ){
-  let result:AzLgcExpDocument
+  let result:AzLgcExpDocument|undefined
   const vr = new ValidateResult(codeDocument, globalSymbolTable);
   if (codeDocument.root?.type === 'IncludeOnlyRule') {
     // no need to check any UNRECOGNIZED_TOKENS exist beneath the root entry level
