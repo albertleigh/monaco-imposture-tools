@@ -1,5 +1,5 @@
 import {ASTNode, CodeDocument} from "@monaco-imposture-tools/core";
-import {AzLogicAppNode, AzLogicAppNodeType,} from "./base";
+import {AzLogicAppLangConstants, AzLogicAppNode, AzLogicAppNodeType,} from "./base";
 import {
   AbstractReturnChainType,
   AzLogicAppNodeUtils,
@@ -1914,12 +1914,27 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           if (!ctx.vr.hasProblems()){
             let parameterTypes: IdentifierType[] | undefined = undefined;
             // determine the param list
-            if (functionDescPath.vd instanceof OverloadedFunctionValueDescription) {
+            if (
+              functionDescPath.vd instanceof OverloadedFunctionValueDescription &&
+              functionDescPath.vd._$parameterTypes.length
+            ) {
               paraSeq = ctx.vr.globalSymbolTable.determineOverloadFunParamSeq(ctx.vr.codeDocument, node, functionDescPath.vd);
-              parameterTypes = functionDescPath.vd._$parameterTypes[paraSeq].slice();
-              retTyp = functionDescPath.vd._$returnType[paraSeq];
-            } else {
+              // todo investigate why functionDescPath.vd._$parameterTypes[paraSeq] might be undefined in the runtime
+              if (paraSeq >=0 && paraSeq<functionDescPath.vd._$parameterTypes.length){
+                parameterTypes = functionDescPath.vd._$parameterTypes[paraSeq].slice();
+                retTyp = functionDescPath.vd._$returnType[paraSeq];
+              }else if(functionDescPath.vd._$parameterTypes.length){
+                paraSeq = 0;
+                parameterTypes = functionDescPath.vd._$parameterTypes[0].slice();
+                retTyp = functionDescPath.vd._$returnType[0];
+              }
+            } else if (
+              functionDescPath.vd instanceof FunctionValueDescription &&
+              Array.isArray(functionDescPath.vd._$parameterTypes) &&
+              functionDescPath.vd._$returnType
+            ) {
               // regular function
+              // todo investigate why functionDescPath.vd._$parameterTypes could be undefined in the runtime
               parameterTypes = functionDescPath.vd._$parameterTypes.slice();
               retTyp = functionDescPath.vd._$returnType;
             }
@@ -2002,6 +2017,15 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                   }
                 }
               }
+            }else{
+              // logically it should not reach over here, parameterTypes should always be a no-empty array
+              // thus if we reached here, we gonna log something over here,
+              AzLogicAppLangConstants.inSyntaxDebugMode &&
+                console.log("[azLgcLang::invalid_function_desc]", functionCallFullNameContent, functionDescPath.name, functionDescPath.vd);
+              AzLogicAppLangConstants.globalTraceHandler && AzLogicAppLangConstants.globalTraceHandler("[azLgcLang::invalid_function_desc]", {
+                functionFullName: functionCallFullNameContent,
+                functionDescriptionPath: functionDescPath.name,
+              })
             }
           }
 

@@ -18,7 +18,7 @@ import {conf, language} from './languageConfiguration';
 import {generateCodeActions} from './codeActionProviderHelper';
 import {themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
-import {AzLogicAppLangConstants, ErrorHandler} from "./base";
+import {AzLogicAppLangConstants, ErrorHandler, TraceHandler} from "./base";
 import {SymbolTable, ValueDescriptionDictionary, PackageDescription} from './values';
 
 class TokenizerState implements languages.IState {
@@ -62,6 +62,13 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
   public static set inSemanticDebugMode(val:boolean){
     AzLogicAppLangConstants.inSemanticDebugMode = val;
+  }
+
+  public static get globalTraceHandler(){
+    return AzLogicAppLangConstants.globalTraceHandler;
+  }
+  public static set globalTraceHandler(handler:TraceHandler|undefined){
+    AzLogicAppLangConstants.globalTraceHandler = handler;
   }
 
   public static get globalErrorHandler(){
@@ -146,6 +153,9 @@ export class AzLogicAppExpressionLangMonacoEditor {
           console.log("[azLgcLang::parseAzLgcExpDocument]", azLgcExpDoc?.entries, azLgcExpDoc?.validateResult, azLgcExpDoc);
           AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
           azLgcExpDoc?.consoleLogSyntaxNodes();
+          if (this.globalTraceHandler){
+            this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] succeed')
+          }
 
           const vr = azLgcExpDoc?.validateResult || new ValidateResult(codeDoc, itsGlobalSymbolTable);
           const curEditorModel = azLgcExpEditor.standaloneCodeEditor.getModel()
@@ -314,13 +324,19 @@ export class AzLogicAppExpressionLangMonacoEditor {
               const res = grammar?.tokenizeLine2(line, state.ruleStack);
               AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
               console.log(`grammar::tokenize2 ${line} ||`, res?.tokens, res);
+              if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+                AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::grammar::tokenize2] succeed', {
+                  lineLength: line.length,
+                  tokensCount: res?.tokens.length
+                })
+              }
               return {
                 endState: new TokenizerState(res!.ruleStack),
                 tokens: res!.tokens
               }
             }catch (err) {
-              if (this.globalErrorHandler){
-                this.globalErrorHandler('[azLgcLang::grammar::tokenize2]', err);
+              if (AzLogicAppExpressionLangMonacoEditor.globalErrorHandler){
+                AzLogicAppExpressionLangMonacoEditor.globalErrorHandler('[azLgcLang::grammar::tokenize2]', err);
                 return {
                   endState: new TokenizerState(INITIAL),
                   tokens: new Uint32Array()
@@ -345,6 +361,13 @@ export class AzLogicAppExpressionLangMonacoEditor {
               AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode &&
               console.log(`grammar::tokenize ${line} ||`, res!.tokens, res);
 
+              if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+                AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::grammar::tokenize] succeed', {
+                  lineLength: line.length,
+                  tokensCount: res?.tokens.length
+                })
+              }
+
               return {
                 endState: new TokenizerState(res!.ruleStack),
                 tokens: res!.tokens.map((token) => ({
@@ -356,8 +379,8 @@ export class AzLogicAppExpressionLangMonacoEditor {
                 })),
               };
             }catch (err) {
-              if (this.globalErrorHandler){
-                this.globalErrorHandler('[azLgcLang::grammar::tokenize]', err);
+              if (AzLogicAppExpressionLangMonacoEditor.globalErrorHandler){
+                AzLogicAppExpressionLangMonacoEditor.globalErrorHandler('[azLgcLang::grammar::tokenize]', err);
                 return {
                   endState: new TokenizerState(INITIAL),
                   tokens: []
@@ -382,11 +405,17 @@ export class AzLogicAppExpressionLangMonacoEditor {
                 character: position.column - 1,
               });
               const theNode = _curCodeDocEntry.azLgcExpDoc.getSyntaxNodeByOffset(offset);
-              return generateHover(theNode, _curCodeDocEntry.azLgcExpDoc);
+              const res =  generateHover(theNode, _curCodeDocEntry.azLgcExpDoc);
+              if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+                AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::provideHover] succeed', {
+                  contentsLength: res?.contents.length,
+                })
+              }
+              return res;
             }
           }catch (err) {
-            if (this.globalErrorHandler){
-              this.globalErrorHandler('[azLgcLang::provideHover]', err);
+            if (AzLogicAppExpressionLangMonacoEditor.globalErrorHandler){
+              AzLogicAppExpressionLangMonacoEditor.globalErrorHandler('[azLgcLang::provideHover]', err);
             }else{
               throw  err;
             }
@@ -421,12 +450,17 @@ export class AzLogicAppExpressionLangMonacoEditor {
                     theLgcExpDocEditor
                   )) || theAzLgcExpDoc;
               }
+              const originalRes = generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
+              let res: MonacoLangCompletionListResult = originalRes;
               if (AzLogicAppExpressionLangMonacoEditor.globalCompletionItemInterceptor){
-                return AzLogicAppExpressionLangMonacoEditor.globalCompletionItemInterceptor(
-                  generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token)
-                );
+                res = AzLogicAppExpressionLangMonacoEditor.globalCompletionItemInterceptor(res);
               }
-              return generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
+              if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+                AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::provideCompletionItems] succeed', {
+                  originalSuggestionsLength: originalRes?.suggestions.length
+                })
+              }
+              return res;
             }
           }catch (err) {
             if (this.globalErrorHandler){
@@ -470,6 +504,9 @@ export class AzLogicAppExpressionLangMonacoEditor {
 
       AzLogicAppExpressionLangMonacoEditor.inSemanticDebugMode &&
         console.log('[AzLogicAppExpressionLangMonacoEditor init]', this._hoverProvider, this._completionProvider);
+      if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+        AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[AzLogicAppExpressionLangMonacoEditor::init] succeed')
+      }
     })();
     return this.init!;
   }

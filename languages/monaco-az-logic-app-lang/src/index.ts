@@ -3,6 +3,7 @@ import {AzLogicAppExpressionLangMonacoEditor} from './editors';
 
 export * from '@monaco-imposture-tools/core';
 export {
+  TraceHandler,
   ErrorHandler,
 } from './base';
 export {
