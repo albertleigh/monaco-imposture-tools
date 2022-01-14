@@ -943,13 +943,13 @@ export class SymbolTable {
     ),
     intersection: createOverloadedFunValDesc(
       [
-        '**intersection(object, object):object**',
-        '**intersection(array, array):array**',
+        '**intersection(<collection1>\', \'<collection2>\', ...):object**',
+        '**intersection([<collection1>], [<collection2>], ...):array**',
         'Returns a single array or object with the common elements between the arrays or objects passed to it. For example, this function returns [1, 2]: intersection([1, 2, 3], [101, 2, 1, 10],[6, 8, 1, 2]). The parameters for the function can either be a set of objects or a set of arrays (not a mixture thereof). If there are two objects with the same name, the last object with that name appears in the final object.',
       ],
       [
-        [IdentifierType.AnyObject, IdentifierType.AnyObject],
-        [IdentifierType.Array, IdentifierType.Array],
+        [IdentifierType.AnyObjectList],
+        [IdentifierType.ArrayList],
       ],
       [IdentifierType.AnyObject, IdentifierType.Array]
     ),
@@ -1042,7 +1042,7 @@ export class SymbolTable {
     ),
     bool: createFunValDesc(
       ['**bool(any):string**', 'Return the Boolean version for a value.'],
-      [IdentifierType.AnyObject],
+      [IdentifierType.Any],
       IdentifierType.Boolean
     ),
     coalesce: createFunValDesc(
@@ -1129,6 +1129,14 @@ export class SymbolTable {
     string: createFunValDesc(
       ['**string(any):string**', 'Return the string version for a value.'],
       [IdentifierType.Any],
+      IdentifierType.String
+    ),
+    uriComponent: createFunValDesc(
+      [
+        '**uriComponent(string):string**',
+        'Return a uniform resource identifier (URI) encoded version for a string by replacing URL-unsafe characters with escape characters. Use this function rather than encodeUriComponent(). Although both functions work the same way, uriComponent() is preferred.',
+      ],
+      [IdentifierType.String],
       IdentifierType.String
     ),
     uriComponentToBinary: createFunValDesc(

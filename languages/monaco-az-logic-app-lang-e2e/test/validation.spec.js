@@ -67,6 +67,79 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@float('0.777')",
         "@subtractFromTime('',1, string( json('')))",
         "@subtractFromTime('',1, string( json('')), 'another')",
+        "@concat(\'Hello\', \'World\')",
+        // "@concat('\\')",
+        // "@concat('\\',concat(''''))",
+        "@concat('azfunc-out',concat('CompanyID'))",
+        // "@concat('azfunc-out','\\',concat('CompanyID'))",
+        // "    @concat('Hello', 'World')",
+        "@substring('somevalue-foo-somevalue',10,3)",
+        "@substring('hello', 1, sub(3, 1))",
+        "@replace('the old string', 'old', 'new')",
+        // "@replace('replace functions\\s escape char test ', '\\', '''')",
+        "@guid('P')",
+        "@toLower('Two by Two is Four')",
+        "@toUpper('Two by Two is Four')",
+        "@indexof('hello, world.', 'world')",
+        "@startswith('hello, world', 'hello')",
+        "@endsWith('hello world', 'world')",
+        "@split('a;b;c',';')",
+        "@intersection([1, 2, 3], [101, 2, 1, 10],[6, 8, 1, 2])",
+        "@union([1, 2, 3], [101, 2, 1, 10])",
+        "@first([0,2,3])",
+        "@last([0,2,3])",
+        "@take([1, 2, 3, 4], 2)",
+        "@skip([1, 2 ,3 ,4], 2)",
+        "@equals('foo', 'foo')",
+        "@less(10,100)",
+        "@lessOrEquals(10,10)",
+        "@greater(10,10)",
+        "@and(greater(1,10),equals(0,0))",
+        "@or(greater(1,10),equals(0,0))",
+        "@not(contains('200 Success','Fail'))",
+        "@if(equals(1, 1), 'yes', 'no')",
+        "@float('10.333')",
+        "@bool(0)",
+        "@coalesce(null, 'hello', 'world')",
+        "@base64('some string')",
+        "@base64ToString('c29tZSBzdHJpbmc=')",
+        "@binary('some string')",
+        "@dataUriToBinary('data:;base64,c29tZSBzdHJpbmc=')",
+        "@dataUriToString('data:;base64,c29tZSBzdHJpbmc=')",
+        "@dataUri('some string')",
+        "@decodeBase64('c29tZSBzdHJpbmc=')",
+        "@encodeUriComponent('You Are:Cool/Awesome')",
+        "@decodeUriComponent('You+Are%3ACool%2FAwesome')",
+        "@decodeDataUri('data:;base64,c29tZSBzdHJpbmc=')",
+        "@uriComponent('You Are:Cool/Awesome ')",
+        "@uriComponent('https://contoso.com')",
+        "@uriComponentToBinary('You+Are%3ACool%2FAwesome')",
+        "@uriComponentToString('You+Are%3ACool%2FAwesome')",
+        "@xml('<name>Alan</name>')",
+        "@xpath(xml('<?xml version=\"1.0\"?> <produce> <item> <name>Gala</name> <type>apple</type> <count>20</count> </item> <item> <name>Honeycrisp</name> <type>apple</type> <count>10</count> </item> </produce>'), '/produce/item/name')",
+        "@array('abc')",
+        "@createArray('a', 'c')",
+        "@add(10,10.333)",
+        "@add(10,10)",
+        "@sub(10,10.333)",
+        "@sub(10,10)",
+        "@mul(10,10.333)",
+        "@mul(10,10)",
+        "@div(10,10.333)",
+        "@div(10,10)",
+        "@mod(10,4)",
+        "@min(0,1,2)",
+        "@min(0,1,2.0)",
+        "@max(0,1,2)",
+        "@max(0,1,2.0)",
+        "@range(3,4)",
+        "@rand(-1000,1000)",
+        "@utcnow()",
+        "@addseconds('2015-03-15T13:27:36Z', -36)",
+        "@addminutes('2015-03-15T13:27:36Z', 33)",
+        "@addhours('2015-03-15T13:27:36Z', 12)",
+        "@adddays('2015-03-15T13:27:36Z', -20)",
+        "@formatDateTime('03/15/2018 12:00:00', 'yyyy-MM-ddTHH:mm:ss')",
       ].forEach((value, index)=>{
         it(`Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -90,6 +163,13 @@ function generateValidationTests(openOnePage, closeOnePage) {
         '@activity(\'Lookup 3\').output.value[1].anything.whatsoever',
         '@activity(\'Lookup 3\').whatever[2].and.anything.you[\'want\'][2]',
         '@activity(\'Lookup 3\').whatever[2].and[266].anything.you[\'want\'][2]',
+        "@indexOf('hello, world.', 'world')",
+        "@endswith('hello world', 'world')",
+        "@utcNow()",
+        "@addSeconds('2015-03-15T13:27:36Z', -36)",
+        "@addMinutes('2015-03-15T13:27:36Z', 33)",
+        "@addHours('2015-03-15T13:27:36Z', 12)",
+        "@addDays('2015-03-15T13:27:36Z', -20)",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -410,8 +490,50 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
       })
 
-      it('The function call lacked or had more parameters required:: root level', async ()=>{
+      it('The function call lacked or had more parameters required:: root level 1#', async ()=>{
         const nextText = '@add(1, 2, 3)';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        const content = await seizeCurExpTxt(page);
+        const problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // The function call lacked or had more parameters required
+        expect(problems[0].code).eq(5);
+        expect(problems[0].startPos.character).eq(0);
+        expect(problems[0].endPos.character).eq(13);
+      })
+
+      it('The function call lacked or had more parameters required:: root level 2#', async ()=>{
+        const nextText = '@guid(10,10,10)';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        const content = await seizeCurExpTxt(page);
+        const problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // The function call lacked or had more parameters required
+        expect(problems[0].code).eq(5);
+        expect(problems[0].startPos.character).eq(0);
+        expect(problems[0].endPos.character).eq(15);
+      })
+
+      it('The function call lacked or had more parameters required:: root level 3#', async ()=>{
+        const nextText = '@toLower()';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        const content = await seizeCurExpTxt(page);
+        const problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // The function call lacked or had more parameters required
+        expect(problems[0].code).eq(5);
+        expect(problems[0].startPos.character).eq(0);
+        expect(problems[0].endPos.character).eq(10);
+      })
+
+      it('The function call lacked or had more parameters required:: root level 4#', async ()=>{
+        const nextText = '@replace(1,2)';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
         const content = await seizeCurExpTxt(page);
@@ -552,6 +674,24 @@ function generateValidationTests(openOnePage, closeOnePage) {
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].startPos.character).greaterThanOrEqual(11);
         expect(problems[0].endPos.character).lessThanOrEqual(24);
+      })
+
+      it('invalid identifier chain 2#', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = 'string @{interpolation}';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // Unrecognized identifiers of the function result
+        expect(problems[0].code).eq(8);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(9);
+        expect(problems[0].endPos.character).lessThanOrEqual(22);
       })
 
       it('invalid identifier chain 2# w/o function call', async ()=>{
@@ -697,6 +837,30 @@ function generateValidationTests(openOnePage, closeOnePage) {
     // })
 
     describe('NON_FULL_ROOT_FUN_CALL_EXP 0x0d', ()=>{
+
+      it('incomplete root function call expression v1', async ()=>{
+        let nextText, content, problems, warnings, hints, allCompletionList;
+
+        nextText = '@concat(';
+        await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await delay(250);
+
+        await page.keyboard.press('End');
+        await page.keyboard.press('Backspace');
+
+        await delay(250);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).eq(nextText);
+        expect(problems.length).eq(1);
+        // The function call must take the completion string
+        expect(problems[0].code).eq(13);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(0);
+      })
 
       it('expression shown after a template', async ()=>{
         const nextText = '@{add(1,2)}@add(3,4)';

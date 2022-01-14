@@ -44,6 +44,7 @@ export type AzLogicAppNode = ASTNode & {
 
 
 
+export type TraceHandler = (message: string, properties?: { [key: string]: any })=> void;
 export type ErrorHandler = (namespace:string, err:Error)=> void;
 
 export class AzLogicAppLangConstants{
@@ -55,6 +56,7 @@ export class AzLogicAppLangConstants{
   static inLexicalDebugMode = false;
   static inSyntaxDebugMode = false;
   static inSemanticDebugMode = false;
+  static globalTraceHandler?: TraceHandler;
   static globalErrorHandler?: ErrorHandler;
 
   static _init: Promise<any> | undefined = undefined;
