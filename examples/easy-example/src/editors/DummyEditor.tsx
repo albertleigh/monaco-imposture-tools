@@ -335,7 +335,7 @@ const useStyles = makeStyles((theme) => ({
 // @item().one['two'].
 
 const sampleCodes =
-`@min(pipeline().globalParameters.oneTypedObj.anotherGlobalFloat,activity('Lookup 3').output.firstRow.count)`;
+`@uriComponent('https://contoso.com')`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
