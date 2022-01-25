@@ -8,6 +8,7 @@ export type DataType =
   | 'dualAtSymbol'
   | 'atSymbol'
   | 'atTemplateSubstitutionElement'
+  | 'incomplete-root-function-call-expression'
   | 'root-function-call-expression'
   | 'parentheses'
   | 'comma'

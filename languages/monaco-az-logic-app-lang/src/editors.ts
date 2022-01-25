@@ -154,6 +154,11 @@ export class AzLogicAppExpressionLangMonacoEditor {
           AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
           azLgcExpDoc?.consoleLogSyntaxNodes();
           if (this.globalTraceHandler){
+            if (codeDoc.separator === '\r\n'){
+              this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] EOF CRLF');
+            }else{
+              this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] EOF LF');
+            }
             this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] succeed')
           }
 

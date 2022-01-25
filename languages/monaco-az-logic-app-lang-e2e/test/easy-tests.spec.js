@@ -5,7 +5,8 @@ const puppeteer = require('puppeteer');
 
 const {delay, typeInMonacoEditor, EXPRESSION_EDITOR_ID, hoverOneSpanContaining, collectMonacoListRowsAriaLabels,
   seizeCurExpTxt, seizeCurExpProb, seizeCurExpWarnings, seizeCurExpHints,
-  clearUpMonacoEditor, triggerCompletionOfCurrentCursor, seizeCurExpAllProb, clearPageErrors, seizePageErrors
+  clearUpMonacoEditor, triggerCompletionOfCurrentCursor, seizeCurExpAllProb, clearPageErrors, seizePageErrors,
+  manuallySetModelText
 } = require('./utils');
 
 const IS_CI = process.env.CI === 'true';
@@ -31,36 +32,44 @@ describe('e2e easy test', () => {
 
     await clearUpMonacoEditor(page);
 
-    let nextText, content, problems, warnings, hints, allCompletionList;
+    let nextText, content, problems, warnings, hints, allCompletionList, hoverRows;
 
-    nextText = `@activity('Get Default 1')`;
+    nextText =
+`{
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Pipeline run result",
+    "@summary2": "@min",
+    "sections": [
+        {
+            "activityTitle": "ADF MSAL Usage Query Result​​​​",
+            "facts": [
+                {
+                    "name": "Pipeline run result",
+                    "value": "@{pipeline().globalParameters.firstGlobalStrPara}"
+                },
+                {
+                    "name": "Notification time (UTC):",
+                    "value": "@{utcNow()}"
+                }
+            ],
+            "markdown": true
+        }
+    ],
+    "potentialAction": [
+    ]
+}`
 
-    await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
-
-    await delay(250);
-
-    problems = await seizeCurExpProb(page);
-    expect(problems.length).eq(0);
-
-    await triggerCompletionOfCurrentCursor(page);
-
-    await delay(250);
-
-    allCompletionList = await collectMonacoListRowsAriaLabels(page);
-    expect(allCompletionList.length>=1).ok;
-
-    expect(allCompletionList.some(value =>
-      value.indexOf('structure') > -1
-    )).not.ok;
-
-    await page.keyboard.press('Enter');
-
-    await delay(250);
-
+    await manuallySetModelText(page, nextText);
     content = await seizeCurExpTxt(page);
-    problems = await seizeCurExpAllProb(page);
-    expect(content).eq("@activity('Get Default 1').output");
+    problems = await seizeCurExpProb(page);
+    expect(content).eq(nextText);
     expect(problems.length).eq(0);
+
+    await hoverOneSpanContaining(page, 'summary2');
+    hoverRows  = await page.$$('.monaco-hover-content .hover-row');
+    expect(hoverRows.length).eq(1);
 
   });
 

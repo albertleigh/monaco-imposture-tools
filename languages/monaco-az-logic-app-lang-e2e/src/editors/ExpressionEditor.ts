@@ -298,6 +298,7 @@ export const mount = (root:HTMLDivElement)=> {
   const theEditor = new AzLogicAppExpressionLangMonacoEditor(
     root,
     {
+      // theme: 'vs',
       theme: 'hc-black',
       // theme: 'vs-code-theme-converted',
       // readOnly: true,
@@ -313,6 +314,9 @@ export const mount = (root:HTMLDivElement)=> {
     theEditor.validationResultEventEmitter?.subscribe(subscribeValidateResult);
     (window as any).regenerateNextSymbolTable = function () {
       theEditor.rootSymbolTable = generateNextSymbolTable();
-    }
+    };
+    (window as any).manuallySetModelText = function (text:string) {
+      theEditor.standaloneCodeEditor.getModel()?.setValue(text);
+    };
   })
 }

@@ -3,7 +3,7 @@ const expect = chai.expect;
 const {
   EXPRESSION_EDITOR_ID, typeInMonacoEditor,clearUpMonacoEditor,
   triggerCompletionOfCurrentCursor, seizeCurExpTxt, seizeCurExpProb, delay, clearPageErrors, seizePageErrors,
-  seizeCurExpWarnings, seizeCurExpHints, seizeCurExpAllProb
+  seizeCurExpWarnings, seizeCurExpHints, seizeCurExpAllProb, manuallySetModelText
 } = require("./utils");
 
 function generateValidationTests(openOnePage, closeOnePage) {
@@ -30,6 +30,88 @@ function generateValidationTests(openOnePage, closeOnePage) {
     })
 
     describe('Bunch of valid expressions', ()=>{
+      [
+`{
+    "@()": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Pipeline run result",
+    "@summary2": "@min",
+    "sections": [
+    ],
+    "potentialAction": [
+    ]
+}`,
+`{
+    "@(min(pipeline().globalParameters.oneTypedObj.anotherGlobalFloat,activity('Lookup 3').output.firstRow.count))": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Pipeline run result",
+    "@summary2": "@min",
+    "sections": [
+    ],
+    "potentialAction": [
+    ]
+}`,
+`{
+    "@(min(fwefw wefwef piwefwepeline().globalParameters.oneTypedObj.anotherGlobalFloat,activity('Lookup 3').output.firstRow.count))": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Pipeline run result",
+    "@summary2": "@min",
+    "sections": [
+    ],
+    "potentialAction": [
+    ]
+}`,
+`{
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Pipeline run result",
+    "@summary2": "@min",
+    "sections": [
+        {
+            "activityTitle": "ADF MSAL Usage Query Result​​​​",
+            "facts": [
+                {
+                    "name": "Pipeline run result",
+                    "value": "@{pipeline().globalParameters.firstGlobalStrPara}"
+                },
+                {
+                    "name": "Notification time (UTC):",
+                    "value": "@{utcNow()}"
+                }
+            ],
+            "markdown": true
+        }
+    ],
+    "potentialAction": [
+    ]
+}`,
+        "@concat('\\')",
+        "@concat('\\\\')",
+        "@concat('\\\\',concat(''''))",
+        "@concat('azfunc-out','\\\\',concat('CompanyID'))",
+        "    @concat('Hello', 'World')",
+        "@replace('replace functions\\s escape char test ', '\\', '''')",
+      ].forEach((value, index)=>{
+        it(`Manually input valid expression ${index}`, async ()=>{
+          let nextText, content, problems;
+
+          nextText = value
+
+          await manuallySetModelText(page, nextText);
+
+          content = await seizeCurExpTxt(page);
+          problems = await seizeCurExpProb(page);
+          expect(content).eq(nextText.trim());
+          expect(problems.length).eq(0);
+
+          await manuallySetModelText(page, "");
+        })
+      });
+
       [
         '@addHours(utcNow(),-5)',
         '@take([string(1), string(1)], 2)',
@@ -68,15 +150,10 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@subtractFromTime('',1, string( json('')))",
         "@subtractFromTime('',1, string( json('')), 'another')",
         "@concat(\'Hello\', \'World\')",
-        // "@concat('\\')",
-        // "@concat('\\',concat(''''))",
         "@concat('azfunc-out',concat('CompanyID'))",
-        // "@concat('azfunc-out','\\',concat('CompanyID'))",
-        // "    @concat('Hello', 'World')",
         "@substring('somevalue-foo-somevalue',10,3)",
         "@substring('hello', 1, sub(3, 1))",
         "@replace('the old string', 'old', 'new')",
-        // "@replace('replace functions\\s escape char test ', '\\', '''')",
         "@guid('P')",
         "@toLower('Two by Two is Four')",
         "@toUpper('Two by Two is Four')",
@@ -694,7 +771,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         expect(problems[0].endPos.character).lessThanOrEqual(22);
       })
 
-      it('invalid identifier chain 2# w/o function call', async ()=>{
+      it('valid identifier chain 2# w/o function call: incomplete function call', async ()=>{
 
         let nextText, content, problems, warnings, hints, allCompletionList;
 
@@ -704,19 +781,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
-        expect(problems.length).eq(2);
-        // Missing invocation of the function
-        expect(problems[0].code).eq(8);
-        expect(problems[0].startPos.line).eq(0);
-        expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(1);
-        expect(problems[0].endPos.character).lessThanOrEqual(9);
-        // Unrecognized identifier DataFactory2
-        expect(problems[1].code).eq(9);
-        expect(problems[1].startPos.line).eq(0);
-        expect(problems[1].endPos.line).eq(0);
-        expect(problems[1].startPos.character).greaterThanOrEqual(9);
-        expect(problems[1].endPos.character).lessThanOrEqual(22);
+        expect(problems.length).eq(0);
+
       })
     })
 

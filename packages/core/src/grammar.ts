@@ -2209,7 +2209,7 @@ export class CodeDocument {
    */
   offsetAt(pos: Position): number {
     let result = 0;
-    if (pos.line < 0 || pos.line > this.lines.length) {
+    if (pos.line < 0 || pos.line >= this.lines.length) {
       throw new CodeDocument.POS_NOT_IN_RANGE(pos, this.text?.length || 0);
     } else if (pos.character < 0 || pos.character > this.lines[pos.line].length) {
       const theErr = new CodeDocument.POS_NOT_IN_RANGE(pos, this.text?.length || 0);
