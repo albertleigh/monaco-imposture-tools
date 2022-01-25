@@ -50,8 +50,10 @@ function generateNextSymbolTable() {
           [IdentifierType.CONSTANT('Lookup 3')],
           [IdentifierType.CONSTANT('Lookup 4')],
 
-          [IdentifierType.CONSTANT('GetMetadata 1')],
-          [IdentifierType.CONSTANT('GetMetadata 2')],
+          [IdentifierType.CONSTANT('GetFileMetadata 1')],
+          [IdentifierType.CONSTANT('GetFileMetadata 2')],
+          [IdentifierType.CONSTANT('GetFolderMetadata 1')],
+          [IdentifierType.CONSTANT('GetFolderMetadata 2')],
 
           [IdentifierType.CONSTANT('Get Default 3')],
         ],
@@ -64,8 +66,10 @@ function generateNextSymbolTable() {
           IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'defaultReturnValue'], 'Lookup activity return type'),
           IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'defaultReturnValue'], 'Lookup activity return type'),
 
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'defaultReturnValue'], 'GetMetaData activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'defaultReturnValue'], 'GetMetaData activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'fileReturnValue'], 'File\'s getMetaData activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'fileReturnValue'], 'File\'s getMetaData activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'folderReturnValue'], 'Folder\'s getMetaData activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'folderReturnValue'], 'Folder\'s getMetaData activity return type'),
 
           IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
         ]
@@ -221,9 +225,9 @@ function generateNextSymbolTable() {
                   'GetMetadata activity output'
                 ],
                 {
-                  exist: createRefValDesc(
+                  exists: createRefValDesc(
                     [
-                      '***exist:boolean***',
+                      '***exists:boolean***',
                       "Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won't fail even if the file, folder, or table doesn't exist. Instead, exists: false is returned in the output."
                     ],
                     IdentifierType.Boolean
@@ -273,6 +277,98 @@ function generateNextSymbolTable() {
                 },  {allowAdditionalAnyProperties: true}
               )
             }, {allowAdditionalAnyProperties: true}),
+            fileReturnValue: createPkgValDesc(['**Return value of a getMetadata activity**', 'File\'s getMetadata activity'], {
+              output: createPkgValDesc(
+                [
+                  'output:any',
+                  'GetMetadata activity output'
+                ],
+                {
+                  exists: createRefValDesc(
+                    [
+                      'exists:boolean',
+                      'Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won\'t fail even if the file, folder, or table doesn\'t exist. Instead, exists: false is returned in the output.'
+                    ],
+                    IdentifierType.Boolean
+                  ),
+                  itemName: createRefValDesc([
+                    'itemName:string',
+                    'Name of the file or folder.'
+                  ], IdentifierType.String),
+                  itemType: createRefValDesc([
+                    'itemType:string',
+                    'Type of the file or folder. Returned value is File or Folder.'
+                  ], IdentifierType.String),
+                  size: createRefValDesc([
+                    'size:number',
+                    'Size of the file, in bytes. Applicable only to files.'
+                  ], IdentifierType.Number),
+                  lastModified: createRefValDesc([
+                    'lastModified:string',
+                    'Last modified datetime of the file or folder.'
+                  ], IdentifierType.String),
+                  created: createRefValDesc([
+                    'created:string',
+                    'Created datetime of the file or folder.'
+                  ], IdentifierType.String),
+                  contentMD5: createRefValDesc([
+                    'contentMD5:string',
+                    'MD5 of the file. Applicable only to files.'
+                  ], IdentifierType.String),
+                  structure: createRefValDesc(
+                    [
+                      'structure:{name, type}[]',
+                      'Data structure of the file or relational database table. Returned value is a list of column names and column types.'
+                    ],
+                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'structure return type')
+                  ),
+                  columnCount: createRefValDesc([
+                    'columnCount:number',
+                    'Number of columns in the file or relational table.'
+                  ], IdentifierType.Number)
+                },  {allowAdditionalAnyProperties: true}
+              )
+            }, {allowAdditionalAnyProperties: true}),
+            folderReturnValue: createPkgValDesc(['**Return value of a getMetadata activity**', 'Folder\'s getMetadata activity'], {
+              output: createPkgValDesc(
+                [
+                  'output:any',
+                  'GetMetadata activity output'
+                ],
+                {
+                  exists: createRefValDesc(
+                    [
+                      'exists:boolean',
+                      'Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won\'t fail even if the file, folder, or table doesn\'t exist. Instead, exists: false is returned in the output.'
+                    ],
+                    IdentifierType.Boolean
+                  ),
+                  itemName: createRefValDesc([
+                    'itemName:string',
+                    'Name of the file or folder.'
+                  ], IdentifierType.String),
+                  itemType: createRefValDesc([
+                    'itemType:string',
+                    'Type of the file or folder. Returned value is File or Folder.'
+                  ], IdentifierType.String),
+                  lastModified: createRefValDesc([
+                    'lastModified:string',
+                    'Last modified datetime of the file or folder.'
+                  ], IdentifierType.String),
+                  created: createRefValDesc([
+                    'created:string',
+                    'Created datetime of the file or folder.'
+                  ], IdentifierType.String),
+                  childItems: createRefValDesc(
+                    [
+                      'childItems:{name, type}[]',
+                      'List of subfolders and files in the given folder. Applicable only to folders. Returned value is a list of the name and type of each child item.'
+                    ],
+                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'childItems return type')
+                  )
+                },  {allowAdditionalAnyProperties: true}
+              )
+            }, {allowAdditionalAnyProperties: true})
           })
         }),
       })
