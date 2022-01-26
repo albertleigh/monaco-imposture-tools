@@ -17,6 +17,30 @@
         },
         {
           "include": "#atRootFunctionCallExpression"
+        },
+        {
+          "include": "#incompleteAtRootFunctionCallExpression"
+        }
+      ]
+    },
+    "incompleteAtRootFunctionCallExpression": {
+      "$impostureLang": {
+        "type": "incomplete-root-function-call-expression",
+        "dataType": "incomplete-root-function-call-expression"
+      },
+      "applyEndPatternLast": true,
+      "name": "meta.expression.function.call.incomplete.azLgcAppExp",
+      "begin": "(?=((@([_$[:alpha:]][_$[:alnum:]]*)?(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*))\\s*(?:(\\?\\.\\s*)|(\\!)|(\\())?)",
+      "end": "(?x)(\n\t(?=[^[:alnum:]\\.\\?\\(\\)])\n\t(?!(\n\t\t\t(\n\t\t\t\t(\n\t\t\t\t\t@([_$[:alpha:]][_$[:alnum:]]*)?\n\t\t\t\t\t(\n\t\t\t\t\t\t\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*)\n\t\t\t\t\t)*\n\t\t\t\t)|\n\t\t\t\t(\n\t\t\t\t\t\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*\n\t\t\t\t)\n\t\t\t)|\n\t\t\t(?<=[\\)])\n\t\t)\n\t\t\\s*\n\t\t(?:\n\t\t\t(\\?\\.\\s*)|\n\t\t\t(\\!)\n\t\t)?\n\t\t(\\()\n\t)\n)",
+      "patterns": [
+        {
+          "include": "#atSymbol"
+        },
+        {
+          "include": "#function-call"
+        },
+        {
+          "include": "#identifiers"
         }
       ]
     },
@@ -26,7 +50,8 @@
         "dataType": "root-function-call-expression"
       },
       "applyEndPatternLast": true,
-      "begin": "(?=((@([_$[:alpha:]][_$[:alnum:]]*)?(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\()?)",
+      "name": "meta.expression.function.call.azLgcAppExp",
+      "begin": "(?=((@([_$[:alpha:]][_$[:alnum:]]*)(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\())",
       "end": "((?<=\\))(?!(((@([_$[:alpha:]][_$[:alnum:]]*)?(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*)|(\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*))|(?<=[\\)]))\\s*(?:(\\?\\.\\s*)|(\\!))?(\\()))|\\Z",
       "patterns": [
         {
@@ -254,42 +279,8 @@
             "type": "numeric-literal",
             "dataType": "number"
           },
-          "name": "constant.numeric.hex.azLgcAppExp",
-          "match": "\\b(?<!\\$)0(?:x|X)[0-9a-fA-F][0-9a-fA-F_]*(n)?\\b(?!\\$)",
-          "captures": {
-            "1": {
-              "$impostureLang": {
-                "type": "numeric-literal",
-                "dataType": "number"
-              },
-              "name": "storage.type.numeric.bigint.azLgcAppExp"
-            }
-          }
-        },
-        {
-          "$impostureLang": {
-            "type": "numeric-literal",
-            "dataType": "number"
-          },
-          "name": "constant.numeric.binary.azLgcAppExp",
-          "match": "\\b(?<!\\$)0(?:b|B)[01][01_]*(n)?\\b(?!\\$)",
-          "captures": {
-            "1": {
-              "$impostureLang": {
-                "type": "numeric-literal",
-                "dataType": "number"
-              },
-              "name": "storage.type.numeric.bigint.azLgcAppExp"
-            }
-          }
-        },
-        {
-          "$impostureLang": {
-            "type": "numeric-literal",
-            "dataType": "number"
-          },
           "name": "constant.numeric.octal.azLgcAppExp",
-          "match": "\\b(?<!\\$)0(?:o|O)?[0-7][0-7_]*(n)?\\b(?!\\$)",
+          "match": "\\b(?<!\\$)0(?:O)?[0-7][0-7_]*(n)?\\b(?!\\$)",
           "captures": {
             "1": {
               "$impostureLang": {
@@ -693,7 +684,7 @@
         "dataType": "string"
       },
       "name": "constant.character.escape.azLgcAppExp",
-      "match": "\\'{2}|\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+      "match": "\\'{2}"
     }
   }
 }

@@ -3,6 +3,7 @@ import {
   DescriptionType, ReferenceValueDescription,
 } from './values';
 import {
+  AzLgcLangSyntaxNodeContext,
   SyntaxNode,
   AzLgcExpDocument,
   AtSymbolNode,
@@ -18,9 +19,33 @@ import {
   IdentifierNodeInBracketNotation
 } from './parser';
 
-export function generateHover(node: SyntaxNode | undefined, _azLgcExpDocument: AzLgcExpDocument): languages.Hover | undefined {
+export function generateHover(node: SyntaxNode<AzLgcLangSyntaxNodeContext> | undefined, _azLgcExpDocument: AzLgcExpDocument): languages.Hover | undefined {
 
   if (node) {
+
+    if (
+      node.syntaxNodeContext.beneathIncompleteRootFunctionCall
+    ){
+      if (!(node instanceof AtSymbolNode)){
+        const closestRootFunctionCall = node.findOneClosestAncestor<AzLgcLangSyntaxNodeContext>(one => one instanceof RootFunctionCallNode);
+        if (closestRootFunctionCall){
+          return {
+            contents: [
+              {
+                value: `'${_azLgcExpDocument.codeDocument.getNodeContent(closestRootFunctionCall.astNode)}' would be regarded as a plain string.`,
+                isTrusted: true,
+              },
+            ],
+          };
+        }
+      }
+
+      // show no hover message for any nodes beneath an incomplete root function call
+      return {
+        contents: [],
+      };
+    }
+
 
     if (node instanceof RootFunctionCallNode){
       // innerFunctionCallNode might be undefined

@@ -75,12 +75,21 @@ async function seizeCurExpHints(page){
   return JSON.parse(probStr).filter(one => one.severity === 1);
 }
 
+async function manuallySetModelText(page, text){
+  await page.evaluate((text)=>{
+    window.manuallySetModelText(text)
+  }, text)
+  await delay(250);
+}
+
 async function clearUpMonacoEditor(page){
   await page.keyboard.down('Control');
   await page.keyboard.press('KeyA');
   await page.keyboard.up('Control');
 
   await page.keyboard.press('Delete');
+
+  await delay(50);
 }
 
 async function typeInMonacoEditor(page, editorId, str){
@@ -126,6 +135,7 @@ module.exports = {
   clearPageErrors,
   seizePageErrors,
   typeInMonacoEditor,
+  manuallySetModelText,
   clearUpMonacoEditor,
   hoverOneSpanContaining,
   collectMonacoListRowsAriaLabels,

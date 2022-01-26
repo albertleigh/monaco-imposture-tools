@@ -30,20 +30,19 @@ function generateAtSymbolTests(openOnePage, closeOnePage) {
     })
 
     it('populate completion list right after @', async ()=>{
+      let nextText, content, problems, warnings, hints, allCompletionList;
+
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, '@');
 
       await triggerCompletionOfCurrentCursor(page);
       await delay(250);
 
-      const allCompletionList = await collectMonacoListRowsAriaLabels(page);
+      allCompletionList = await collectMonacoListRowsAriaLabels(page);
       expect(allCompletionList.length>0).ok;
 
-      const problems = await seizeCurExpProb(page);
+      problems = await seizeCurExpProb(page);
       // Invalid symbol @ which missed following identifiers
-      expect(problems.length).eq(1);
-      expect(problems[0].code).eq(1);
-      expect(problems[0].startPos.character).eq(0);
-      expect(problems[0].endPos.character).eq(1);
+      expect(problems.length).eq(0);
 
     })
 
@@ -76,22 +75,25 @@ function generateAtSymbolTests(openOnePage, closeOnePage) {
     })
 
     it('escaped & invalid @ symbols', async ()=>{
-      const nextText = '@@@ @ @add(1, 2)';
+      let nextText, content, problems, warnings, hints, allCompletionList;
+
+      nextText = '@@@ @ @add(1, 2)';
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
-      const content = await seizeCurExpTxt(page);
-      const problems = await seizeCurExpProb(page);
+      content = await seizeCurExpTxt(page);
+      problems = await seizeCurExpProb(page);
       expect(content).eq(nextText);
-      expect(problems.length).eq(2);
+      expect(problems.length).eq(1);
       // Invalid symbol @' code 0x1
-      expect(problems[0].code).eq(1);
-      expect(problems[1].code).eq(1);
+      expect(problems[0].code).eq(13);
     })
 
     it('multiple identifiers exist within the root statement', async ()=>{
-      const nextText = "@add(1, 2)@concat('a', 'b')";
+      let nextText, content, problems, warnings, hints, allCompletionList;
+
+      nextText = "@add(1, 2)@concat('a', 'b')";
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
-      const content = await seizeCurExpTxt(page);
-      const problems = await seizeCurExpProb(page);
+      content = await seizeCurExpTxt(page);
+      problems = await seizeCurExpProb(page);
       expect(content).eq(nextText);
       expect(problems.length).eq(2);
       // Miss a preceding comma

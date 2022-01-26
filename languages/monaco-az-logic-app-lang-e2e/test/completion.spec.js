@@ -607,7 +607,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
       it ('literal inner count v1', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 1').output.structure[].name`;
+        nextText = `@activity('GetFileMetadata 1').output.structure[].name`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -626,9 +626,9 @@ pipeline().globalParameters.firstGlobalStrPara`;
         expect(problems.length).eq(1);
         expect(problems[0].code).eq(16);
         expect(problems[0].startPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(43);
+        expect(problems[0].startPos.character).greaterThanOrEqual(47);
         expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].endPos.character).lessThanOrEqual(45);
+        expect(problems[0].endPos.character).lessThanOrEqual(49);
 
         await triggerCompletionOfCurrentCursor(page);
 
@@ -645,7 +645,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
       it('post array of type item v1', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 1').output.structure[add(1,2)]`;
+        nextText = `@activity('GetFileMetadata 1').output.structure[add(1,2)]`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -672,14 +672,14 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq('@activity(\'GetMetadata 1\').output.structure[add(1,2)].name');
+        expect(content).eq('@activity(\'GetFileMetadata 1\').output.structure[add(1,2)].name');
         expect(problems.length).eq(0);
       })
 
       it('post array of type item v2', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 1').output.structure[add(1,2)].`;
+        nextText = `@activity('GetFileMetadata 1').output.structure[add(1,2)].`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -689,9 +689,9 @@ pipeline().globalParameters.firstGlobalStrPara`;
         expect(problems.length).eq(1);
         expect(problems[0].code).eq(14);
         expect(problems[0].startPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(53);
+        expect(problems[0].startPos.character).greaterThanOrEqual(57);
         expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].endPos.character).lessThanOrEqual(54);
+        expect(problems[0].endPos.character).lessThanOrEqual(58);
 
         await triggerCompletionOfCurrentCursor(page);
 
@@ -711,14 +711,14 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq('@activity(\'GetMetadata 1\').output.structure[add(1,2)].name');
+        expect(content).eq('@activity(\'GetFileMetadata 1\').output.structure[add(1,2)].name');
         expect(problems.length).eq(0);
       })
 
       it('post array of type item v3', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 2').output.structure[1].`;
+        nextText = `@activity('GetFileMetadata 2').output.structure[1].`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -728,9 +728,9 @@ pipeline().globalParameters.firstGlobalStrPara`;
         expect(problems.length).eq(1);
         expect(problems[0].code).eq(14);
         expect(problems[0].startPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(46);
+        expect(problems[0].startPos.character).greaterThanOrEqual(50);
         expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].endPos.character).lessThanOrEqual(47);
+        expect(problems[0].endPos.character).lessThanOrEqual(51);
 
         await triggerCompletionOfCurrentCursor(page);
 
@@ -750,14 +750,14 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq('@activity(\'GetMetadata 2\').output.structure[1].name');
+        expect(content).eq('@activity(\'GetFileMetadata 2\').output.structure[1].name');
         expect(problems.length).eq(0);
       })
 
       it('post array of type item v4', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 2').output.structure[add(1,2)].na`;
+        nextText = `@activity('GetFileMetadata 2').output.structure[add(1,2)].na`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -783,14 +783,14 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq('@activity(\'GetMetadata 2\').output.structure[add(1,2)].name');
+        expect(content).eq('@activity(\'GetFileMetadata 2\').output.structure[add(1,2)].name');
         expect(problems.length).eq(0);
       })
 
       it('post array of type item v5', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 2').output.structure[1].na`;
+        nextText = `@activity('GetFileMetadata 2').output.structure[1].na`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -816,14 +816,14 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq('@activity(\'GetMetadata 2\').output.structure[1].name');
+        expect(content).eq('@activity(\'GetFileMetadata 2\').output.structure[1].name');
         expect(problems.length).eq(0);
       })
 
       it('completion list containing the array of type item v1', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 2').output`;
+        nextText = `@activity('GetFolderMetadata 2').output`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -840,7 +840,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
         expect(allCompletionList.length>=1).ok;
 
         expect(allCompletionList.some(value =>
-          value.indexOf('.structure') > -1
+          value.indexOf('.exists') > -1
         )).ok;
 
         await page.keyboard.press('Enter');
@@ -849,14 +849,14 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq("@activity('GetMetadata 2').output.childItems");
+        expect(content).eq("@activity('GetFolderMetadata 2').output.childItems");
         expect(problems.length).eq(0);
       })
 
       it('completion list containing the array of type item v2', async ()=>{
         let nextText, content, problems, warnings, hints, allCompletionList;
 
-        nextText = `@activity('GetMetadata 2').output.`;
+        nextText = `@activity('GetFolderMetadata 2').output.`;
 
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
 
@@ -866,9 +866,9 @@ pipeline().globalParameters.firstGlobalStrPara`;
         expect(problems.length).eq(1);
         expect(problems[0].code).eq(14);
         expect(problems[0].startPos.line).eq(0);
-        expect(problems[0].startPos.character).greaterThanOrEqual(33);
+        expect(problems[0].startPos.character).greaterThanOrEqual(39);
         expect(problems[0].endPos.line).eq(0);
-        expect(problems[0].endPos.character).lessThanOrEqual(34);
+        expect(problems[0].endPos.character).lessThanOrEqual(40);
 
         await triggerCompletionOfCurrentCursor(page);
 
@@ -878,7 +878,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
         expect(allCompletionList.length>=1).ok;
 
         expect(allCompletionList.some(value =>
-          value.indexOf('structure') > -1
+          value.indexOf('exists') > -1
         )).ok;
 
         await page.keyboard.press('Enter');
@@ -887,7 +887,7 @@ pipeline().globalParameters.firstGlobalStrPara`;
 
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpAllProb(page);
-        expect(content).eq("@activity('GetMetadata 2').output.childItems");
+        expect(content).eq("@activity('GetFolderMetadata 2').output.childItems");
         expect(problems.length).eq(0);
       })
 

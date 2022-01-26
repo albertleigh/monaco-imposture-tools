@@ -28,10 +28,12 @@ import {
   WrapperType
 } from "./validateHelper";
 
+export type AzLgcLangSyntaxNodeContext = ValidationIntermediateContext;
+
 // ------------------------ gen cst nodes  ----------------------------
 
 // base AST
-export abstract class SyntaxNode {
+export abstract class SyntaxNode<SyntaxNodeContext extends Record<any, any> = any> {
 
   public parent?: SyntaxNode;
 
@@ -131,7 +133,8 @@ export abstract class SyntaxNode {
   }
 
   protected constructor(
-    public readonly astNode: ASTNode
+    public readonly astNode: ASTNode,
+    public readonly syntaxNodeContext: SyntaxNodeContext,
   ) {
   }
 
@@ -145,10 +148,23 @@ export abstract class SyntaxNode {
 
   abstract traverse(cb:(syntaxNode:SyntaxNode, depth:number)=>void, depth:number):void;
 
+  findOneClosestAncestor<C extends SyntaxNodeContext = SyntaxNodeContext>(matcher:(one:SyntaxNode<C>)=>boolean): SyntaxNode<C>|undefined{
+    let result:SyntaxNode|undefined = undefined;
+    let cur:SyntaxNode|undefined = this;
+    while (cur){
+      if (matcher(cur)){
+        result = cur;
+        break;
+      }
+      cur = cur.parent;
+    }
+    return result;
+  }
+
 }
 
 // parenthesis expression
-export class ParenthesisNode extends SyntaxNode{
+export class ParenthesisNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
 
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
@@ -157,9 +173,10 @@ export class ParenthesisNode extends SyntaxNode{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly content: SyntaxNode[]
   ) {
-    super(astNode);
+    super(astNode, synCtx);
     content.forEach(one=> one.parent = this);
   }
 
@@ -292,13 +309,14 @@ export class ParenthesisNode extends SyntaxNode{
 
 // function call
 //   r values
-export class FunctionCallNode extends SyntaxNode{
+export class FunctionCallNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
   readonly hasReturnValue: boolean = true;
 
   constructor(
     ast:ASTNode,
+    synCtx: SynCtx,
     public readonly functionFullName: string,
     public readonly functionValueDescription: FunctionValueDescription | OverloadedFunctionValueDescription,
     public readonly supportFunctionCallIdentifiers: IdentifierNode[],
@@ -306,7 +324,7 @@ export class FunctionCallNode extends SyntaxNode{
     public readonly parameters: ParenthesisNode,
     public readonly parameterSeq = 0
   ) {
-    super(ast);
+    super(ast, synCtx);
     supportFunctionCallIdentifiers.forEach(one=> one.parent = this);
     parameters.parent = this;
   }
@@ -410,7 +428,7 @@ export class FunctionCallNode extends SyntaxNode{
 
 // literal
 // r value
-export abstract class LiteralValueNode extends SyntaxNode{
+export abstract class LiteralValueNode<SynCtx extends AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
   readonly hasReturnValue: boolean = true;
@@ -432,7 +450,7 @@ export abstract class LiteralValueNode extends SyntaxNode{
 }
 
 // boolean
-export class LiteralBooleanNode extends LiteralValueNode{
+export class LiteralBooleanNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends LiteralValueNode<SynCtx>{
 
   static StringToBoolean(str:string):boolean{
     return str === 'true';
@@ -442,9 +460,10 @@ export class LiteralBooleanNode extends LiteralValueNode{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly  value:boolean
   ) {
-    super(astNode);
+    super(astNode, synCtx);
     this._valueDesc = ReferenceValueDescription.buildOne(
       [
         ''+ value,
@@ -457,15 +476,16 @@ export class LiteralBooleanNode extends LiteralValueNode{
   }
 }
 // string
-export class LiteralStringNode extends LiteralValueNode{
+export class LiteralStringNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends LiteralValueNode<SynCtx>{
 
   readonly _valueDesc: ReferenceValueDescription;
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly  value:string
   ) {
-    super(astNode);
+    super(astNode, synCtx);
     this._valueDesc = ReferenceValueDescription.buildOne(
       [
         value,
@@ -482,7 +502,7 @@ export class LiteralStringNode extends LiteralValueNode{
   }
 }
 // number
-export class LiteralNumberNode extends LiteralValueNode{
+export class LiteralNumberNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends LiteralValueNode<SynCtx>{
 
   static StringToNumber(str:string):number{
     return Number(str);
@@ -492,9 +512,10 @@ export class LiteralNumberNode extends LiteralValueNode{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly value:number
   ) {
-    super(astNode);
+    super(astNode, synCtx);
     this._valueDesc = ReferenceValueDescription.buildOne(
       [
         '' + value,
@@ -507,14 +528,15 @@ export class LiteralNumberNode extends LiteralValueNode{
   }
 }
 // null
-export class LiteralNullNode extends LiteralValueNode{
+export class LiteralNullNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends LiteralValueNode<SynCtx>{
 
   readonly _valueDesc: ReferenceValueDescription;
 
   constructor(
-    astNode: ASTNode
+    astNode: ASTNode,
+    synCtx: SynCtx,
   ) {
-    super(astNode);
+    super(astNode, synCtx);
     this._valueDesc = ReferenceValueDescription.buildOne(
       [
         'null',
@@ -528,7 +550,7 @@ export class LiteralNullNode extends LiteralValueNode{
 }
 
 // literal array
-export class LiteralArrayNode extends LiteralValueNode{
+export class LiteralArrayNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends LiteralValueNode<SynCtx>{
 
   readonly _valueDesc: ReferenceValueDescription;
 
@@ -537,9 +559,10 @@ export class LiteralArrayNode extends LiteralValueNode{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly content: SyntaxNode[]
   ) {
-    super(astNode);
+    super(astNode, synCtx);
     let firstContentReturnValue:IdentifierType | undefined = undefined;
     content.forEach(one=>{
       one.parent = this;
@@ -731,17 +754,18 @@ export class LiteralArrayNode extends LiteralValueNode{
 // identifier
 //   l r values
 
-export class IdentifierNode extends SyntaxNode{
+export class IdentifierNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
   readonly hasLValue: boolean = true;
   readonly hasRValue: boolean = true;
   readonly hasReturnValue: boolean = true;
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly identifierName: string,
     public target: ValueDescription | undefined
   ) {
-    super(astNode);
+    super(astNode, synCtx);
   }
 
   traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
@@ -760,17 +784,18 @@ export class IdentifierNode extends SyntaxNode{
 
 }
 
-export class FunctionCallTarget extends IdentifierNode{
+export class FunctionCallTarget<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends IdentifierNode<SynCtx>{
 
   readonly hasLValue: boolean = false;
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     identifierName: string,
     target: FunctionValueDescription | OverloadedFunctionValueDescription | undefined,
     private _prefixAccessor?: AccessorPunctuator
   ) {
-    super(astNode, identifierName, target);
+    super(astNode, synCtx, identifierName, target);
     if (this._prefixAccessor){
       this._prefixAccessor.parent = this;
     }
@@ -805,15 +830,16 @@ export class FunctionCallTarget extends IdentifierNode{
 
 }
 
-export class IdentifierNodeWithPunctuation extends IdentifierNode{
+export class IdentifierNodeWithPunctuation<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends IdentifierNode<SynCtx>{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     identifierName: string,
     readonly target: ReferenceValueDescription | PackageDescription,
     public readonly prefixAccessor: AccessorPunctuator
   ) {
-    super(astNode, identifierName, target);
+    super(astNode, synCtx, identifierName, target);
     prefixAccessor.parent = this;
   }
 
@@ -835,16 +861,17 @@ export class IdentifierNodeWithPunctuation extends IdentifierNode{
   }
 }
 
-export class IdentifierNodeInBracketNotation extends IdentifierNode{
+export class IdentifierNodeInBracketNotation<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends IdentifierNode<SynCtx>{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     identifierName: string,
     public readonly isPropertyLiteral: boolean,
     readonly target: ReferenceValueDescription | PackageDescription,
     public readonly literalArrayNode: LiteralArrayNode
   ) {
-    super(astNode, identifierName, target);
+    super(astNode, synCtx, identifierName, target);
     literalArrayNode.parent = this;
   }
 
@@ -864,13 +891,16 @@ export class IdentifierNodeInBracketNotation extends IdentifierNode{
 }
 
 // punctuation
-export class Punctuator extends SyntaxNode{
+export class Punctuator<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = false;
   readonly hasReturnValue: boolean = false;
 
-  constructor(astNode: ASTNode) {
-    super(astNode);
+  constructor(
+    astNode: ASTNode,
+    synCtx: SynCtx,
+  ) {
+    super(astNode, synCtx);
   }
 
   traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
@@ -928,16 +958,17 @@ export class CommaPunctuator extends Punctuator{}
 
 // AzLgc nodes
 // at symbol
-export class AtSymbolNode extends SyntaxNode{
+export class AtSymbolNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
 
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = false;
   readonly hasReturnValue: boolean = false;
 
   constructor(
-    astNode: ASTNode
+    astNode: ASTNode,
+    synCtx: SynCtx,
   ) {
-    super(astNode);
+    super(astNode, synCtx);
   }
 
   traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
@@ -948,7 +979,7 @@ export class AtSymbolNode extends SyntaxNode{
 
 // escapedAtSymbol
 // r val
-export class EscapedAtSymbolNode extends SyntaxNode{
+export class EscapedAtSymbolNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
 
   static RETURN_VALUE:ReferenceValueDescription = ReferenceValueDescription.buildOne(
     [
@@ -965,9 +996,10 @@ export class EscapedAtSymbolNode extends SyntaxNode{
   readonly hasReturnValue: boolean = true;
 
   constructor(
-    astNode: ASTNode
+    astNode: ASTNode,
+    synCtx: SynCtx,
   ) {
-    super(astNode);
+    super(astNode, synCtx);
   }
 
   traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
@@ -982,7 +1014,7 @@ export class EscapedAtSymbolNode extends SyntaxNode{
 
 // root function call
 // r val
-export class RootFunctionCallNode extends SyntaxNode{
+export class RootFunctionCallNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
 
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
@@ -992,12 +1024,13 @@ export class RootFunctionCallNode extends SyntaxNode{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly precedingNodes: SyntaxNode[],
     public readonly atSymbolNode: AtSymbolNode,
     public readonly innerFunctionCallNode: FunctionCallNode | undefined,
     public readonly followingNodes: SyntaxNode[]
   ) {
-    super(astNode);
+    super(astNode,synCtx);
     atSymbolNode.parent = this;
     if (innerFunctionCallNode){
       innerFunctionCallNode.parent = this;
@@ -1032,7 +1065,7 @@ export class RootFunctionCallNode extends SyntaxNode{
 
 // expression template
 // r val
-export class ExpressionTemplateNode extends SyntaxNode{
+export class ExpressionTemplateNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyntaxNodeContext> extends SyntaxNode<SynCtx>{
 
   readonly hasLValue: boolean = false;
   readonly hasRValue: boolean = true;
@@ -1040,9 +1073,10 @@ export class ExpressionTemplateNode extends SyntaxNode{
 
   constructor(
     astNode: ASTNode,
+    synCtx: SynCtx,
     public readonly content: SyntaxNode[]
   ) {
-    super(astNode);
+    super(astNode,synCtx);
     content.forEach(one => {
       one.parent = this;
     })
@@ -1152,8 +1186,12 @@ interface ParserRes{
 }
 
 function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermediateContext):ParserRes{
+
   let nodes:SyntaxNode[] = [];
-  const returnCtx = {...ctx, directWrapperType: WrapperType.ROOT_FUNCTION_CALL};
+  const returnCtx = {
+    ...ctx,
+    directWrapperType: WrapperType.ROOT_FUNCTION_CALL,
+  };
   const rootFunctionCallRes = _parse_children(node, ctx);
   const childrenSyntaxNodes = rootFunctionCallRes.nodes;
 
@@ -1188,6 +1226,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
 
     const rootFunctionCall = new RootFunctionCallNode(
       node,
+      ctx,
       precedingNodes,
       atSymbolNode,
       innerFunctionCallNode,
@@ -1196,19 +1235,32 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
 
     nodes.push(rootFunctionCall);
 
+    if(!!ctx.beneathIncompleteRootFunctionCall){
+      ctx.vr.addOneProblem({
+        severity: DiagnosticSeverity.Hint,
+        code: ErrorCode.INCOMPLETE_ROOT_FUNCTION_CALL_STRING,
+        message: `'${ctx.vr.codeDocument.getNodeContent(rootFunctionCall.astNode)}' would be regarded as a plain string.`,
+        startPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset),
+        endPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset + rootFunctionCall.length),
+        node,
+      },ctx);
+    }
+
+    // only do validation for complete root function call
+
     // validate precedingNodes
     if (!ctx.vr.hasProblems()){
       precedingNodes.forEach((one, index)=>{
         if (one instanceof AtSymbolNode){
           if (one!== atSymbolNode){
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.INVALID_AT_SYMBOL,
               message: `Invalid symbol @`,
               startPos: ctx.vr.codeDocument.positionAt(one.offset),
               endPos: ctx.vr.codeDocument.positionAt(one.offset + one.length),
               node,
-            });
+            },ctx);
           }
         }
       })
@@ -1220,9 +1272,9 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
         precedingNodes.length ||
         (
           followingNodes.length &&
-            followingNodes.some(value =>(
-              !(value instanceof IdentifierNodeWithPunctuation || value instanceof IdentifierNodeInBracketNotation)
-            ))
+          followingNodes.some(value =>(
+            !(value instanceof IdentifierNodeWithPunctuation || value instanceof IdentifierNodeInBracketNotation)
+          ))
         ) ||
         (
           ctx.vr.codeDocument.text.slice(0, rootFunctionCall.offset)
@@ -1234,26 +1286,26 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
             ).replace(/\s/g, '').length
         )
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_ROOT_FUNCTION_CALL,
           message: `The function call must take the completion string`,
           startPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset),
           endPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset + rootFunctionCall.length),
           node,
-        })
+        },ctx)
       }else if (
         !! atSymbolNode &&
         ! innerFunctionCallNode
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_AT_SYMBOL,
           message: `Invalid symbol @ which missed following identifiers`,
           startPos: ctx.vr.codeDocument.positionAt(atSymbolNode.offset),
           endPos: ctx.vr.codeDocument.positionAt(atSymbolNode.offset + (atSymbolNode.length || 0)),
           node,
-        });
+        },ctx);
       }else if (
         !! atSymbolNode &&
         !! innerFunctionCallNode
@@ -1265,14 +1317,14 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
           atSymbolNode.offset + atSymbolNode.length !==
           (innerFunctionCallNode as FunctionCallNode).offset
         ){
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INVALID_ROOT_FUNCTION_CALL,
             message: `There should be no spaces or tokens between @ and the function name`,
             startPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset),
             endPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset + rootFunctionCall.length),
             node,
-          })
+          }, ctx)
         }
 
         // check if any UNRECOGNIZED_TOKENS exist
@@ -1288,7 +1340,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
           )
             .match(/^\s*$/)
         ){
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.UNRECOGNIZED_TOKENS,
             message: `Unrecognized tokens`,
@@ -1298,7 +1350,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
             data:{
               code: 'UNRECOGNIZED_TOKENS_#1'
             }
-          });
+          }, ctx);
         }
         if (
           !ctx.vr.codeDocument.text.substr(
@@ -1307,7 +1359,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
           )
             .match(/^\s*$/)
         ){
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.UNRECOGNIZED_TOKENS,
             message: `Unrecognized tokens`,
@@ -1317,7 +1369,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
             data:{
               code: 'UNRECOGNIZED_TOKENS_#2'
             }
-          });
+          }, ctx);
         }
 
       }
@@ -1328,18 +1380,19 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
       followingNodes.forEach((one, index)=>{
         if (one instanceof AtSymbolNode){
           if (one!== atSymbolNode){
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.INVALID_AT_SYMBOL,
               message: `Invalid symbol @`,
               startPos: ctx.vr.codeDocument.positionAt(one.offset),
               endPos: ctx.vr.codeDocument.positionAt(one.offset + one.length),
               node,
-            });
+            }, ctx);
           }
         }
       })
     }
+
 
   }else{
     nodes = childrenSyntaxNodes
@@ -1349,23 +1402,23 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
       if (nodes.length> 0){
         // this part should not be reached unless lexical part failed
         // thus no harm to add this
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_ROOT_FUNCTION_CALL,
           message: `Invalid entry function call which missing a leading at symbol`,
           startPos: ctx.vr.codeDocument.positionAt(node.offset),
           endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 0)),
           node,
-        });
+        }, ctx);
       }else{
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_ROOT_FUNCTION_CALL,
           message: `Invalid logic app entry expression`,
           startPos: ctx.vr.codeDocument.positionAt(node.offset),
           endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 0)),
           node,
-        });
+        }, ctx);
       }
     }
   }
@@ -1401,20 +1454,24 @@ function _collect_identifiers_w_punctuation(
     ){
       const theIdentifierNodeWithPunctuation = new IdentifierNodeWithPunctuation(
         curSymbol.node,
+        ctx,
         curSymbol.identifierName,
         curVdPath.vd as any,
-        new AccessorPunctuator(curSymbol.node.children[0])
+        new AccessorPunctuator(curSymbol.node.children[0], ctx)
       );
 
       if (curVdPath.vd.isUnrecognizedReference()){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_FUNCTION_IDENTIFIER_CHAIN,
           message: `Unrecognized identifier ${curSymbol.identifierName}`,
           startPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset),
           endPos: ctx.vr.codeDocument.positionAt(theIdentifierNodeWithPunctuation.offset+theIdentifierNodeWithPunctuation.length),
           node: theIdentifierNodeWithPunctuation.astNode as any,
-        });
+          data:{
+            code: 'INVALID_FUNCTION_IDENTIFIER_CHAIN_#1'
+          }
+        }, ctx);
       }else if (previousVdPath.vd._$isOptional && !theIdentifierNodeWithPunctuation.isOptional){
         // check whether its accessor must be optional over here
         let startPos = previousSyntaxNode.offset;
@@ -1428,15 +1485,14 @@ function _collect_identifiers_w_punctuation(
             startPos += previousSyntaxNode.isOptional? 2 : 1;
           }
         }
-
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL,
           message: `${previousSyntaxNodeLabel} might be null or undefined, suggest to use an optional accessor.`,
           startPos: ctx.vr.codeDocument.positionAt(startPos),
           endPos: ctx.vr.codeDocument.positionAt(endPos),
           node: previousSyntaxNode.astNode as any,
-        });
+        }, ctx);
       }else if (!previousVdPath.vd._$isOptional && theIdentifierNodeWithPunctuation.isOptional){
         // check whether its optional accessor is redundant or not
         const prefixAccessor = theIdentifierNodeWithPunctuation.prefixAccessor;
@@ -1448,7 +1504,7 @@ function _collect_identifiers_w_punctuation(
         }else if (previousSyntaxNode instanceof IdentifierNode){
           previousSyntaxNodeLabel = previousSyntaxNode.identifierName;
         }
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Hint,
           code: ErrorCode.IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL,
           message: `${previousSyntaxNodeLabel} is defined and its optional accessor might be redundant`,
@@ -1458,7 +1514,7 @@ function _collect_identifiers_w_punctuation(
           data: {
             optionalAccessorStartPos: theIdentifierNodeWithPunctuation.prefixAccessor.offset
           }
-        });
+        }, ctx);
       }
       // check if any mismatched cases found
       if(
@@ -1471,7 +1527,7 @@ function _collect_identifiers_w_punctuation(
         const problemLength = theIdentifierNodeWithPunctuation.isOptional?
             theIdentifierNodeWithPunctuation.length-2:
             theIdentifierNodeWithPunctuation.length-1;
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Warning,
           code: ErrorCode.MISMATCHED_CASES_FOUND,
           message: `Identifier ${curSymbol.identifierName} would be regarded as ${curVdPath.name}`,
@@ -1479,7 +1535,7 @@ function _collect_identifiers_w_punctuation(
           endPos: ctx.vr.codeDocument.positionAt(problemOffset + problemLength),
           node: theIdentifierNodeWithPunctuation.astNode as any,
           source: curVdPath.name
-        });
+        }, ctx);
       }
 
       nodes.push(theIdentifierNodeWithPunctuation);
@@ -1489,6 +1545,7 @@ function _collect_identifiers_w_punctuation(
       curSymbol.type === "array-literal" &&
       (curSymbol as any).isBracketNotation
     ){
+      // for array-literal, there is no way it could be beneath an incomplete root function call
       const _curSymbol = curSymbol as IdentifierInBracketNotationReturnChainType;
       // todo need injected vrCtx to validate and add problems if any
 
@@ -1500,6 +1557,7 @@ function _collect_identifiers_w_punctuation(
         const literalArrayNode = literalArrayNodeRes.nodes[0];
         const theIdentifierNodeInBracketNotation = new IdentifierNodeInBracketNotation(
           _curSymbol.node,
+          ctx,
           _curSymbol.identifierName,
           _curSymbol.isPropertyLiteral,
           curVdPath.vd as any,
@@ -1508,14 +1566,14 @@ function _collect_identifiers_w_punctuation(
         nodes.push(theIdentifierNodeInBracketNotation);
         // alright need to validate the literal array node for bracketNotation
         if (literalArrayNode.itemSize !== 1){
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INCORRECT_ITEM_SIZE_OF_BRACKET_NOTATION_IDENTIFIER,
             message: `The literal array bracket identifier expect exactly one item.`,
             startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
             endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
             node: literalArrayNode.astNode as any,
-          });
+          }, ctx);
         }else{
           const firstItem = literalArrayNode.item(0);
           if (firstItem){
@@ -1527,24 +1585,24 @@ function _collect_identifiers_w_punctuation(
                 sourceIdTyp?.assignableTo(IdentifierType.Number)
               )
             ){
-              ctx.vr.problems.push({
+              ctx.vr.addOneProblem({
                 severity: DiagnosticSeverity.Error,
                 code: ErrorCode.INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
                 message: `The index type could only be of the string/number type.`,
                 startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
                 endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
                 node: literalArrayNode.astNode as any,
-              });
+              }, ctx);
             }
           }else {
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
               message: `The index type cannot be empty.`,
               startPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset),
               endPos: ctx.vr.codeDocument.positionAt(literalArrayNode.offset + literalArrayNode.length),
               node: literalArrayNode.astNode as any,
-            });
+            }, ctx);
           }
         }
         // check if any mismatched cases found for a literal array of one literal property
@@ -1565,7 +1623,7 @@ function _collect_identifiers_w_punctuation(
             problemOffset += 1;
             problemLength -= 2;
           }
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Warning,
             code: ErrorCode.MISMATCHED_CASES_FOUND,
             message: `Literal property ${_curSymbol.identifierName} would be regarded as ${curVdPath.name}`,
@@ -1573,11 +1631,11 @@ function _collect_identifiers_w_punctuation(
             endPos: ctx.vr.codeDocument.positionAt(problemOffset + problemLength),
             node: theIdentifierNodeInBracketNotation.astNode as any,
             source: curVdPath.name
-          });
+          }, ctx);
         }
 
       }else {
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized identifiers, The index type was expected`,
@@ -1587,7 +1645,7 @@ function _collect_identifiers_w_punctuation(
           data:{
             code: 'UNRECOGNIZED_TOKENS_#3'
           }
-        });
+        }, ctx);
       }
     }else{
       break;
@@ -1616,7 +1674,7 @@ function _collect_function_call_identifiers(
       !ctx.vr.codeDocument.getNodeContent(functionCallNode)
         .match(/^\s*$/)
     ){
-      ctx.vr.problems.push({
+      ctx.vr.addOneProblem({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.UNRECOGNIZED_TOKENS,
         message: `Unrecognized tokens`,
@@ -1626,7 +1684,7 @@ function _collect_function_call_identifiers(
         data:{
           code: 'UNRECOGNIZED_TOKENS_#4'
         }
-      });
+      }, ctx);
     }else if (funCallTargetChildren.length){
       const startPos = functionCallNode.offset;
       const endPos = functionCallNode.offset + (functionCallNode.length || 0);
@@ -1639,7 +1697,7 @@ function _collect_function_call_identifiers(
         )
           .match(/^\s*$/)
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized tokens`,
@@ -1649,7 +1707,7 @@ function _collect_function_call_identifiers(
           data:{
             code: 'UNRECOGNIZED_TOKENS_#5'
           }
-        });
+        }, ctx);
       }
       if (
         !ctx.vr.codeDocument.text.substr(
@@ -1658,7 +1716,7 @@ function _collect_function_call_identifiers(
         )
           .match(/^\s*$/)
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized tokens`,
@@ -1668,7 +1726,7 @@ function _collect_function_call_identifiers(
           data:{
             code: 'UNRECOGNIZED_TOKENS_#6'
           }
-        });
+        }, ctx);
       }
     }
   }
@@ -1742,6 +1800,7 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
       // push one identifier node into nodes
       const theIdentifierNode = new IdentifierNode(
         node,
+        ctx,
         (postIdChain.chain[0] as IdentifierReturnChainType).identifierName,
         vdPathArr[0].vd
       );
@@ -1750,14 +1809,17 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
         vdPathArr[0].vd._$type === DescriptionType.OverloadedFunctionValue ||
         vdPathArr[0].vd._$type === DescriptionType.FunctionValue
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_IDENTIFIER_CHAIN,
           message: `Missing invocation of the function`,
           startPos: ctx.vr.codeDocument.positionAt(theIdentifierNode.offset),
           endPos: ctx.vr.codeDocument.positionAt(theIdentifierNode.offset + theIdentifierNode.length),
           node,
-        });
+          data: {
+            code: 'INVALID_IDENTIFIER_CHAIN_#1'
+          }
+        }, ctx);
       }
 
       _collect_identifiers_w_punctuation(ctx, nodes, postIdChain.chain, vdPathArr);
@@ -1767,36 +1829,45 @@ function _parse_identifiers(node: AzLogicAppNode, ctx: ValidationIntermediateCon
         lastVd._$type === DescriptionType.OverloadedFunctionValue ||
         lastVd._$type === DescriptionType.FunctionValue
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_IDENTIFIER_CHAIN,
           message: `Missing invocation of the function`,
           startPos: ctx.vr.codeDocument.positionAt(postIdChain.head.offset),
           endPos: ctx.vr.codeDocument.positionAt(postIdChain.tail.offset + (postIdChain.tail.length || 0)),
           node,
-        });
+          data: {
+            code: 'INVALID_IDENTIFIER_CHAIN_#2'
+          }
+        }, ctx);
       }
 
     }else{
-      ctx.vr.problems.push({
+      ctx.vr.addOneProblem({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.INVALID_IDENTIFIER_CHAIN,
         message: `Unrecognized identifiers`,
         startPos: ctx.vr.codeDocument.positionAt(postIdChain.head.offset),
         endPos: ctx.vr.codeDocument.positionAt(postIdChain.tail.offset + (postIdChain.tail.length || 0)),
         node,
-      });
+        data: {
+          code: 'INVALID_IDENTIFIER_CHAIN_#3'
+        }
+      }, ctx);
     }
   } else {
     // unrecognized identifier node
-    ctx.vr.problems.push({
+    ctx.vr.addOneProblem({
       severity: DiagnosticSeverity.Error,
       code: ErrorCode.INVALID_IDENTIFIER,
       message: `Unrecognized identifier`,
       startPos: ctx.vr.codeDocument.positionAt(postIdChain.head.offset),
       endPos: ctx.vr.codeDocument.positionAt(postIdChain.tail.offset + (postIdChain.tail.length || 0)),
       node,
-    });
+      data: {
+        code: 'INVALID_IDENTIFIER_CHAIN_#4'
+      }
+    }, ctx);
   }
 
   return {
@@ -1812,6 +1883,7 @@ function _parse_function_call_target(node: AzLogicAppNode, ctx: ValidationInterm
   if (node.$impostureLang?.dataType === 'function-call-target'){
     nodes.push(new FunctionCallTarget(
       node,
+      ctx,
       ctx.vr.codeDocument.getNodeContent(node),
       // todo fix this seize its type
       undefined,
@@ -1825,6 +1897,8 @@ function _parse_function_call_target(node: AzLogicAppNode, ctx: ValidationInterm
 }
 
 function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationIntermediateContext):ParserRes{
+  // there is no function call complete beneath an incomplete root function call
+  // thus beneathIncompleteRootFunctionCall would always be falsy
   const nodes:SyntaxNode[] = [];
   const returnCtx = {...ctx, hasFunctionCall: true};
 
@@ -1834,14 +1908,14 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
       const theElderSibling = node.findAnElderSibling();
       //check valid root fun-call-complete or not
       if (!theElderSibling || theElderSibling.$impostureLang?.dataType !== 'atSymbol') {
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.INVALID_FUNCTION_PATTERN,
           message: `Miss a preceding @ for the function call at root statement`,
           startPos: ctx.vr.codeDocument.positionAt(node.offset),
           endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 0)),
           node,
-        });
+        }, ctx);
         return {
           ctx: returnCtx,
           nodes: nodes
@@ -1876,7 +1950,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           !(functionDescPath.vd instanceof OverloadedFunctionValueDescription)
         )
       ) {
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNKNOWN_FUNCTION_NAME,
           message: `Unknown function name`,
@@ -1885,7 +1959,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
           ),
           endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 0)),
           node,
-        });
+        }, ctx);
       }else{
         let retTyp: IdentifierType | undefined = undefined;
         if (functionDescPath.vd instanceof FunctionValueDescription){
@@ -1953,7 +2027,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                 !parameterTypes.some((onePara) => onePara.isVarList) &&
                 (curParamCnt !== confParamCnt || curParenthesesChildrenCnt < confParamCnt * 2 - 1)
               ) {
-                ctx.vr.problems.push({
+                ctx.vr.addOneProblem({
                   severity: DiagnosticSeverity.Error,
                   code: ErrorCode.FUNCTION_PARAMETER_COUNT_MISMATCHES,
                   message: `The function call lacked or had more parameters required`,
@@ -1963,7 +2037,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                   ),
                   endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 0)),
                   node,
-                });
+                }, ctx);
               } else {
                 if (curParamCnt && parenthesesSyntaxNode.content) {
                   // iterate, seize and validate param return type
@@ -2001,7 +2075,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                       }
                     }
                     if (!match) {
-                      ctx.vr.problems.push({
+                      ctx.vr.addOneProblem({
                         severity: DiagnosticSeverity.Error,
                         code: ErrorCode.FUNCTION_PARAMETER_TYPE_MISMATCHES,
                         message: `Cannot fit ${
@@ -2010,7 +2084,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                         startPos: ctx.vr.codeDocument.positionAt(parenthesesSyntaxNode.startPosOfParameter(paraIndex)),
                         endPos: ctx.vr.codeDocument.positionAt(parenthesesSyntaxNode.endPosOfParameter(paraIndex)),
                         node,
-                      });
+                      }, ctx);
                       break;
                     }
                     paraIndex++;
@@ -2037,6 +2111,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
 
           const theFunctionCallNode = new FunctionCallNode(
             node,
+            ctx,
             functionCallFullName,
             functionDescPath.vd,
             supportFunctionCallIdentifiers,
@@ -2052,7 +2127,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
             PackageDescription.CASE_MODE === "CASE_INSENSITIVE_WITH_WARNINGS" &&
             expectedFunctionCallTargetContent != functionCallFullNameContent
           ){
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Warning,
               code: ErrorCode.MISMATCHED_CASES_FOUND,
               message: `Function call target ${functionCallFullNameContent} would be regarded as ${expectedFunctionCallTargetContent}`,
@@ -2060,7 +2135,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
               endPos: ctx.vr.codeDocument.positionAt(theFunctionCallNode.targetOffset + theFunctionCallNode.targetLength),
               node: theFunctionCallNode.astNode as any,
               source: expectedFunctionCallTargetContent
-            });
+            }, ctx);
           }
 
         }
@@ -2079,20 +2154,23 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
               chainVds
             )
           }else{
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.INVALID_FUNCTION_IDENTIFIER_CHAIN,
               message: `Unrecognized identifiers`,
               startPos: ctx.vr.codeDocument.positionAt(postFunCallChain.head.offset + postFunCallChain.head.length || 0),
               endPos: ctx.vr.codeDocument.positionAt(postFunCallChain.tail.offset + (postFunCallChain.tail.length || 0)),
               node,
-            });
+              data:{
+                code: 'INVALID_FUNCTION_IDENTIFIER_CHAIN_#2'
+              }
+            }, ctx);
           }
         }
 
       }
     }else{
-      ctx.vr.problems.push({
+      ctx.vr.addOneProblem({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.INVALID_FUNCTION_PATTERN,
         message: `Invalid function pattern`,
@@ -2102,7 +2180,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
         ),
         endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 0)),
         node,
-      });
+      }, ctx);
     }
   }
 
@@ -2119,6 +2197,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
   const templateContentRes = _parse_children(node, {...ctx, directWrapperType: WrapperType.CURLY_BRACKETS})
   const expressionTemplate = new ExpressionTemplateNode(
     node,
+    ctx,
     templateContentRes.nodes
   );
 
@@ -2135,7 +2214,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
       !ctx.vr.codeDocument.text.substr(expressionTemplate.offset + 2, expressionTemplate.length -3)
         .match(/^\s*$/)
     ){
-      ctx.vr.problems.push({
+      ctx.vr.addOneProblem({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.UNRECOGNIZED_TOKENS,
         message: `Unrecognized tokens`,
@@ -2145,7 +2224,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
         data:{
           code: 'UNRECOGNIZED_TOKENS_#7'
         }
-      });
+      }, ctx);
     }else if (
       templateChildren.length
     ){
@@ -2160,7 +2239,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
         )
           .match(/^\s*$/)
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized tokens`,
@@ -2170,7 +2249,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
           data:{
             code: 'UNRECOGNIZED_TOKENS_#8'
           }
-        });
+        }, ctx);
       }
       if (
         !ctx.vr.codeDocument.text.substr(
@@ -2179,7 +2258,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
         )
           .match(/^\s*$/)
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized tokens`,
@@ -2189,7 +2268,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
           data:{
             code: 'UNRECOGNIZED_TOKENS_#9'
           }
-        });
+        }, ctx);
       }
     }
   }
@@ -2206,7 +2285,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
   const returnCtx = {...ctx, hasFunctionCall: true, directWrapperType: WrapperType.LITERAL_ARRAY};
 
   const literalArrContentParsedRes = _parse_children(node, returnCtx);
-  const literalArrayNode = new LiteralArrayNode(node, literalArrContentParsedRes.nodes);
+  const literalArrayNode = new LiteralArrayNode(node, ctx, literalArrContentParsedRes.nodes);
   // todo should we ignore the ctx returned by the literalArrContentParsedRes, emmm think about it
   // Object.assign(returnCtx, literalArrContentParsedRes.ctx);
   nodes.push(literalArrayNode);
@@ -2220,7 +2299,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
       !ctx.vr.codeDocument.text.substr(literalArrayNode.offset+1, literalArrayNode.length -2)
         .match(/^\s*$/)
     ){
-      ctx.vr.problems.push({
+      ctx.vr.addOneProblem({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.UNRECOGNIZED_TOKENS,
         message: `Unrecognized tokens`,
@@ -2230,7 +2309,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
         data:{
           code: 'UNRECOGNIZED_TOKENS_#10'
         }
-      });
+      }, ctx);
     }else if (literalArrayChildren.length){
       const startPos = literalArrayNode.offset + 1;
       const endPos = literalArrayNode.offset + literalArrayNode.length - 1;
@@ -2243,7 +2322,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
         )
           .match(/^\s*$/)
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized tokens`,
@@ -2253,7 +2332,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
           data:{
             code: 'UNRECOGNIZED_TOKENS_#11'
           }
-        });
+        }, ctx);
       }
       if (
         !ctx.vr.codeDocument.text.substr(
@@ -2262,7 +2341,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
         )
           .match(/^\s*$/)
       ){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.UNRECOGNIZED_TOKENS,
           message: `Unrecognized tokens`,
@@ -2272,7 +2351,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
           data:{
             code: 'UNRECOGNIZED_TOKENS_#12'
           }
-        });
+        }, ctx);
       }
     }
 
@@ -2330,7 +2409,7 @@ function _parse_children(node: AzLogicAppNode, ctx: ValidationIntermediateContex
               )
                 .match(/^\s*$/)
             ){
-              ctx.vr.problems.push({
+              ctx.vr.addOneProblem({
                 severity: DiagnosticSeverity.Error,
                 code: ErrorCode.UNRECOGNIZED_TOKENS,
                 message: `Unrecognized tokens`,
@@ -2340,7 +2419,7 @@ function _parse_children(node: AzLogicAppNode, ctx: ValidationIntermediateContex
                 data:{
                   code: 'UNRECOGNIZED_TOKENS_#13'
                 }
-              });
+              }, ctx);
             }
           }
           // push the first node or linked node
@@ -2384,45 +2463,51 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
       node?.$impostureLang?.dataType === 'boolean' ||
       node?.$impostureLang?.dataType === 'null')
   ) {
-    ctx.vr.problems.push({
+    ctx.vr.addOneProblem({
       severity: DiagnosticSeverity.Error,
       code: ErrorCode.NEED_PRECEDING_SEPARATOR,
       message: `Miss a preceding comma`,
       startPos: ctx.vr.codeDocument.positionAt(node.offset),
       endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 1)),
       node,
-    });
+    }, ctx);
   }
 
   switch (node?.$impostureLang?.dataType) {
     case 'punctuation':
     {
-      const theAccessorPunctuator = new AccessorPunctuator(node);
+      const theAccessorPunctuator = new AccessorPunctuator(node, returnCtx);
       nodes.push(theAccessorPunctuator);
       // we might have a standalone AccessorPunctuator, like: @pipeline().globalParameters?.|
-      ctx.vr.problems.push({
+      ctx.vr.addOneProblem({
         severity: DiagnosticSeverity.Error,
         code: ErrorCode.INVALID_STANDALONE_ACCESSOR,
         message: `Invalid standalone accessor`,
         startPos: ctx.vr.codeDocument.positionAt(theAccessorPunctuator.offset),
         endPos: ctx.vr.codeDocument.positionAt(theAccessorPunctuator.offset + theAccessorPunctuator.length),
         node,
-      });
+      }, ctx);
     }
       break;
+    case 'incomplete-root-function-call-expression':
     case 'root-function-call-expression':
     {
-      const rootFunCallExpRes = _parse_root_function_call(node, returnCtx);
+      const rootFunCallExpRes = _parse_root_function_call(node, {
+          ...returnCtx,
+          directWrapperType: WrapperType.ROOT_FUNCTION_CALL,
+          beneathIncompleteRootFunctionCall: node?.$impostureLang?.dataType === 'incomplete-root-function-call-expression'
+        },
+      );
       returnCtx = rootFunCallExpRes.ctx;
       nodes = rootFunCallExpRes.nodes;
     }
       break;
     case 'dualAtSymbol':
-      nodes.push(new EscapedAtSymbolNode(node));
+      nodes.push(new EscapedAtSymbolNode(node, returnCtx));
       break;
     case 'atSymbol':
       // create one atSymbol node
-      nodes.push(new AtSymbolNode(node));
+      nodes.push(new AtSymbolNode(node, returnCtx));
       // function `_parse_root_function_call` would check whether it is a valid atSymbol or not once returned
       break;
     case 'atTemplateSubstitutionElement':
@@ -2432,23 +2517,28 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
       nodes = atTemplateSubElementRes.nodes;
       if (!ctx.vr.hasProblems()){
         if (ctx.directWrapperType === WrapperType.CURLY_BRACKETS) {
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INVALID_NESTED_TEMPLATE,
             message: `A template cannot nest each other`,
             startPos: ctx.vr.codeDocument.positionAt(node.offset),
             endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 1)),
             node,
-          });
-        } else if (ctx.directWrapperType === WrapperType.ROOT && ctx.precedingPeerIdentifierExist) {
-          ctx.vr.problems.push({
+          }, ctx);
+        } else if (
+          (
+            ctx.directWrapperType === WrapperType.ROOT ||
+            ctx.directWrapperType === WrapperType.ROOT_FUNCTION_CALL
+          ) && ctx.precedingPeerIdentifierExist
+        ) {
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INVALID_TEMPLATE,
             message: `A string template cannot succeed an identifier within the root statement`,
             startPos: ctx.vr.codeDocument.positionAt(node.offset),
             endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 1)),
             node,
-          });
+          }, ctx);
         }
       }
       returnCtx.precedingPeerTemplateExist = true;
@@ -2471,19 +2561,19 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
       // if (!ctx.vr.hasProblems()){
         if (ctx.directWrapperType === WrapperType.ROOT_FUNCTION_CALL && ctx.precedingPeerTemplateExist) {
           // todo remove it?
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INVALID_MULTIPLE_EXPRESSION,
             message: `An identifier cannot succeed a template string within the root statement`,
             startPos: ctx.vr.codeDocument.positionAt(node.offset),
             endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 1)),
             node,
-          });
+          }, ctx);
         } else if (
           (ctx.directWrapperType === WrapperType.ROOT_FUNCTION_CALL || ctx.directWrapperType === WrapperType.CURLY_BRACKETS) &&
           ctx.precedingPeerIdentifierExist
         ) {
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INVALID_MULTIPLE_EXPRESSION,
             message: `Cannot have multiple identifiers within the ${
@@ -2492,7 +2582,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             startPos: ctx.vr.codeDocument.positionAt(node.offset),
             endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 1)),
             node,
-          });
+          }, ctx);
         }
       // }
 
@@ -2512,7 +2602,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
           (ctx.directWrapperType === WrapperType.ROOT_FUNCTION_CALL || ctx.directWrapperType === WrapperType.CURLY_BRACKETS) &&
           ctx.precedingPeerIdentifierExist
         ) {
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.INVALID_MULTIPLE_EXPRESSION,
             message: `Cannot have multiple identifiers within the ${
@@ -2521,7 +2611,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             startPos: ctx.vr.codeDocument.positionAt(node.offset),
             endPos: ctx.vr.codeDocument.positionAt(node.offset + (node.length || 1)),
             node,
-          });
+          }, ctx);
         }
       }
 
@@ -2539,7 +2629,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
       Object.assign(returnCtx, parenthesesChildrenRes.ctx);
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      const parenthesisNode = new ParenthesisNode(node, parenthesesChildren);
+      const parenthesisNode = new ParenthesisNode(node, returnCtx, parenthesesChildren);
       nodes.push(parenthesisNode);
       if (!ctx.vr.hasProblems()){
         if(
@@ -2550,7 +2640,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
           )
             .match(/^\s*$/)
         ){
-          ctx.vr.problems.push({
+          ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
             code: ErrorCode.UNRECOGNIZED_TOKENS,
             message: `Unrecognized tokens`,
@@ -2560,7 +2650,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             data:{
               code: 'UNRECOGNIZED_TOKENS_#14'
             }
-          });
+          }, ctx);
         }else if (parenthesesChildren.length){
           if (
             !ctx.vr.codeDocument.text.substr(
@@ -2568,7 +2658,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             )
               .match(/^\s*$/)
           ){
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.UNRECOGNIZED_TOKENS,
               message: `Unrecognized tokens`,
@@ -2578,7 +2668,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
               data:{
                 code: 'UNRECOGNIZED_TOKENS_#15'
               }
-            });
+            }, ctx);
           }
           if (
             !ctx.vr.codeDocument.text.substr(
@@ -2588,7 +2678,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             )
               .match(/^\s*$/)
           ){
-            ctx.vr.problems.push({
+            ctx.vr.addOneProblem({
               severity: DiagnosticSeverity.Error,
               code: ErrorCode.UNRECOGNIZED_TOKENS,
               message: `Unrecognized tokens`,
@@ -2602,7 +2692,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
               data:{
                 code: 'UNRECOGNIZED_TOKENS_#16'
               }
-            });
+            }, ctx);
           }
         }
       }
@@ -2611,17 +2701,17 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
     case 'number':
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      nodes.push(new LiteralNumberNode(node, LiteralNumberNode.StringToNumber(
+      nodes.push(new LiteralNumberNode(node, returnCtx, LiteralNumberNode.StringToNumber(
         returnCtx.vr.codeDocument.getNodeContent(node)
       )));
       break;
     case 'string':{
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      const theLiteralStringNode = new LiteralStringNode(node, returnCtx.vr.codeDocument.getNodeContent(node));
+      const theLiteralStringNode = new LiteralStringNode(node, returnCtx, returnCtx.vr.codeDocument.getNodeContent(node));
       nodes.push(theLiteralStringNode);
       if (theLiteralStringNode.isDoubleQuoted()){
-        ctx.vr.problems.push({
+        ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
           code: ErrorCode.Q_STRING_DOUBLE_IS_NOT_ALLOWED,
           message: `Double quoted string is not allowed`,
@@ -2632,21 +2722,21 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
             theLiteralStringNode.offset + theLiteralStringNode.length
           ),
           node: theLiteralStringNode.astNode as any,
-        });
+        }, ctx);
       }
     }
       break;
     case 'boolean':
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      nodes.push(new LiteralBooleanNode(node, LiteralBooleanNode.StringToBoolean(
+      nodes.push(new LiteralBooleanNode(node, returnCtx, LiteralBooleanNode.StringToBoolean(
         returnCtx.vr.codeDocument.getNodeContent(node)
       )));
       break;
     case 'null':
       returnCtx.needOneSeparator = true;
       returnCtx.precedingPeerIdentifierExist = true;
-      nodes.push(new LiteralNullNode(node));
+      nodes.push(new LiteralNullNode(node, returnCtx));
       break;
     case 'array-literal':
     {
@@ -2657,7 +2747,7 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
       break;
     case 'comma':
       returnCtx.needOneSeparator = false;
-      nodes.push(new CommaPunctuator(node));
+      nodes.push(new CommaPunctuator(node, returnCtx));
       break;
     default:
       // noop

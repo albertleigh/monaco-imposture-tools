@@ -1,4 +1,6 @@
 import {
+  CodeDocumentOffsetNotInRange,
+  CodeDocumentPositionNotInRange,
   FontStyle,
   ICompiledRule,
   IGrammarRepository,
@@ -2049,26 +2051,6 @@ class LineTokens {
 
 export class CodeDocument {
 
-  static readonly OFFSET_NOT_IN_RANGE = class OffsetNotInRange extends Error {
-    constructor(offset: number, range: number) {
-      super(`Current offset: ${offset} is out the total length ${range} of the file.`);
-    }
-
-    updateMessage(pos: Position, lineNum: number, charNum: number) {
-      this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file.`;
-    }
-  };
-
-  static readonly POS_NOT_IN_RANGE = class PositionNotInRange extends Error {
-    constructor(pos: Position, range: number) {
-      super(`Current position: L${pos.line} C${pos.character} is out of the total length ${range} of the file.`);
-    }
-
-    updateMessage(pos: Position, lineNum: number, charNum: number) {
-      this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file.`;
-    }
-  };
-
   public readonly lines: string[];
   private readonly accLineLength: number[] = [];
 
@@ -2187,7 +2169,7 @@ export class CodeDocument {
    */
   positionAt(offset: number): Position {
     if ( typeof this.text !== 'string' || this.text.length < offset) {
-      throw new CodeDocument.OFFSET_NOT_IN_RANGE(offset, this.text?.length || 0);
+      throw new CodeDocumentOffsetNotInRange(offset, this.text?.length || 0, this._separator);
     }
     let theLine = 0,
       theChar = 0,
@@ -2209,11 +2191,11 @@ export class CodeDocument {
    */
   offsetAt(pos: Position): number {
     let result = 0;
-    if (pos.line < 0 || pos.line > this.lines.length) {
-      throw new CodeDocument.POS_NOT_IN_RANGE(pos, this.text?.length || 0);
+    if (pos.line < 0 || pos.line >= this.lines.length) {
+      throw new CodeDocumentPositionNotInRange(pos, this.text?.length || 0, this._separator);
     } else if (pos.character < 0 || pos.character > this.lines[pos.line].length) {
-      const theErr = new CodeDocument.POS_NOT_IN_RANGE(pos, this.text?.length || 0);
-      theErr.updateMessage(pos, pos.line, this.lines[pos.line].length);
+      const theErr = new CodeDocumentPositionNotInRange(pos, this.text?.length || 0, this._separator);
+      theErr.updateMessage(pos, pos.line, this.lines[pos.line].length, this._separator);
       throw theErr;
     }
     this.lines.some((one, index) => {

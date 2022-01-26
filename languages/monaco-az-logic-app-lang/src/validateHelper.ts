@@ -30,6 +30,7 @@ export enum ErrorCode {
 
   // hints
   IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL = 0x801,
+  INCOMPLETE_ROOT_FUNCTION_CALL_STRING,
 }
 
 export enum DiagnosticSeverity {
@@ -51,7 +52,11 @@ export interface Problem {
 }
 
 export class ValidateResult {
-  public problems: Problem[] = [];
+  private _problems: Problem[] = [];
+
+  get problems(){
+    return this._problems.slice();
+  }
 
   constructor(
     public readonly codeDocument: CodeDocument,
@@ -59,27 +64,45 @@ export class ValidateResult {
   ) {}
 
   get errors(){
-    return this.problems.filter(one=>one.code < 0x200);
+    return this._problems.filter(one=>one.code < 0x200);
   }
 
   public hasProblems(): boolean {
     return !!this.errors.length
   }
+
+  public addOneProblem(problem:Problem, ctx:ValidationIntermediateContext){
+
+    //beneathIncompleteRootFunctionCall
+    if (!!ctx.beneathIncompleteRootFunctionCall){
+      if (problem.severity !== DiagnosticSeverity.Error){
+        this._problems.push(problem);
+      }
+      return;
+    }
+
+    //regular
+    this._problems.push(problem);
+
+  }
+
 }
 
 export enum WrapperType {
   ROOT = 0x001,
-  ROOT_FUNCTION_CALL = 0x001,
+  ROOT_FUNCTION_CALL = 0x101,
   FUNCTION_PARENTHESES,
   PARENTHESES,
   CURLY_BRACKETS,
   LITERAL_ARRAY,
 }
 
+// todo make this a class latter
 export interface ValidationIntermediateContext {
   vr: ValidateResult;
   directWrapperType: WrapperType;
   needOneSeparator?: boolean;
+  beneathIncompleteRootFunctionCall?: boolean;
   hasFunctionCall?: boolean;
   precedingPeerIdentifierExist?: boolean;
   precedingPeerTemplateExist?: boolean;

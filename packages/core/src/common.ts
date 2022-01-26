@@ -1,5 +1,5 @@
 import {ThemeTrieElementRule} from './theme';
-import {IRawGrammar, IRawRepository} from './types';
+import {IRawGrammar, IRawRepository, Position} from './types';
 import {Rule} from './rule';
 import {OnigScanner} from '@monaco-imposture-tools/oniguruma-asm';
 
@@ -54,4 +54,29 @@ export interface ICompiledRule {
 export interface ICompilePatternsResult {
   readonly patterns: number[];
   readonly hasMissingPatterns: boolean;
+}
+
+
+// common err clazz
+
+// code documents
+
+export class CodeDocumentOffsetNotInRange extends Error {
+  constructor(offset: number, range: number, separator:string) {
+    super(`Current offset: ${offset} is out the total length ${range} of the file of separator ${separator}.`);
+  }
+
+  updateMessage(pos: Position, lineNum: number, charNum: number, separator:string) {
+    this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file seperated by ${separator}.`;
+  }
+}
+
+export class CodeDocumentPositionNotInRange extends Error {
+  constructor(pos: Position, range: number, separator:string) {
+    super(`Current position: L${pos.line} C${pos.character} is out of the total length ${range} of the file of separator ${separator}.`);
+  }
+
+  updateMessage(pos: Position, lineNum: number, charNum: number, separator:string) {
+    this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file seperated by ${separator}.`;
+  }
 }
