@@ -1502,7 +1502,7 @@
                     }
                 }
             },
-            "end": "(\\')|((?:[^\\\\\\n])$)",
+            "end": "(\\')",
             "applyEndPatternLast": true,
             "endCaptures": {
                 "1": {
@@ -1513,17 +1513,6 @@
                             "qstring-single",
                             "endCaptures",
                             "1"
-                        ]
-                    }
-                },
-                "2": {
-                    "name": "invalid.illegal.newline.azLgcAppExp",
-                    "$impostureLang": {
-                        "namespaces": [
-                            "repository",
-                            "qstring-single",
-                            "endCaptures",
-                            "2"
                         ]
                     }
                 }
