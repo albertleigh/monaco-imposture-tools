@@ -1,5 +1,5 @@
 const debug = {
-  CAPTURE_METADATA: typeof process === 'undefined' ? false : !!process.env['VSCODE_TEXTMATE_DEBUG'],
-  IN_DEBUG_MODE: typeof process === 'undefined' ? false : !!process.env['VSCODE_TEXTMATE_DEBUG']
+  CAPTURE_METADATA: false,
+  IN_DEBUG_MODE: false
 };
 export default debug

@@ -419,8 +419,8 @@ export class AzLogicAppExpressionLangMonacoEditor {
               return res;
             }
           }catch (err) {
-            if (AzLogicAppExpressionLangMonacoEditor.globalErrorHandler){
-              AzLogicAppExpressionLangMonacoEditor.globalErrorHandler('[azLgcLang::provideHover]', err);
+            if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+              AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::provideHover]', err);
             }else{
               throw  err;
             }
