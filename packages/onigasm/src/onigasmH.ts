@@ -21,7 +21,7 @@ async function initModule(bytes: ArrayBuffer) {
             successCallback(output.instance);
           })
           .catch((e) => {
-            throw e;
+            _reject(e);
           });
         return {};
       },

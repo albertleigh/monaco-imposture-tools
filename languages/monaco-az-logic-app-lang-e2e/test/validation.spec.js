@@ -112,6 +112,36 @@ function generateValidationTests(openOnePage, closeOnePage) {
         })
       });
 
+    [
+`@json('{
+    "str": "another",
+    "num": 2,
+    "bool": true,
+    "null": null,
+}')`,
+`@json('{
+    "str": "another",
+    "num": 2,
+    "bool": true,
+    "null": null
+}')`
+    ].forEach((value, index)=>{
+        it(`Strict manually input valid expression ${index}`, async ()=>{
+          let nextText, content, problems;
+
+          nextText = value
+
+          await manuallySetModelText(page, nextText);
+
+          content = await seizeCurExpTxt(page);
+          problems = await seizeCurExpAllProb(page);
+          expect(content).eq(nextText.trim());
+          expect(problems.length).eq(0);
+
+          await manuallySetModelText(page, "");
+        })
+      });
+
       [
         '@addHours(utcNow(),-5)',
         '@take([string(1), string(1)], 2)',

@@ -662,14 +662,11 @@
           "name": "punctuation.definition.string.begin.azLgcAppExp"
         }
       },
-      "end": "(\\')|((?:[^\\\\\\n])$)",
+      "end": "(\\')",
       "applyEndPatternLast": true,
       "endCaptures": {
         "1": {
           "name": "punctuation.definition.string.end.azLgcAppExp"
-        },
-        "2": {
-          "name": "invalid.illegal.newline.azLgcAppExp"
         }
       },
       "patterns": [

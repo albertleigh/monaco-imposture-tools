@@ -431,17 +431,12 @@ const useStyles = makeStyles((theme) => ({
 // @item().one['two'].
 
 const sampleCodes =
-`{
-    "@(min(pipeline().globalParameters.oneTypedObj.anotherGlobalFloat,activity('Lookup 3').output.firstRow.count))": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "themeColor": "0076D7",
-    "summary": "Pipeline run result",
-    "@summary2": "@min",
-    "sections": [
-    ],
-    "potentialAction": [
-    ]
-}`;
+`@json('{
+    "str": "another",
+    "num": 2,
+    "bool": true,
+    "null": null,
+}')`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
@@ -505,8 +500,8 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
       monacoEditor.current.editor = new AzLogicAppExpressionLangMonacoEditor(
         monacoEditor.current.element,
         {
-          // theme: 'vs-dark',
-          theme: 'vs',
+          theme: 'vs-dark',
+          // theme: 'vs',
           // readOnly: true,
           contextmenu: false,
           value: sampleCodes,
