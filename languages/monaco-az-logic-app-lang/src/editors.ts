@@ -270,6 +270,43 @@ export class AzLogicAppExpressionLangMonacoEditor {
     }
   }
 
+  public static manuallyParseSync(
+    symbolTable: SymbolTable,
+    text: string,
+  ){
+    let azLgcExpDoc: AzLgcExpDocument | undefined = undefined;
+    try{
+      const codeDoc = this.grammar!.parse(text);
+      if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
+        if (codeDoc.separator === '\r\n'){
+          console.log('[azLgcLang::manuallySyncParse] EOF CRLF');
+        }else{
+          console.log('[azLgcLang::manuallySyncParse] EOF LF');
+        }
+      }
+      azLgcExpDoc = parseAzLgcExpDocument(codeDoc, symbolTable);
+      AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
+      console.log("[azLgcLang::manuallySyncParse]", azLgcExpDoc?.entries, azLgcExpDoc?.validateResult, azLgcExpDoc);
+      AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
+      azLgcExpDoc?.consoleLogSyntaxNodes();
+      if (this.globalTraceHandler){
+        if (codeDoc.separator === '\r\n'){
+          this.globalTraceHandler('[azLgcLang::manuallySyncParse] EOF CRLF');
+        }else{
+          this.globalTraceHandler('[azLgcLang::manuallySyncParse] EOF LF');
+        }
+        this.globalTraceHandler('[azLgcLang::manuallySyncParse] succeed')
+      }
+    }catch (error) {
+      if (this.globalErrorHandler){
+        this.globalErrorHandler('[azLgcLang::manuallySyncParse] error', error)
+      }else {
+        throw error;
+      }
+    }
+    return azLgcExpDoc;
+  }
+
   public static activate(
     scannerOrItsPath: string | ArrayBuffer = this._scannerOrItsPath,
     realMonaco: typeof monaco = AzLogicAppLangConstants._monaco!,
