@@ -53,6 +53,7 @@ export class AzLogicAppLangConstants{
   static readonly SCOPE_NAME = 'source.azLgcAppExp'; // source.js      ->    source.azLgcAppExp
   static readonly LANGUAGE_ID = 'azureLogicAppExpression'; // javascript     ->    azureLogicAppExpression
   static readonly DEFAULT_EDITOR_ID = 'az-lg-app-exp-default-editor';
+  static readonly DEFAULT_DOCUMENT_ID = 'az-lg-app-exp-default-document';
 
   static inLexicalDebugMode = false;
   static inSyntaxDebugMode = false;

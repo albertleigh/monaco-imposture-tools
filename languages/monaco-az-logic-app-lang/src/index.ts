@@ -1,4 +1,3 @@
-import {SymbolTable, createSymbolTable} from './values'
 import {AzLogicAppExpressionLangMonacoEditor} from './editors';
 
 export * from '@monaco-imposture-tools/core';
@@ -20,20 +19,14 @@ export {
   createPkgValDesc,
   createSymbolTable,
   createFunRetDesc,
+  emtpyFunRetTyp,
+  globalSymbolTableBase,
+  globalSymbolTable,
 } from './values';
 
 export {Problem, ValidateResult} from './validateHelper';
 export {AzLogicAppExpressionLangMonacoEditor} from './editors';
+export {AzLogicAppExpressionLanguage} from './languages';
 export {AzLgcExpDocument} from './parser';
-
-
-SymbolTable.globalSymbolTable = createSymbolTable({});
-SymbolTable.globalValueDescriptionDict
-  = SymbolTable.globalSymbolTable.generateValueDescriptionDictionary();
-
-export const emtpyFunRetTyp = SymbolTable.emtpyFunRetTyp;
-export const globalSymbolTableBase =  SymbolTable.globalSymbolTableBase;
-export const globalSymbolTable = SymbolTable.globalSymbolTable;
-
 
 export default AzLogicAppExpressionLangMonacoEditor;
