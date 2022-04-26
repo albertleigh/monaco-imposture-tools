@@ -2288,3 +2288,11 @@ export const createSymbolTable = SymbolTable.buildOne.bind(SymbolTable);
 
 export const ValueDescriptionDictionaryFunctionKey = '_$ValueDescriptionDictionaryFunctionKey';
 export type ValueDescriptionDictionary = Map<IdentifierType | string, DescriptorCollection[]>;
+
+SymbolTable.globalSymbolTable = createSymbolTable({});
+SymbolTable.globalValueDescriptionDict
+  = SymbolTable.globalSymbolTable.generateValueDescriptionDictionary();
+
+export const emtpyFunRetTyp = SymbolTable.emtpyFunRetTyp;
+export const globalSymbolTableBase =  SymbolTable.globalSymbolTableBase;
+export const globalSymbolTable = SymbolTable.globalSymbolTable;
