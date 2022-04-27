@@ -911,14 +911,14 @@ export class SymbolTable {
     contains: createOverloadedFunValDesc(
       [
         '**contains(stringWithin:string, findString:string):boolean**',
-        '**contains(arrayWithin:array, element:array):boolean**',
-        '**contains(objectWithin:object, key:object):boolean**',
+        '**contains(arrayWithin:array, element:any):boolean**',
+        '**contains(objectWithin:object, key:string):boolean**',
         'Check whether a collection has a specific item.',
       ],
       [
         [IdentifierType.String, IdentifierType.String],
-        [IdentifierType.Array, IdentifierType.Array],
-        [IdentifierType.AnyObject, IdentifierType.AnyObject],
+        [IdentifierType.Any, IdentifierType.Any],
+        [IdentifierType.AnyObject, IdentifierType.String],
       ],
       [IdentifierType.Boolean, IdentifierType.Boolean, IdentifierType.Boolean]
     ),
