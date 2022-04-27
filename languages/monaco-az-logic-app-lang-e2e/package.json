@@ -2,7 +2,7 @@
   "name": "monaco-az-logic-app-lang-e2e",
   "private": true,
   "dependencies": {
-    "monaco-azure-logic-app-lang": "^0.1.6",
+    "monaco-azure-logic-app-lang": "^0.1.7",
     "monaco-editor": "^0.27.0"
   },
   "devDependencies": {
@@ -62,5 +62,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "version": "0.1.6"
+  "version": "0.1.7"
 }
