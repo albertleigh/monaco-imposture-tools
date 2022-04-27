@@ -277,6 +277,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@addMinutes('2015-03-15T13:27:36Z', 33)",
         "@addHours('2015-03-15T13:27:36Z', 12)",
         "@addDays('2015-03-15T13:27:36Z', -20)",
+        "@contains( variables('splitStates'), variables('stateItem'))",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;

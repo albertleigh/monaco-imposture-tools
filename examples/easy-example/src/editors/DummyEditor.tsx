@@ -85,13 +85,17 @@ function generateNextSymbolTable() {
           'Variable one',
           'Variable two',
           'Variable three',
+          'stateItem',
+          'splitStates',
         ],
         [
           [IdentifierType.CONSTANT('firstVar')],
           [IdentifierType.CONSTANT('secondVar')],
-          [IdentifierType.CONSTANT('thirdVar')]
+          [IdentifierType.CONSTANT('thirdVar')],
+          [IdentifierType.CONSTANT('stateItem')],
+          [IdentifierType.CONSTANT('splitStates')]
         ],
-        [IdentifierType.String, IdentifierType.String, IdentifierType.String]
+        [IdentifierType.String, IdentifierType.String, IdentifierType.String, IdentifierType.String, IdentifierType.Array]
       ),
       pipeline: createFunValDesc(
         ['**pipeline()**', 'Return pipeline object'],
