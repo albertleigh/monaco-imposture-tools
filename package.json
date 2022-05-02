@@ -5,17 +5,18 @@
   "main": "index.js",
   "devDependencies": {
     "coveralls": "^3.1.1",
-    "husky": "^7.0.2",
+    "husky": "^7.0.4",
     "lerna": "^4.0.0",
-    "lint-staged": "^11.1.2",
+    "lint-staged": "^12.4.1",
     "nyc": "^15.1.0",
-    "prettier": "^2.4.0"
+    "prettier": "^2.6.2"
   },
   "scripts": {
     "postinstall": "lerna bootstrap --ci",
     "setup": "lerna run setup",
     "compile": "lerna run compile --stream",
     "compile:debug": "lerna run compile:debug",
+    "audit": "npm audit && lerna run audit --stream",
     "test": "lerna run test",
     "coverage": "lerna run coverage --stream",
     "create-coverage:text": "nyc report --reporter=text",
@@ -24,6 +25,10 @@
     "lint:fix": "lerna run lint:fix",
     "prettify:check": "prettier --config .prettierrc --check \"(languages|examples|packages)/**/*.{json,ts,tsx,js,jsx}\"",
     "prettify": "prettier --config .prettierrc --write"
+  },
+  "engines": {
+    "node": ">=16.15.0 <17",
+    "npm": "~8.5.5"
   },
   "lint-pretty-staged": {
     "!(languages|examples|packages)/**/*.{ts,tsx,js,jsx}": [

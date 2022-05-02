@@ -10,11 +10,15 @@
     "type": "git",
     "url": "git@github.com:albertleigh/monaco-imposture-tools.git"
   },
+  "engines": {
+    "node": ">=16.15.0 <17",
+    "npm": "~8.5.5"
+  },
   "keywords": [],
   "publishConfig": {
     "access": "public"
   },
   "author": "Wentao LI <liwentao90@yahoo.com>",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "LICENSE.md",
   "gitHead": "fbea0c56db4e7b358687c48d75a7e8a45aedc674"
 }

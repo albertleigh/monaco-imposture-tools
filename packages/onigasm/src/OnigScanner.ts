@@ -49,7 +49,7 @@ function convertUTF8BytesFromPtrToString(ptr: number): string {
 }
 
 const cache = new LRUCache<OnigScanner, INativeOnigHInfo>({
-  dispose: (scanner: OnigScanner, info: INativeOnigHInfo) => {
+  dispose: (info: INativeOnigHInfo, scanner: OnigScanner, _reason: LRUCache.DisposeReason) => {
     if (info.regexTPtrs?.length){
       const regexTPtrsPtr = onigasmH._malloc(info.regexTPtrs.length);
       onigasmH.HEAPU8.set(info.regexTPtrs, regexTPtrsPtr);

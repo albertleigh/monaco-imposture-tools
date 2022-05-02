@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "ESNext",
+    "module": "CommonJS",
     "sourceMap": true,
     "outDir": "lib",
     "declaration": true,
     "strictNullChecks": true,
     "declarationDir": "lib/typings"
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "cmake-build-debug", "cmake-build-release"]
 }

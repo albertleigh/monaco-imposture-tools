@@ -39,10 +39,7 @@ const devConfig = {
       '/assets': {
         selfHandleResponse: true,
         bypass(req, resp) {
-          if (req.url === '/assets/scanner.wasm') {
-            resp.header('Content-Type', 'application/wasm');
-            fs.createReadStream(wasmBinPath).pipe(resp);
-          } else if (req.url.indexOf('/assets/grammars') > -1) {
+          if (req.url.indexOf('/assets/grammars') > -1) {
             const matchIndices = req.url.match(/assets\/grammars\/([-\w]+)\/([-\w\.]+)/);
             const _folderName = matchIndices[1];
             const fileName = matchIndices[2];

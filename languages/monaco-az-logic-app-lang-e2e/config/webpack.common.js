@@ -41,6 +41,20 @@ module.exports = {
           },
         },
       },
+      {
+        test: /\.wasm$/,
+        type:
+          "javascript/auto" /** this disables webpacks default handling of wasm */,
+        use: [
+          {
+            loader: "file-loader",
+            options: {
+              name: "assets/wasm/[name].[hash].[ext]",
+              publicPath: ""
+            }
+          }
+        ]
+      }
     ],
   },
   plugins: [

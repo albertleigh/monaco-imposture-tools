@@ -6,8 +6,8 @@
   "typings": "lib/typings/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
-    "setup-emsdk": "node scripts/setup-emsdk.js 2.0.26",
-    "setup-oniguruma": "node scripts/setup-oniguruma.js 980fbf9828fd0112ac0d4a15735990d2f6dd6acd",
+    "setup-emsdk": "node scripts/setup-emsdk.js 3.1.9",
+    "setup-oniguruma": "node scripts/setup-oniguruma.js c30fd2dba48efe0b2cd3324c14da70b77ff7c6be",
     "setup": "npm run setup-emsdk && npm run setup-oniguruma",
     "cmake-build:debug": "node scripts/build.js Debug",
     "cmake-build": "node scripts/build.js",
@@ -17,6 +17,7 @@
     "copy-to-lib": "node scripts/copy-to-lib.js",
     "compile:debug": "npm run clean && npm run tsc-build:debug && npm run cmake-build:debug && npm run copy-to-lib:debug",
     "compile": "npm run clean && npm run tsc-build && npm run cmake-build && npm run copy-to-lib",
+    "audit": "npm audit",
     "benchmark": "node benchmark.js",
     "test": "node node_modules/mocha/bin/mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
     "test:coverage": "nyc --reporter=text mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
@@ -29,33 +30,37 @@
     "type": "git",
     "url": "git@github.com:albertleigh/monaco-imposture-tools.git"
   },
+  "engines": {
+    "node": ">=16.15.0 <17",
+    "npm": "~8.5.5"
+  },
   "dependencies": {
-    "lru-cache": "^5.1.1"
+    "lru-cache": "^7.9.0"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.21",
-    "@types/lru-cache": "^5.1.1",
-    "@types/mocha": "^9.0.0",
-    "@types/node": "^14.14.31",
-    "@types/shelljs": "^0.8.9",
-    "@types/sinon": "^10.0.2",
-    "@typescript-eslint/eslint-plugin": "^4.31.1",
-    "@typescript-eslint/parser": "^4.31.1",
-    "chai": "^4.3.4",
-    "eslint": "^7.32.0",
-    "fs-extra": "^10.0.0",
-    "mocha": "^9.0.3",
+    "@types/chai": "^4.3.1",
+    "@types/lru-cache": "^7.6.1",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^16.11.32",
+    "@types/shelljs": "^0.8.11",
+    "@types/sinon": "10.0.11",
+    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "@typescript-eslint/parser": "^5.21.0",
+    "chai": "^4.3.6",
+    "eslint": "^8.14.0",
+    "fs-extra": "^10.1.0",
+    "mocha": "^10.0.0",
     "nyc": "^15.1.0",
     "rimraf": "^3.0.2",
-    "shelljs": "^0.8.4",
-    "sinon": "^11.1.2",
-    "typescript": "^4.3.5"
+    "shelljs": "^0.8.5",
+    "sinon": "^13.0.2",
+    "typescript": "^4.6.4"
   },
   "keywords": [],
   "publishConfig": {
     "access": "public"
   },
   "author": "Wentao LI <liwentao90@yahoo.com>",
-  "license": "SEE LICENSE IN LICENSE.md",
+  "license": "LICENSE.md",
   "gitHead": "fbea0c56db4e7b358687c48d75a7e8a45aedc674"
 }
