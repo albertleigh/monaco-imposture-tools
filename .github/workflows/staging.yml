@@ -1,7 +1,8 @@
 name: Next Status
 on:
+  workflow_dispatch:
   push:
-    branches: [ feature/**, release/** ]
+    branches: [ feature/**, release/**, fix/** ]
 
 jobs:
   build-and-test:
