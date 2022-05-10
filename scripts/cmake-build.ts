@@ -1,10 +1,9 @@
-const os = require("os")
-const fs = require("fs")
-const path = require("path")
-// const fse = require("fs-extra")
-const shell = require("shelljs")
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as shell from 'shelljs';
 
-const {ROOT_DIR, EMSDK_DIR, CMAKE_DEBUG_TARGET, CMAKE_RELEASE_TARGET, CMAKE_TOOLCHAIN_FILE_PATH} = require('./paths')
+import {ROOT_DIR, EMSDK_DIR, CMAKE_DEBUG_TARGET, CMAKE_RELEASE_TARGET, CMAKE_TOOLCHAIN_FILE_PATH} from'./paths';
 
 if (!shell.which('git')) {
   shell.echo('Sorry, this script requires git');
@@ -26,7 +25,7 @@ if (!fs.existsSync(TARGET_PATH)){
 }
 
 const curPlatform = os.platform();
-shell.echo(`*** Building oniguruma-asm on ${curPlatform}`);
+shell.echo(`*** Building monaco-imposture-tools-root ${curPlatform}`);
 
 shell.pushd(TARGET_PATH);
 if(curPlatform=== "win32"){
@@ -37,6 +36,7 @@ if(curPlatform=== "win32"){
 
   shell.exec(`cmake.exe -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_TOOLCHAIN_FILE=${path.resolve(EMSDK_DIR, ...CMAKE_TOOLCHAIN_FILE_PATH)} -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - NMake Makefiles" ${ROOT_DIR}`);
 
+  shell.exec(`cmake.exe --build ${TARGET_PATH} --target onig`);
   shell.exec(`cmake.exe --build ${TARGET_PATH} --target OnigurumaAsm`);
 
 }else if (
@@ -46,6 +46,7 @@ if(curPlatform=== "win32"){
 
   shell.exec(`cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_TOOLCHAIN_FILE=${path.resolve(EMSDK_DIR, ...CMAKE_TOOLCHAIN_FILE_PATH)} -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" ${ROOT_DIR}`);
 
+  shell.exec(`cmake --build ${TARGET_PATH} --target onig -- -j 6`)
   shell.exec(`cmake --build ${TARGET_PATH} --target OnigurumaAsm -- -j 6`)
 
 }else{
