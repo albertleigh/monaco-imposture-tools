@@ -4,14 +4,12 @@
 process.env.BABEL_ENV = 'production';
 process.env.NODE_ENV = 'production';
 
-const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 const {merge} = require('webpack-merge');
-// const ModuleFederationPlugin = require("webpack/lib/container/ModuleFederationPlugin");
 
 const commonConfig = require('./webpack.common');
-// const packageJson  = require('../package.json');
 
+/**@type {import('webpack').Configuration}*/
 const prodConfig = {
   mode: 'production',
   devtool: 'source-map',
@@ -20,9 +18,14 @@ const prodConfig = {
     chunkFilename: '[name].[id].js',
   },
   optimization:{
-    minimize: false
+    // todo fix it
+    minimize: false,
+    // chunkIds: "named"
   },
   plugins: [
+    // new webpack.ids.DeterministicChunkIdsPlugin({
+    //   maxLength: 5,
+    // }),
   ],
 };
 

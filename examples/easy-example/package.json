@@ -67,8 +67,5 @@
     "lint": "eslint --ext=js,jsx,ts,tsx src",
     "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "version": "0.1.7"
 }

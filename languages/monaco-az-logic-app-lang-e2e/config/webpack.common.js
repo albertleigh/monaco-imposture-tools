@@ -7,6 +7,7 @@ const getClientEnvironment = require('./env');
 const env = getClientEnvironment();
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
+/**@type {import('webpack').Configuration}*/
 module.exports = {
   entry: './src/index.ts',
   resolve: {

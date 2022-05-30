@@ -7,10 +7,37 @@ declare const require;
 export let onigasmH;
 const OnigasmModuleFactory = require('./OnigurumaAsm')
 
+/**
+ * ASM_IN_BASE64 would be replaced at compile time, do not change it
+ */
+const ASM_IN_BASE64 = '%%MAGIC_ASM_BASE64%%';
+
+function base64ToArrayBuffer( base64Data: string ) {
+  const isBrowser = typeof window !== 'undefined' && typeof window.atob === 'function';
+  const binary = isBrowser? window.atob(base64Data): Buffer.from(base64Data, 'base64').toString('binary');
+  const bytes = new Uint8Array(binary.length);
+  for (let i =0; i < binary.length;  ++i){
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 async function initModule() {
   return new Promise<void>((resolve, _reject) => {
     const {log, warn, error} = console;
-    OnigasmModuleFactory().then((moduleH) => {
+    OnigasmModuleFactory({
+      instantiateWasm(imports, successCallback){
+        WebAssembly.instantiate(
+          base64ToArrayBuffer(ASM_IN_BASE64),
+          imports
+        ).then((output)=>{
+          successCallback(output.instance);
+        }).catch((err)=>{
+          _reject(err);
+        });
+        return {};
+      }
+    }).then((moduleH) => {
       onigasmH = moduleH;
       resolve();
     });
@@ -34,7 +61,7 @@ let isInitialized = false;
 export async function initOnigasm() {
   if (isInitialized) {
     throw new Error(
-      `Oniguruma asm#init has been called and was succesful, subsequent calls are not allowed once initialized`
+      `Oniguruma asm#init has been called and was successful, subsequent calls are not allowed once initialized`
     );
   }
   await initModule();

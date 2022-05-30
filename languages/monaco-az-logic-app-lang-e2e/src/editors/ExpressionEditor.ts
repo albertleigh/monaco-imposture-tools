@@ -12,9 +12,7 @@ import {
   createFunRetDesc,
   createOverloadedFunValDesc
 } from 'monaco-azure-logic-app-lang';
-import scannerPath from 'monaco-azure-logic-app-lang/scanner/scanner.wasm';
 
-AzLogicAppExpressionLang.scannerOrItsPath = scannerPath;
 AzLogicAppExpressionLang.monaco = monaco;
 AzLogicAppExpressionLang.emitBinaryTokens = true;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;

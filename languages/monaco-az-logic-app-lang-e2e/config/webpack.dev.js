@@ -22,8 +22,7 @@ const wasmBinPath = path.resolve(
 );
 const grammarBasePath = path.resolve(__dirname, '..', 'node_modules', 'monaco-azure-logic-app-lang', 'grammar');
 
-//  assets/grammars/cpp/c.tmLanguage.json
-
+/**@type {import('webpack').Configuration}*/
 const devConfig = {
   mode: 'development',
   devtool: 'cheap-module-source-map',
