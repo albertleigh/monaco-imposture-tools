@@ -3,7 +3,7 @@ const expect = chai.expect;
 
 const jsonTmLangJson = require('@monaco-imposture-tools/grammars/json/JSON.tmLanguage.ext.json');
 
-import {Registry, CodeDocument, IGrammar, StackElement, IToken} from '../src/main';
+import {Registry, CodeDocument, IGrammar, StackElement, IToken, IRawTheme} from '../src/main';
 
 enum FormatAction{
   INCREASE_INDENT = 0x1,
@@ -26,6 +26,144 @@ const WHITE_SPACES = /\s+/g
 const defaultFormatActions = [FormatAction.INPUT_CONTENT];
 const defaultCustomized = {formatterAction: defaultFormatActions};
 
+const theme1:IRawTheme = {
+  name: "default",
+  settings: [
+    {
+      scope: "",
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.INPUT_CONTENT]
+        }
+      }
+    },
+    // root array and definition
+    {
+      scope: [
+        'punctuation.definition.array.begin.json',
+        'punctuation.definition.dictionary.begin.json'
+      ],
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INCREASE_INDENT, FormatAction.INPUT_ENTER ]
+        }
+      }
+    },
+    {
+      scope: [
+        'punctuation.definition.array.end.json',
+        'punctuation.definition.dictionary.end.json'
+      ],
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.DECREASE_INDENT, FormatAction.INPUT_ENTER, FormatAction.INPUT_CONTENT]
+        }
+      },
+
+    },
+    // chained array and definition
+    {
+      scope: [
+        'meta.structure.array.json meta.structure.array.json punctuation.definition.array.begin.json',
+      ],
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_SPACE ]
+        }
+      }
+    },
+    {
+      scope: [
+        'meta.structure.array.json meta.structure.array.json punctuation.definition.array.end.json',
+      ],
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.INPUT_SPACE, FormatAction.INPUT_CONTENT]
+        }
+      },
+    },
+    {
+      scope: [
+        'punctuation.separator.array.json',
+        'punctuation.separator.dictionary.key-value.json',
+      ],
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_SPACE]
+        }
+      }
+    },
+    {
+      scope: [
+        'punctuation.separator.dictionary.pair.json',
+      ],
+      settings:{
+        customized: {
+          formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_ENTER]
+        }
+      }
+    }
+  ]
+}
+// const theme2:IRawTheme = {
+//   name: "default",
+//   settings: [
+//     {
+//       scope: "",
+//       settings:{
+//         customized: {
+//           formatterAction: [FormatAction.INPUT_CONTENT]
+//         }
+//       }
+//     },
+//     // root array and definition
+//     {
+//       scope: [
+//         'punctuation.definition.array.begin.json',
+//         'punctuation.definition.dictionary.begin.json'
+//       ],
+//       settings:{
+//         customized: {
+//           formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INCREASE_INDENT, FormatAction.INPUT_ENTER ]
+//         }
+//       }
+//     },
+//     {
+//       scope: [
+//         'punctuation.definition.array.end.json',
+//         'punctuation.definition.dictionary.end.json'
+//       ],
+//       settings:{
+//         customized: {
+//           formatterAction: [FormatAction.DECREASE_INDENT, FormatAction.INPUT_ENTER, FormatAction.INPUT_CONTENT]
+//         }
+//       },
+//
+//     },
+//     {
+//       scope: [
+//         'punctuation.separator.dictionary.key-value.json',
+//       ],
+//       settings:{
+//         customized: {
+//           formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_SPACE]
+//         }
+//       }
+//     },
+//     {
+//       scope: [
+//         'punctuation.separator.array.json',
+//         'punctuation.separator.dictionary.pair.json',
+//       ],
+//       settings:{
+//         customized: {
+//           formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_ENTER]
+//         }
+//       }
+//     }
+//   ]
+// }
+
 describe('json formatter test', ()=>{
   const sampleStrV1 = `{
 "value1": "one",
@@ -47,85 +185,7 @@ describe('json formatter test', ()=>{
           content: jsonTmLangJson,
         };
       },
-      theme: {
-        name: "default",
-        settings: [
-          {
-            scope: "",
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.INPUT_CONTENT]
-              }
-            }
-          },
-          // root array and definition
-          {
-            scope: [
-              'punctuation.definition.array.begin.json',
-              'punctuation.definition.dictionary.begin.json'
-            ],
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INCREASE_INDENT, FormatAction.INPUT_ENTER ]
-              }
-            }
-          },
-          {
-            scope: [
-              'punctuation.definition.array.end.json',
-              'punctuation.definition.dictionary.end.json'
-            ],
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.DECREASE_INDENT, FormatAction.INPUT_ENTER, FormatAction.INPUT_CONTENT]
-              }
-            },
-
-          },
-          // chained array and definition
-          {
-            scope: [
-              'meta.structure.array.json meta.structure.array.json punctuation.definition.array.begin.json',
-            ],
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_SPACE ]
-              }
-            }
-          },
-          {
-            scope: [
-              'meta.structure.array.json meta.structure.array.json punctuation.definition.array.end.json',
-            ],
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.INPUT_SPACE, FormatAction.INPUT_CONTENT]
-              }
-            },
-          },
-          {
-            scope: [
-              'punctuation.separator.array.json',
-              'punctuation.separator.dictionary.key-value.json',
-            ],
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_SPACE]
-              }
-            }
-          },
-          {
-            scope: [
-              'punctuation.separator.dictionary.pair.json',
-            ],
-            settings:{
-              customized: {
-                formatterAction: [FormatAction.INPUT_CONTENT, FormatAction.INPUT_ENTER]
-              }
-            }
-          }
-        ]
-      }
+      theme: theme1
     });
     jsonGrammar = (await langReg.loadGrammar('source.json'))!;
   })
@@ -199,6 +259,18 @@ describe('json formatter test', ()=>{
       }
     }
 
+    const expectedStr = `{
+\t"value1": "one",
+\t"value2": [
+\t\t1, 2, [ 3, [ 4, 5 ], 6 ], 7, [ 8, 9 ]
+\t],
+\t"value3": true,
+\t"value4": {
+\t\t"value4.1": null
+\t},
+\t
+}`;
+    expect(formattedStr).eq(expectedStr);
     expect(tokens.length).gt(0);
     expect(formattedStr.length).gt(0);
 

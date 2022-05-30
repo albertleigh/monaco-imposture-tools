@@ -1677,6 +1677,20 @@ export class ScopeListElement {
     return ScopeListElement._equals(this, other);
   }
 
+  private static _hasScopeNameCombinator(scopeName:string): boolean{
+    if (scopeName.length< 1){
+      return false;
+    }
+    return scopeName[scopeName.length -1] === '>';
+  }
+
+  private static _purgeScopeNameCombinator(scopeName:string): [boolean, string]{
+    if (this._hasScopeNameCombinator(scopeName)){
+      return [true, scopeName.substring(0, scopeName.length-1)]
+    }
+    return [false, scopeName];
+  }
+
   private static _matchesScope(scope: string, selector: string, selectorWithDot: string): boolean {
     return selector === scope || scope.substring(0, selectorWithDot.length) === selectorWithDot;
   }
@@ -1685,13 +1699,15 @@ export class ScopeListElement {
     if (!parentScopes) {
       return true;
     }
-    // todo parent scopes and target scopeList were compared over here, enhance it
-    // enhance it to support and scope1>
 
     const len = parentScopes.length;
     let index = 0;
-    let selector = parentScopes[index];
+    // combinator would only exist on the parent scopes, but parentScope starts from the second
+    const [isFirstScopeNameCombinator, firstScopeName] = this._purgeScopeNameCombinator(parentScopes[index]);
+    let selector = firstScopeName;
     let selectorWithDot = selector + '.';
+    // the first scopeName with combinator would be ignored
+    let hasCombinator = isFirstScopeNameCombinator;
 
     while (target) {
       if (this._matchesScope(target.scope, selector, selectorWithDot)) {
@@ -1699,8 +1715,13 @@ export class ScopeListElement {
         if (index === len) {
           return true;
         }
-        selector = parentScopes[index];
+        const [isNextCombinator, nextScopeName] = this._purgeScopeNameCombinator(parentScopes[index]);
+        hasCombinator = isNextCombinator;
+        selector = nextScopeName;
         selectorWithDot = selector + '.';
+      }else if(hasCombinator){
+        // found a mismatched scope name of combinator
+        return false;
       }
       target = target.parent;
     }
