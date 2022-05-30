@@ -21,6 +21,13 @@
     "no-extra-boolean-cast": 0,
     "no-unused-vars": 0,
     "require-yield": "off",
+    "max-len": [
+      "warn",
+      {
+        "code": 120,
+        "ignorePattern": "^(?!.*/(/|\\*) .* .*).*$"
+      }
+    ],
     "@typescript-eslint/no-empty-function": 0,
     "@typescript-eslint/no-non-null-assertion": 0,
     "@typescript-eslint/explicit-module-boundary-types": 0,

@@ -79,7 +79,7 @@
             "applyEndPatternLast": true,
             "name": "meta.expression.function.call.incomplete.azLgcAppExp",
             "begin": "(?=((@([_$[:alpha:]][_$[:alnum:]]*)?(\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*))*))\\s*(?:(\\?\\.\\s*)|(\\!)|(\\())?)",
-            "end": "(?x)(\n\t(?=[^[:alnum:]\\.\\?\\(\\)])\n\t(?!(\n\t\t\t(\n\t\t\t\t(\n\t\t\t\t\t@([_$[:alpha:]][_$[:alnum:]]*)?\n\t\t\t\t\t(\n\t\t\t\t\t\t\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*)\n\t\t\t\t\t)*\n\t\t\t\t)|\n\t\t\t\t(\n\t\t\t\t\t\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*\n\t\t\t\t)\n\t\t\t)|\n\t\t\t(?<=[\\)])\n\t\t)\n\t\t\\s*\n\t\t(?:\n\t\t\t(\\?\\.\\s*)|\n\t\t\t(\\!)\n\t\t)?\n\t\t(\\()\n\t)\n)",
+            "end": "((?x)(\n\t(?=[^[:alnum:]\\.\\?\\(\\)])\n\t(?!(\n\t\t\t(\n\t\t\t\t(\n\t\t\t\t\t@([_$[:alpha:]][_$[:alnum:]]*)?\n\t\t\t\t\t(\n\t\t\t\t\t\t\\s*\\??\\.\\s*([_$[:alpha:]][_$[:alnum:]]*)\n\t\t\t\t\t)*\n\t\t\t\t)|\n\t\t\t\t(\n\t\t\t\t\t\\??\\.\\s*[_$[:alpha:]][_$[:alnum:]]*\n\t\t\t\t)\n\t\t\t)|\n\t\t\t(?<=[\\)])\n\t\t)\n\t\t\\s*\n\t\t(?:\n\t\t\t(\\?\\.\\s*)|\n\t\t\t(\\!)\n\t\t)?\n\t\t(\\()\n\t)\n))|\\Z",
             "patterns": [
                 {
                     "include": "#atSymbol",

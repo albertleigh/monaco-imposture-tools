@@ -18,10 +18,10 @@ EMSCRIPTEN_KEEPALIVE
 int compilePattern(UChar *pattern, size_t *regexTPtr) {
   int r;
   regex_t *reg;
-  OnigErrorInfo einfo;
+  OnigErrorInfo errorInfo;
   r = onig_new(&reg, pattern, pattern + strlen((char *) pattern),
                ONIG_OPTION_CAPTURE_GROUP, ONIG_ENCODING_UTF8,
-               ONIG_SYNTAX_DEFAULT, &einfo);
+               ONIG_SYNTAX_DEFAULT, &errorInfo);
   if (r != ONIG_NORMAL) {
     lastErrCode = r;
     return -1;
@@ -42,27 +42,29 @@ EMSCRIPTEN_KEEPALIVE
 int findBestMatch(regex_t **patterns, int patternCount, UChar *utf8String, int strLen, int startOffset,
                   size_t *resultInfo) {
   int r;
-  unsigned char *start, *range, *end;
+  UChar *start, *range, *end;
   start = utf8String + startOffset;
   end = utf8String + strLen;
   // todo for forward searching...this might not be good enough
   range = end;
-  OnigErrorInfo einfo;
-  OnigRegion *bestRegion = NULL;
+  OnigRegion *bestRegion = nullptr;
   int bestRegionIdx = 0;
   for (int i = 0; i < patternCount; i++) {
     OnigRegion *region;
     region = onig_region_new();
     r = onig_search(patterns[i], utf8String, end, start, range, region, ONIG_OPTION_NONE);
     if (r >= 0) {
-      if (region->num_regs > 0 && (bestRegion == NULL || region->beg[0] < bestRegion->beg[0])) {
+      if (region->num_regs > 0 && (bestRegion == nullptr || region->beg[0] < bestRegion->beg[0])) {
         bestRegion = region;
         bestRegionIdx = i;
+        // do not free the bestRegion
         continue;
       }
-    } else if (r == ONIG_MISMATCH) {
-      // TODO
-    } else { /* error */
+    }  else if (r == ONIG_MISMATCH) {
+      // noop
+      // free the region
+    } else {
+      // error:     error code    (< 0)
       onig_region_free(region, 1);
       lastErrCode = r;
       return -1;
@@ -70,9 +72,9 @@ int findBestMatch(regex_t **patterns, int patternCount, UChar *utf8String, int s
     onig_region_free(region, 1);
   }
 
-  if (bestRegion != NULL) {
+  if (bestRegion != nullptr) {
     int resultLen = (bestRegion->num_regs) * 2;
-    size_t *res = (size_t *) malloc(resultLen * sizeof(size_t));
+    auto *res = static_cast<size_t *>(malloc(resultLen * sizeof(size_t)));
     int i = 0;
     int j = 0;
 

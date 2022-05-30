@@ -3,7 +3,7 @@
   "version": "0.1.7",
   "description": "",
   "main": "lib/index.js",
-  "typings": "lib/typings/index.d.ts",
+  "typings": "lib/index.d.ts",
   "scripts": {
     "clean": "rimraf lib",
     "tsc-build:debug": "tsc",
@@ -14,9 +14,9 @@
     "compile": "npm run clean && npm run tsc-build && npm run copy-to-lib",
     "audit": "npm audit",
     "benchmark": "node benchmark.js",
-    "test": "node node_modules/mocha/bin/mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
-    "test:coverage": "nyc --reporter=text mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
-    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "test": "mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
+    "test:coverage": "nyc --reporter=text mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
+    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "postpublish": "node ./scripts/post-publish.js",
     "lint": "eslint --ext=js,jsx,ts,tsx src",
     "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"
@@ -49,6 +49,7 @@
     "rimraf": "^3.0.2",
     "shelljs": "^0.8.5",
     "sinon": "^13.0.2",
+    "ts-node": "^10.7.0",
     "typescript": "^4.6.4"
   },
   "keywords": [],

@@ -10,7 +10,7 @@ const TARGET_PATH = path.resolve(PROJECT_DIR, TARGET_FOLDER);
 
 const files=[
     'OnigurumaAsm.js',
-    'OnigurumaAsm.wasm',
+    // 'OnigurumaAsm.wasm',
 ];
 
 

@@ -1,9 +1,9 @@
-const chai = require('chai');
+import * as chai from 'chai';
 const expect = chai.expect;
 
 const jsonTmLangJson = require('@monaco-imposture-tools/grammars/json/JSON.tmLanguage.ext.json');
 
-const {Registry} = require('..');
+import {Registry} from '../src/main';
 
 describe('json lang test', () => {
   it('json lang 100', async () => {
@@ -15,13 +15,13 @@ describe('json lang test', () => {
         };
       },
     });
-    const jsonGrammar = await langReg.loadGrammar('source.json');
+    const jsonGrammar = (await langReg.loadGrammar('source.json'))!;
 
     const sampleStr1 = '{"value1": "one"}';
     // const sampleStr2 = '{"value1": "one", "value2":2, "value3":true}';
 
-    const tokens = jsonGrammar.tokenizeLine(sampleStr1);
-    expect(tokens.tokens.length).ok;
+    const tokens = jsonGrammar.tokenizeLine(sampleStr1, undefined);
+    expect(tokens?.tokens.length).ok;
   });
   it('json lang 200', async () => {
     const langReg = new Registry({
@@ -32,7 +32,7 @@ describe('json lang test', () => {
         };
       },
     });
-    const jsonGrammar = await langReg.loadGrammar('source.json');
+    const jsonGrammar = (await langReg.loadGrammar('source.json'))!;
 
     const sampleStr1 = `{
 \t"value1": "one",
@@ -50,7 +50,7 @@ describe('json lang test', () => {
     const astStr = codeDocument.printASTNode();
 
     expect(astStr).ok;
-    expect(codeDocument.root).ok;
+    expect(codeDocument?.root).ok;
   });
 });
 //{"value1":"one"}

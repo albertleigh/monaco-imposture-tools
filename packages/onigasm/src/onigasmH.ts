@@ -1,31 +1,16 @@
 declare const require;
-declare const WebAssembly;
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const OnigasmModuleFactory = require('./OnigurumaAsm.js' /** when TS is compiled to JS, this will mean `lib/OnigurumaAsm.js` (emitted by `emcc`) */);
 
 /**
  * Handle to onigasm module (the JS glue code emitted by emscripten, that provides access to C/C++ runtime)
- *
  * Single handle shared among modules that decorate the C runtime to deliver `atom/node-oniguruma` API
  */
 export let onigasmH;
+const OnigasmModuleFactory = require('./OnigurumaAsm')
 
-async function initModule(bytes: ArrayBuffer) {
+async function initModule() {
   return new Promise<void>((resolve, _reject) => {
     const {log, warn, error} = console;
-    OnigasmModuleFactory({
-      instantiateWasm(imports, successCallback) {
-        WebAssembly.instantiate(bytes, imports)
-          .then((output) => {
-            successCallback(output.instance);
-          })
-          .catch((e) => {
-            _reject(e);
-          });
-        return {};
-      },
-    }).then((moduleH) => {
+    OnigasmModuleFactory().then((moduleH) => {
       onigasmH = moduleH;
       resolve();
     });
@@ -45,22 +30,13 @@ let isInitialized = false;
 
 /**
  * Mount the .wasm file that will act as library's "backend"
- * @param data Path to .wasm file or it's ArrayBuffer
  */
-export async function loadWASM(data: string | ArrayBuffer) {
+export async function initOnigasm() {
   if (isInitialized) {
     throw new Error(
       `Oniguruma asm#init has been called and was succesful, subsequent calls are not allowed once initialized`
     );
   }
-  if (typeof data === 'string') {
-    const arrayBuffer = await (await fetch(data)).arrayBuffer();
-    await initModule(arrayBuffer);
-  } else if (data instanceof ArrayBuffer) {
-    await initModule(data);
-  } else {
-    throw new TypeError(`Expected a string (URL of .wasm file) or ArrayBuffer (.wasm file itself) as first parameter`);
-  }
-
+  await initModule();
   isInitialized = true;
 }

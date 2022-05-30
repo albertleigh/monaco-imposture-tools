@@ -5,8 +5,7 @@
     "sourceMap": true,
     "outDir": "lib",
     "declaration": true,
-    "strictNullChecks": true,
-    "declarationDir": "lib/typings"
+    "strictNullChecks": true
   },
-  "exclude": ["node_modules", "cmake-build-debug", "cmake-build-release"]
+  "exclude": ["node_modules", "cmake-build-debug", "cmake-build-release", "test"]
 }

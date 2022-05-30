@@ -2,8 +2,8 @@
   "name": "@monaco-imposture-tools/core",
   "version": "0.1.7",
   "description": "",
-  "main": "./lib/main.js",
-  "typings": "./lib/typings/main.d.ts",
+  "main": "lib/main.js",
+  "typings": "lib/main.d.ts",
   "scripts": {
     "clean": "rimraf lib",
     "compile:tsc": "tsc",
@@ -11,9 +11,9 @@
     "compile": "npm run clean && npm run compile:tsc-prod",
     "compile:debug": "npm run clean && npm run compile:tsc",
     "audit": "npm audit",
-    "test": "node node_modules/mocha/bin/mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
-    "test:coverage": "nyc --reporter=text mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
-    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -s -0 --file \"./test/setup.js\" \"./test/**/*.spec.js\"",
+    "test": "mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
+    "test:coverage": "nyc --reporter=text mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
+    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "normalize-grammar": "ts-node scripts/normalize-grammar.ts",
     "print-rules": "ts-node scripts/print-rules.ts",
     "postpublish": "node ./scripts/post-publish.js",
@@ -29,8 +29,7 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "@monaco-imposture-tools/oniguruma-asm": "^0.1.7",
-    "fast-plist": "^0.1.2"
+    "@monaco-imposture-tools/oniguruma-asm": "^0.1.7"
   },
   "devDependencies": {
     "@monaco-imposture-tools/grammars": "^0.1.7",

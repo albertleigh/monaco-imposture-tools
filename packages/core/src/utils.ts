@@ -46,7 +46,7 @@ export function mergeObjects(target: any, ...sources: any[]): any {
 const CAPTURING_REGEX_SOURCE = /\$(\d+)|\${(\d+):\/(downcase|upcase)}/;
 
 export class RegexSource {
-  public static hasCaptures(regexSource: string | null): boolean {
+  public static hasCaptures(regexSource: string | undefined): boolean {
     // /\$(\d+)|\${(\d+):\/(downcase|upcase)}/.test(null) will return falsy
     return CAPTURING_REGEX_SOURCE.test(regexSource as string);
   }

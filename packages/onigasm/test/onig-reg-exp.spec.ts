@@ -1,14 +1,15 @@
-const OnigRegExp = require('..').OnigRegExp;
-const chai = require('chai');
-const sinon = require('sinon');
+import {OnigRegExp} from '../lib';
+import * as chai from 'chai';
+import * as sinon from 'sinon';
 const expect = chai.expect;
 
 describe('OnigRegExp', () => {
   describe('::search(string, index, callback)', () => {
+    // noinspection JSUnusedAssignment
     it('returns an array of the match and all capture groups', () => {
       let regex = new OnigRegExp('\\w(\\d+)');
-      let searchCallback = sinon.spy();
-      let result = regex.search('----a123----', searchCallback);
+      let searchCallback = sinon.spy() as any;
+      let result = regex.search('----a123----', searchCallback) as any;
 
       expect(searchCallback.callCount).eq(1);
 
@@ -26,10 +27,11 @@ describe('OnigRegExp', () => {
       expect(result[1].length).eq(3);
     });
 
+    // noinspection JSUnusedAssignment
     it('returns null if it does not match', () => {
       let regex = new OnigRegExp('\\w(\\d+)');
-      let searchCallback = sinon.spy();
-      let result = regex.search('--------', searchCallback);
+      let searchCallback = sinon.spy()  as any;
+      let result = regex.search('--------', searchCallback)  as any;
 
       expect(searchCallback.callCount).eq(1);
 
@@ -105,7 +107,7 @@ describe('OnigRegExp', () => {
     it('returns null if it does not match', () => {
       let regex = new OnigRegExp('\\w(\\d+)');
       let result = regex.searchSync('--------');
-      expect(result).null;
+      expect(result).undefined;
     });
 
     describe('when the string being searched contains a unicode character', () =>
@@ -147,25 +149,27 @@ describe('OnigRegExp', () => {
     it('returns true if the string matches the pattern', () => {
       expect(new OnigRegExp('a[b-d]c').testSync('aec')).false;
       expect(new OnigRegExp('a[b-d]c').testSync('abc')).true;
+      // @ts-ignore
       expect(new OnigRegExp(false).testSync(false)).true;
+      // @ts-ignore
       expect(new OnigRegExp(false).testSync(true)).false;
     }));
 
   describe('::test(string, callback)', () =>
     it('calls back with true if the string matches the pattern', () => {
-      let testCallback = sinon.spy();
+      const testCallback = sinon.spy();
 
       new OnigRegExp('a[b-d]c').test('aec', testCallback);
 
       expect(testCallback.callCount).eq(1);
 
-      expect(testCallback.getCall(0).args[0]).null;
+      expect(testCallback.getCall(0).args[0]).undefined;
       expect(testCallback.getCall(0).args[1]).false;
       new OnigRegExp('a[b-d]c').test('abc', testCallback);
 
       expect(testCallback.callCount).eq(2);
 
-      expect(testCallback.getCall(1).args[0]).null;
+      expect(testCallback.getCall(1).args[0]).undefined;
       expect(testCallback.getCall(1).args[1]).true;
     }));
 });

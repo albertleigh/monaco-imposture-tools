@@ -1,7 +1,7 @@
 // -- raw grammar typings
 import {CodeDocument} from './grammar';
 
-export const DEFAULT_SEPARATOR = '\n';
+export const DEFAULT_SEPARATORS = ['\r\n','\n'];
 
 export interface ImpostureLang {
   /**
@@ -11,6 +11,7 @@ export interface ImpostureLang {
   // readonly rootScopeName?: string;
   readonly line?: number;
   readonly char?: number;
+  // todo add a new field name?
   [key: string]: any;
 }
 
@@ -19,20 +20,36 @@ export interface ImpostureLangMeta {
 }
 
 export interface ILocatable {
-  // todo rename $vscodeTextmateLocation into $impostureLang
+  // todo rename $impostureLang into _$lang
   $impostureLang?: ImpostureLang;
+  // todo rename $impostureLangMeta into _$meta
   $impostureLangMeta?: ImpostureLangMeta;
 }
 
 export interface IGrammarDefinition {
-  format: 'json' | 'plist';
+  format: 'json';
   content: string | object;
 }
 
 export interface IRawGrammar extends ILocatable {
+  // todo readonly?
   repository: IRawRepository;
   readonly scopeName: string;
   readonly patterns: IRawRule[];
+  /**
+   * Expression would be like
+   *    R is of lower priority
+   *    L is of higher priority, the lefter the position the better
+   *    - means not
+   *    , and | stands for conjunction
+   *  e.g.
+   *  seg1.seg2.seg3
+   *  L:seg1.seg2.seg3
+   *  R:(seg1.seg2.seg3,seg4.seg5.seg6)
+   *  R:(seg1.seg2.seg3,seg4.seg5.seg6),(seg1.seg2.seg3,seg4.seg5.seg6)
+   *  R:(seg1.seg2.seg3,-seg4.seg5.seg6),(seg1.seg2.seg3,seg4.seg5.seg6)
+
+   */
   readonly injections?: {[expression: string]: IRawRule};
   readonly injectionSelector?: string;
 
@@ -52,8 +69,15 @@ export type IRawRepository = IRawRepositoryMap & ILocatable;
 export interface IRawRule extends ILocatable {
   id?: number;
 
+  /**
+   * include string could be
+   *    referring self like:              $base or $self
+   *    referring from repository like:   #otherRule
+   *    referring other lang's repo like: other-lang#otherRule
+   */
   readonly include?: string;
 
+  // todo we could just use one of the name and contentName
   readonly name?: string;
   readonly contentName?: string;
 
@@ -85,11 +109,40 @@ export type IRawCaptures = IRawCapturesMap & ILocatable;
  */
 export interface IRawThemeSetting {
   readonly name?: string;
+  /**
+   * hierarchic scope list seperated by comma like:
+   *    eg:
+   *      "scopeList1,scopeList2,scopeList3,scopeList4"
+   *    or
+   *      ["scopeList1", "scopeList2", "scopeList3", "scopeList4"]
+   *
+   * and one scopeList could also be consisted of multiple scopes seperated by space like:
+   *    eg:
+   *      "scope1 scope2 scope3 scope4"
+   *    todo:
+   *      consider "scope1> scope2 scope3 scope4"
+   */
   readonly scope?: string | string[];
   readonly settings: {
+    /**
+     * font style of the current scope which could be string like: italic, bold, underline
+     * eg:
+     *        "italic"
+     *        "italic bold"
+     */
     readonly fontStyle?: string;
+    /**
+     * Hexadecimal color like #0e0e0e
+     */
     readonly foreground?: string;
+    /**
+     * Hexadecimal color like #ffffff
+     */
     readonly background?: string;
+    /**
+     * Additional customized style record
+     */
+    readonly customized?: Record<string, any>;
   };
 }
 
@@ -110,7 +163,7 @@ export interface RegistryOptions {
   captureMeta?:boolean;
   debug?:boolean;
   theme?: IRawTheme;
-  getGrammarDefinition(scopeName: string, dependentScope?: string | null): Promise<IGrammarDefinition>;
+  getGrammarDefinition(scopeName: string, dependentScope?: string | null): Promise<IGrammarDefinition> | IGrammarDefinition;
   getInjections?(scopeName: string): string[];
 }
 
@@ -149,7 +202,7 @@ export interface IGrammar {
   /**
    * Tokenize `lineText` using previous line state `prevState`.
    */
-  tokenizeLine(lineText: string, prevState: StackElement): ITokenizeLineResult;
+  tokenizeLine(lineText: string, prevState: StackElement | undefined): ITokenizeLineResult;
 
   /**
    * Tokenize `lineText` using previous line state `prevState`.
@@ -161,14 +214,14 @@ export interface IGrammar {
    *  - background color
    * e.g. for getting the languageId: `(metadata & MetadataConsts.LANGUAGEID_MASK) >>> MetadataConsts.LANGUAGEID_OFFSET`
    */
-  tokenizeLine2(lineText: string, prevState: StackElement): ITokenizeLineResult2;
+  tokenizeLine2(lineText: string, prevState: StackElement | undefined): ITokenizeLineResult2;
 
   /**
    * Parse multiline `text` and generate a codeDocument w/ a syntax tree
    * @param text
    * @param option
    */
-  parse(text: string, option?: {separator?: string}): CodeDocument;
+  parse(text: string, option?: {separators?: string[]}): CodeDocument;
 }
 
 export interface ITokenizeLineResult {
@@ -231,6 +284,8 @@ export interface IToken {
   startIndex: number;
   readonly endIndex: number;
   readonly scopes: string[];
+  readonly meta:number;
+  readonly customized?: Record<string, any>
 }
 
 /**
@@ -276,7 +331,7 @@ export abstract class BaseASTNode implements ILocatable{
         return this.parent.children![theIndex - 1] as T;
       }
     }
-    return;
+    return undefined;
   }
 
   findAYoungerSibling<T extends BaseASTNode = ASTNode>():T|undefined{
@@ -286,7 +341,7 @@ export abstract class BaseASTNode implements ILocatable{
         return this.parent.children![theIndex + 1] as T;
       }
     }
-    return;
+    return undefined;
   }
 
 }

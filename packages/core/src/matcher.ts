@@ -7,7 +7,7 @@ export function createMatchers<T>(
   const results = <MatcherWithPriority<T>[]>[];
   const tokenizer = newTokenizer(selector);
   let token = tokenizer.next();
-  while (token !== null) {
+  while (token !== undefined) {
     let priority: -1 | 0 | 1 = 0;
     if (token.length === 2 && token.charAt(1) === ':') {
       switch (token.charAt(0)) {
@@ -33,7 +33,7 @@ export function createMatchers<T>(
   }
   return results;
 
-  function parseOperand(): Matcher<T> | null {
+  function parseOperand(): Matcher<T> | undefined {
     if (token === '-') {
       token = tokenizer.next();
       const expressionToNegate = parseOperand();
@@ -55,7 +55,7 @@ export function createMatchers<T>(
       } while (isIdentifier(token));
       return (matcherInput) => matchesName(identifiers, matcherInput);
     }
-    return null;
+    return undefined;
   }
   function parseConjunction(): Matcher<T> {
     const matchers: Matcher<T>[] = [];
@@ -84,17 +84,28 @@ export function createMatchers<T>(
   }
 }
 
-function isIdentifier(token: string | null) {
+/**
+ * Identifier like: seg1:
+ * @param token
+ */
+function isIdentifier(token: string | undefined) {
   return token && token.match(/[\w\.:]+/);
 }
 
-function newTokenizer(input: string): {next: () => (string | null) } {
+/**
+ * Tokens would be like:
+ *    -priorities:    L R
+ *    -identifiers: seg1.seg2-seg3 seg4.seg5:
+ *    -separators:    , | - ( )
+ * @param input
+ */
+function newTokenizer(input: string): {next: () => (string | undefined) } {
   const regex = /([LR]:|[\w\.:][\w\.:\-]*|[\,\|\-\(\)])/g;
   let match = regex.exec(input);
   return {
     next: () => {
       if (!match) {
-        return null;
+        return undefined;
       }
       const res = match[0];
       match = regex.exec(input);
