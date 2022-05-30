@@ -13,7 +13,7 @@
     "audit": "npm audit",
     "test": "mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "test:coverage": "nyc --reporter=text mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
-    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
+    "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "normalize-grammar": "ts-node scripts/normalize-grammar.ts",
     "print-rules": "ts-node scripts/print-rules.ts",
     "postpublish": "node ./scripts/post-publish.js",
