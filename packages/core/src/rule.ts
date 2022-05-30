@@ -12,7 +12,7 @@ export abstract class Rule {
   private readonly _contentNameIsCapturing: boolean;
 
   protected constructor(
-    public readonly $impostureLang: ImpostureLang,
+    public readonly $impostureLang: ImpostureLang | undefined,
     public readonly id: number,
     public readonly _name: string | undefined,
     public readonly _contentName: string | undefined
@@ -82,7 +82,7 @@ export class CaptureRule extends Rule {
    * @param retokenizeCapturedWithRuleId the rule id of the inner pattern rule within the capture rule if exists, or ruld id 0 if not
    */
   constructor(
-    $impostureLang: ImpostureLang,
+    $impostureLang: ImpostureLang | undefined,
     id: number,
     name: string | undefined,
     contentName: string | undefined,
@@ -376,7 +376,7 @@ export class MatchRule extends Rule {
   public readonly captures: CaptureRule[];
   private _cachedCompiledPatterns?: RegExpSourceList;
 
-  constructor($impostureLang: ImpostureLang, id: number, name: string | undefined, match: string, captures: CaptureRule[]) {
+  constructor($impostureLang: ImpostureLang | undefined, id: number, name: string | undefined, match: string, captures: CaptureRule[]) {
     super($impostureLang, id, name, undefined);
     this._match = new RegExpSource(match, this.id);
     this.captures = captures;
@@ -407,7 +407,7 @@ export class IncludeOnlyRule extends Rule {
   private _cachedCompiledPatterns?: RegExpSourceList;
 
   constructor(
-    $impostureLang: ImpostureLang,
+    $impostureLang: ImpostureLang | undefined,
     id: number,
     name: string | undefined,
     contentName: string | undefined,
@@ -450,7 +450,7 @@ export class BeginEndRule extends Rule {
   private _cachedCompiledPatterns?: RegExpSourceList;
 
   constructor(
-    $impostureLang: ImpostureLang,
+    $impostureLang: ImpostureLang | undefined,
     id: number,
     name: string | undefined,
     contentName: string | undefined,
@@ -540,7 +540,7 @@ export class BeginWhileRule extends Rule {
   private _cachedCompiledWhilePatterns?: RegExpSourceList;
 
   constructor(
-    $impostureLang: ImpostureLang,
+    $impostureLang: ImpostureLang | undefined,
     id: number,
     name: string | undefined,
     contentName: string | undefined,
@@ -610,7 +610,7 @@ export class BeginWhileRule extends Rule {
 export class RuleFactory {
   public static createCaptureRule(
     helper: IRuleFactoryHelper,
-    $impostureLang: ImpostureLang,
+    $impostureLang: ImpostureLang | undefined,
     name: string | undefined,
     contentName: string | undefined,
     retokenizeCapturedWithRuleId: number
@@ -627,7 +627,7 @@ export class RuleFactory {
         // match rule
         if (desc.match) {
           return new MatchRule(
-            desc.$impostureLang!,
+            desc.$impostureLang,
             desc.id,
             desc.name,
             desc.match,
@@ -640,7 +640,7 @@ export class RuleFactory {
             repository = mergeObjects({}, repository, desc.repository);
           }
           return new IncludeOnlyRule(
-            desc.$impostureLang!,
+            desc.$impostureLang,
             desc.id,
             desc.name,
             desc.contentName,
@@ -650,7 +650,7 @@ export class RuleFactory {
         // while rule
         if (desc.while) {
           return new BeginWhileRule(
-            desc.$impostureLang!,
+            desc.$impostureLang,
             desc.id,
             desc.name,
             desc.contentName,
@@ -663,7 +663,7 @@ export class RuleFactory {
         }
         // begin end rule
         return new BeginEndRule(
-          desc.$impostureLang!,
+          desc.$impostureLang,
           desc.id,
           desc.name,
           desc.contentName,
@@ -718,7 +718,7 @@ export class RuleFactory {
         }
         r[numericCaptureId] = RuleFactory.createCaptureRule(
           helper,
-          captures[captureId].$impostureLang!,
+          captures[captureId].$impostureLang,
           captures[captureId].name,
           captures[captureId].contentName,
           retokenizeCapturedWithRuleId

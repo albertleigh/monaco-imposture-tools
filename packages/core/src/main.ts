@@ -17,6 +17,7 @@ import debug from './debug';
 export * from './types';
 export {ValueEventEmitter, ValueUpdateListener} from './ValueEventEmitter';
 export {CodeDocument} from './grammar';
+export * from './grammarHelper'
 
 const DEFAULT_OPTIONS: RegistryOptions = {
   getGrammarDefinition: ((_scopeName: string) => undefined) as any,
