@@ -2355,7 +2355,7 @@ export class CodeDocument {
   offsetAt(pos: Position): number {
     if (pos.line < 0 || pos.line >= this.lines.length) {
       throw new CodeDocumentPositionNotInRange(pos, this.text?.length ?? 0, this._separators);
-    } else if (pos.character < 0 || pos.character >= this.lines[pos.line].text.length + this.lines[pos.line].lineTerminator.length) {
+    } else if (pos.character < 0 || pos.character > this.lines[pos.line].text.length + this.lines[pos.line].lineTerminator.length) {
       const theErr = new CodeDocumentPositionNotInRange(pos, this.text.length ?? 0, this._separators);
       theErr.updateMessage(pos, pos.line, this.lines[pos.line].text.length + this.lines[pos.line].lineTerminator.length, this._separators);
       throw theErr;
