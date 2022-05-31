@@ -1,39 +1,45 @@
-const OnigString = require('..').OnigString;
-const chai = require('chai');
-const sinon = require('sinon');
+import {OnigUTF8String} from '../lib';
+import * as chai from 'chai';
+// import * as sinon from 'sinon';
 const expect = chai.expect;
 
-describe('OnigString', () => {
+
+describe('OnigUTF8String', () => {
   it('has a length property', () => {
-    expect(new OnigString('yoo').length).eq(3);
+    expect(new OnigUTF8String('yoo').length).eq(3);
   });
 
   it('can be converted back into a string', () => {
-    expect(new OnigString('abc').toString()).eq('abc');
+    expect(new OnigUTF8String('abc').toString()).eq('abc');
   });
 
   it('can retrieve substrings (for conveniently inspecting captured text)', () => {
     const str = 'abcdef';
-    const onigStr = new OnigString(str);
+    const onigStr = new OnigUTF8String(str);
 
     expect(onigStr.substring(2, 3)).eq(str.substring(2, 3));
+    // @ts-ignore
     expect(onigStr.substring(2)).eq(str.substring(2));
+    // @ts-ignore
     expect(onigStr.substring()).eq(str.substring());
+    // @ts-ignore
     expect(onigStr.substring(-1)).eq(str.substring(-1));
     expect(onigStr.substring(-1, -2)).eq(str.substring(-1, -2));
 
+    // @ts-ignore
     onigStr.substring({});
     onigStr.substring(null, undefined);
   });
 
   it('handles invalid arguments', () => {
     expect(() => {
-      new OnigString(undefined);
+      // @ts-ignore
+      new OnigUTF8String(undefined);
     }).to.throw(TypeError, 'Argument must be a string');
   });
 
   it('handles encoding', () => {
-    const str = new OnigString('Wörld');
+    const str = new OnigUTF8String('Wörld');
     expect(Array.from(str.utf8Bytes)).deep.eq([0x57, 0xc3, 0xb6, 0x72, 0x6c, 0x64, 0x00]);
 
     expect(str.convertUtf16OffsetToUtf8(0)).eq(0);
@@ -49,7 +55,7 @@ describe('OnigString', () => {
   });
 
   it('mapping 2/3/4 byte UTF-8 encoding', () => {
-    const str = new OnigString('123$¢€𐍈123');
+    const str = new OnigUTF8String('123$¢€𐍈123');
 
     expect(Array.from(str.utf8Bytes)).deep.eq([
       0x31 /*1*/, 0x32 /*2*/, 0x33 /*3*/, 0x24 /*$*/, 0xc2 /*¢*/, 0xa2, 0xe2 /*€*/, 0x82, 0xac, 0xf0 /*𐍈*/, 0x90, 0x8d,
@@ -86,7 +92,7 @@ describe('OnigString', () => {
   });
 
   it('mapping UTF-16 surrogate pairs ', () => {
-    const str = new OnigString('1𩸽𩹀');
+    const str = new OnigUTF8String('1𩸽𩹀');
 
     expect(Array.from(str.utf8Bytes)).deep.eq([0x31, 0xf0, 0xa9, 0xb8, 0xbd, 0xf0, 0xa9, 0xb9, 0x80, 0x0]);
     expect(str.convertUtf16OffsetToUtf8(0)).eq(0);

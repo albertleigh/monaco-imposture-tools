@@ -18,21 +18,6 @@ const prodConfig = {
     filename: '[name].[contenthash:8].js',
   },
   plugins: [
-    new CopyPlugin({
-      patterns: [
-        {
-          from: path.resolve(
-            __dirname,
-            '..',
-            'node_modules',
-            'monaco-azure-logic-app-lang',
-            'scanner',
-            'scanner.wasm'
-          ),
-          to: path.resolve(__dirname, '..', 'dist', 'assets', 'scanner.wasm'),
-        }
-      ],
-    }),
   ],
 };
 

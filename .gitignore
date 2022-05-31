@@ -1,5 +1,9 @@
 .idea/
 node_modules/
+cmake-build-debug/
+cmake-build-release/
+cmake-build-em-debug/
+cmake-build-em-release/
 
 .nyc_output/
 coverage/

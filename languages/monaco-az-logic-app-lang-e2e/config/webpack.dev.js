@@ -22,8 +22,7 @@ const wasmBinPath = path.resolve(
 );
 const grammarBasePath = path.resolve(__dirname, '..', 'node_modules', 'monaco-azure-logic-app-lang', 'grammar');
 
-//  assets/grammars/cpp/c.tmLanguage.json
-
+/**@type {import('webpack').Configuration}*/
 const devConfig = {
   mode: 'development',
   devtool: 'cheap-module-source-map',
@@ -39,10 +38,7 @@ const devConfig = {
       '/assets': {
         selfHandleResponse: true,
         bypass(req, resp) {
-          if (req.url === '/assets/scanner.wasm') {
-            resp.header('Content-Type', 'application/wasm');
-            fs.createReadStream(wasmBinPath).pipe(resp);
-          } else if (req.url.indexOf('/assets/grammars') > -1) {
+          if (req.url.indexOf('/assets/grammars') > -1) {
             const matchIndices = req.url.match(/assets\/grammars\/([-\w]+)\/([-\w\.]+)/);
             const _folderName = matchIndices[1];
             const fileName = matchIndices[2];

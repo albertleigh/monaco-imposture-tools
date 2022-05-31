@@ -13,7 +13,6 @@ import {
   createOverloadedFunValDesc
 } from 'monaco-azure-logic-app-lang';
 
-AzLogicAppExpressionLang.scannerOrItsPath = `assets/scanner.wasm`;
 AzLogicAppExpressionLang.monaco = monaco;
 AzLogicAppExpressionLang.emitBinaryTokens = true;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;

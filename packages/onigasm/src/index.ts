@@ -1,6 +1,6 @@
-import {loadWASM} from './onigasmH';
-import OnigRegExp, {IOnigSearchResult} from './OnigRegExp';
-import OnigScanner, {IOnigCaptureIndex} from './OnigScanner';
-import OnigString from './OnigString';
+import {initOnigasm} from './onigasmH';
+import {OnigRegExp, IOnigSearchResult} from './OnigRegExp';
+import {OnigScanner, IOnigCaptureIndex} from './OnigScanner';
+import {OnigUTF8String} from './OnigUTF8String';
 
-export {loadWASM, OnigScanner, OnigRegExp, OnigString, IOnigCaptureIndex, IOnigSearchResult};
+export {initOnigasm, OnigScanner, OnigRegExp, OnigUTF8String, IOnigCaptureIndex, IOnigSearchResult};

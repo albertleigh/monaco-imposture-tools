@@ -22,7 +22,6 @@ import {
   createOverloadedFunValDesc
 } from 'monaco-azure-logic-app-lang';
 
-AzLogicAppExpressionLang.scannerOrItsPath = `assets/scanner.wasm`;
 AzLogicAppExpressionLang.monaco = monaco;
 AzLogicAppExpressionLang.inLexicalDebugMode = false;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;
@@ -435,12 +434,7 @@ const useStyles = makeStyles((theme) => ({
 // @item().one['two'].
 
 const sampleCodes =
-`@json('{
-    "str": "another",
-    "num": 2,
-    "bool": true,
-    "null": null,
-}')`;
+`@pipeline().DataFactory`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
@@ -555,4 +549,4 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
   );
 });
 
-export default DummyEditor;
+// export default DummyEditor;

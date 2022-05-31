@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
+    "target": "ESNext",
+    "module": "CommonJS",
     "outDir": "lib",
-    "declarationDir": "lib/typings",
+    "lib": ["esnext"],
+    "useDefineForClassFields": false,
     "downlevelIteration": true,
     "noImplicitAny": false,
     "sourceMap": true,
+    "moduleResolution": "node",
     "strictNullChecks": true,
-    "declaration": true,
-    "lib": ["esnext"]
+    "declaration": true
   },
-  "exclude": ["node_modules", "lib", "scripts"]
+  "exclude": ["node_modules", "scripts", "test"]
 }

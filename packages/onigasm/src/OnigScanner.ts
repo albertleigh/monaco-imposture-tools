@@ -1,6 +1,6 @@
 import * as LRUCache from 'lru-cache';
 import {onigasmH} from './onigasmH';
-import OnigString from './OnigString';
+import {OnigUTF8String} from './OnigUTF8String';
 
 /**
  * Every instance of OnigScanner internally calls native libonig API
@@ -12,7 +12,7 @@ interface INativeOnigHInfo {
    * regex_t* is used by libonig to match string against an expression
    * this is the output of compiling raw string pattern to libonig's internal representation
    */
-  regexTPtrs: Uint8Array | null;
+  regexTPtrs: Uint8Array;
 }
 
 export interface IOnigCaptureIndex {
@@ -23,6 +23,9 @@ export interface IOnigCaptureIndex {
 }
 
 export interface IOnigMatch {
+  /**
+   * Best matched index of the regex among the scanner
+   */
   index: number;
   captureIndices: IOnigCaptureIndex[];
   scanner: OnigScanner;
@@ -30,27 +33,28 @@ export interface IOnigMatch {
 
 /**
  * Allocates space on the heap and copies the string bytes on to it
- * @param str
+ * @param str: OnigUTF8String
  * @returns pointer to the first byte's address on heap
  */
-function mallocAndWriteString(str: OnigString): number {
+function mallocAndWriteString(str: OnigUTF8String): number {
   const ptr = onigasmH._malloc(str.utf8Bytes.length);
   onigasmH.HEAPU8.set(str.utf8Bytes, ptr);
   return ptr;
 }
 
 function convertUTF8BytesFromPtrToString(ptr: number): string {
-  const chars:any[] = [];
+  const chars = new Uint8Array();
   let i = 0;
   while (onigasmH.HEAPU8[ptr] !== 0x00) {
     chars[i++] = onigasmH.HEAPU8[ptr++];
   }
-  return chars.join();
+  return `Oniguruma error: ${new TextDecoder("utf8").decode(chars)}`;
 }
 
 const cache = new LRUCache<OnigScanner, INativeOnigHInfo>({
-  dispose: (scanner: OnigScanner, info: INativeOnigHInfo) => {
+  dispose: (info: INativeOnigHInfo, scanner: OnigScanner, _reason: LRUCache.DisposeReason) => {
     if (info.regexTPtrs?.length){
+      // regexTPtrs was saved in unsigned bytes, thus we need not mul by 4 and use HEAP32
       const regexTPtrsPtr = onigasmH._malloc(info.regexTPtrs.length);
       onigasmH.HEAPU8.set(info.regexTPtrs, regexTPtrsPtr);
       const status = onigasmH._disposeCompiledPatterns(regexTPtrsPtr, scanner.patterns.length);
@@ -73,7 +77,7 @@ export class OnigScanner {
   constructor(patterns: string[]) {
     if (onigasmH === null) {
       throw new Error(
-        `Onigasm has not been initialized, call loadWASM from 'onigasm' exports before using any other API`
+        `Onigasm has not been initialized, call initOnigasm from '@monaco-imposture-tools/oniguruma-asm' exports before using any other API`
       );
     }
     for (let i = 0; i < patterns.length; i++) {
@@ -96,11 +100,11 @@ export class OnigScanner {
    * @param callback The (error, match) function to call when done, match will null when there is no match
    */
   public findNextMatch(
-    string: string | OnigString,
+    string: string | OnigUTF8String,
     startPosition: number,
-    callback: (err, match?: IOnigMatch | null) => void
+    callback: (err, match?: IOnigMatch) => void
   ) {
-    if (startPosition == null) {
+    if (!Boolean(startPosition)) {
       startPosition = 0;
     }
     if (typeof startPosition === 'function') {
@@ -110,7 +114,7 @@ export class OnigScanner {
 
     try {
       const match = this.findNextMatchSync(string, startPosition);
-      callback(null, match);
+      callback(undefined, match);
     } catch (error) {
       callback(error);
     }
@@ -121,20 +125,21 @@ export class OnigScanner {
    * @param string The string to search
    * @param startPosition The optional position to start at, defaults to 0
    */
-  public findNextMatchSync(string: string | OnigString, startPosition: number): IOnigMatch | null {
-    if (startPosition == null) {
+  public findNextMatchSync(string: string | OnigUTF8String | null | undefined, startPosition: number | null |undefined): IOnigMatch | undefined {
+    if (typeof startPosition !== 'number' && !Boolean(startPosition)) {
       startPosition = 0;
     }
-    startPosition = this.convertToNumber(startPosition);
+    const theStartPositionNum = this.convertToNumber(startPosition);
 
     let onigNativeInfo = cache.get(this);
     let status = 0;
     if (!onigNativeInfo) {
+      // regex ptr address
       const regexTAddrRecieverPtr = onigasmH._malloc(4);
       const regexTPtrs:any[] = [];
       for (let i = 0; i < this.sources.length; i++) {
         const pattern = this.sources[i];
-        const patternStrPtr = mallocAndWriteString(new OnigString(pattern));
+        const patternStrPtr = mallocAndWriteString(new OnigUTF8String(pattern));
         status = onigasmH._compilePattern(patternStrPtr, regexTAddrRecieverPtr);
         if (status !== 0) {
           const errMessage = convertUTF8BytesFromPtrToString(onigasmH._getLastError());
@@ -151,10 +156,12 @@ export class OnigScanner {
       cache.set(this, onigNativeInfo);
     }
 
-    const onigString = string instanceof OnigString ? string : new OnigString(this.convertToString(string));
+    const onigString = string instanceof OnigUTF8String ? string : new OnigUTF8String(this.convertToString(string));
     const strPtr = mallocAndWriteString(onigString);
+    // the result currently is the 3 4-bytes pointers
     const resultInfoReceiverPtr = onigasmH._malloc(12);
-    const regexTPtrsPtr = onigasmH._malloc(onigNativeInfo.regexTPtrs!.length);
+    // regexTPtrs should be defined fore sure
+    const regexTPtrsPtr = onigasmH._malloc(onigNativeInfo.regexTPtrs.length);
     onigasmH.HEAPU8.set(onigNativeInfo.regexTPtrs, regexTPtrsPtr);
 
     status = onigasmH._findBestMatch(
@@ -164,10 +171,10 @@ export class OnigScanner {
       this.sources.length,
       // UChar *utf8String
       strPtr,
-      // int strLen
+      // int strLen w/o trailing \0
       onigString.utf8Bytes.length - 1,
       // int startOffset
-      onigString.convertUtf16OffsetToUtf8(startPosition),
+      onigString.convertUtf16OffsetToUtf8(theStartPositionNum),
       // int *resultInfo
       resultInfoReceiverPtr
     );
@@ -195,6 +202,7 @@ export class OnigScanner {
     onigasmH._free(regexTPtrsPtr);
 
     if (encodedResultLength > 0) {
+      // sizeof size_t in current wasm is of 4 bytes
       const encodedResult = new Int32Array(onigasmH.HEAPU32.buffer, encodedResultBeginAddress, encodedResultLength);
       const captureIndices: IOnigCaptureIndex[] = [];
       let i = 0;
@@ -221,23 +229,23 @@ export class OnigScanner {
         scanner: this,
       };
     }
-    return null;
+    return undefined;
   }
 
-  public convertToString(value) {
+  public convertToString(value): string {
     if (value === undefined) {
       return 'undefined';
     }
     if (value === null) {
       return 'null';
     }
-    if (value instanceof OnigString) {
+    if (value instanceof OnigUTF8String) {
       return value.content;
     }
     return value.toString();
   }
 
-  public convertToNumber(value) {
+  public convertToNumber(value): number {
     value = parseInt(value, 10);
     if (!isFinite(value)) {
       value = 0;

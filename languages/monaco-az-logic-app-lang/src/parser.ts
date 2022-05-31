@@ -30,9 +30,9 @@ import {
 
 export type AzLgcLangSyntaxNodeContext = ValidationIntermediateContext;
 
-// ------------------------ gen cst nodes  ----------------------------
+// ------------------------ gen ir nodes  ----------------------------
 
-// base AST
+// base ir nodes
 export abstract class SyntaxNode<SyntaxNodeContext extends Record<any, any> = any> {
 
   public parent?: SyntaxNode;
@@ -136,6 +136,9 @@ export abstract class SyntaxNode<SyntaxNodeContext extends Record<any, any> = an
     public readonly astNode: ASTNode,
     public readonly syntaxNodeContext: SyntaxNodeContext,
   ) {
+    if (!astNode) {
+      throw new Error("Cannot create a syntax node without ast node")
+    }
   }
 
   get offset():number{
@@ -143,7 +146,7 @@ export abstract class SyntaxNode<SyntaxNodeContext extends Record<any, any> = an
   }
 
   get length():number{
-    return this.astNode.length || 0;
+    return this.astNode.length ?? 0;
   }
 
   abstract traverse(cb:(syntaxNode:SyntaxNode, depth:number)=>void, depth:number):void;

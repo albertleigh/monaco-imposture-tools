@@ -1,21 +1,29 @@
 {
   "name": "monaco-imposture-tools-root",
-  "private": "true",
-  "description": "",
-  "main": "index.js",
+  "private": true,
   "devDependencies": {
+    "@types/node": "^16.11.33",
+    "@types/shelljs": "^0.8.11",
     "coveralls": "^3.1.1",
-    "husky": "^7.0.2",
+    "husky": "^7.0.4",
     "lerna": "^4.0.0",
-    "lint-staged": "^11.1.2",
+    "lint-staged": "^12.4.1",
     "nyc": "^15.1.0",
-    "prettier": "^2.4.0"
+    "prettier": "^2.6.2",
+    "shelljs": "^0.8.5",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4"
   },
   "scripts": {
     "postinstall": "lerna bootstrap --ci",
-    "setup": "lerna run setup",
-    "compile": "lerna run compile --stream",
+    "setup:emsdk": "npx ts-node ./scripts/setup-emsdk.ts 3.1.9",
+    "setup:oniguruma": "npx ts-node ./scripts/setup-oniguruma.ts c30fd2dba48efe0b2cd3324c14da70b77ff7c6be",
+    "setup": "npm run setup:emsdk && npm run setup:oniguruma",
+    "cmake-build:debug": "npx ts-node ./scripts/cmake-build.ts Debug",
+    "cmake-build": "npx ts-node ./scripts/cmake-build.ts",
+    "compile": "npm run cmake-build && lerna run compile --stream",
     "compile:debug": "lerna run compile:debug",
+    "audit": "npm audit && lerna run audit --stream",
     "test": "lerna run test",
     "coverage": "lerna run coverage --stream",
     "create-coverage:text": "nyc report --reporter=text",
@@ -24,6 +32,10 @@
     "lint:fix": "lerna run lint:fix",
     "prettify:check": "prettier --config .prettierrc --check \"(languages|examples|packages)/**/*.{json,ts,tsx,js,jsx}\"",
     "prettify": "prettier --config .prettierrc --write"
+  },
+  "engines": {
+    "node": ">=16.15.0 <17",
+    "npm": "~8.5.5"
   },
   "lint-pretty-staged": {
     "!(languages|examples|packages)/**/*.{ts,tsx,js,jsx}": [
@@ -37,8 +49,5 @@
     "hooks": {
       "pre-commit": "lint-pretty-staged"
     }
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }

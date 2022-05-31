@@ -1,6 +1,6 @@
 import {ASTNode, IGrammar, IRawTheme, Registry} from '@monaco-imposture-tools/core';
-import {default as monaco} from './editor.api';
 import {themes} from "./themes";
+import type {default as monaco} from './editor.api';
 
 export const SYMBOL_TABLE_FUNCTION_RETURN_PATH_NAME = '_$functionReturnType';
 

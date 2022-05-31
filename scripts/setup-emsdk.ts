@@ -1,17 +1,16 @@
-const os = require("os")
-const fs = require("fs")
-const path = require("path")
-const fse = require("fs-extra")
-const shell = require("shelljs")
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as shell from 'shelljs';
 
 if (!shell.which('git')) {
   shell.echo('Sorry, this script requires git');
   shell.exit(1);
 }
 const VERSION = process.argv[2] || 'latest'
-const ROOT_DIR = process.cwd();
+const ROOT_DIR = path.join(process.cwd(), 'opt');
 const EMSDK_DIR = path.resolve(ROOT_DIR, 'emsdk');
-const CURRENT_DIR = __dirname;
+// const CURRENT_DIR = __dirname;
 
 if (fs.existsSync(EMSDK_DIR)){
   shell.echo(`*** Updating emscripten-core/emsdk.git at ${EMSDK_DIR}`);

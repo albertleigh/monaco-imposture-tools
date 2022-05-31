@@ -1,3 +1,4 @@
+const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ESLintPlugin = require('eslint-webpack-plugin');
@@ -43,6 +44,14 @@ module.exports = {
           },
         },
       },
+      {
+        test: /\.wasm$/,
+        use: [
+          {
+            loader: path.resolve(__dirname, 'loaders', 'array-buffer-loader.js')
+          },
+        ],
+      }
     ],
   },
   plugins: [

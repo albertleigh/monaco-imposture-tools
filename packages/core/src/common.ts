@@ -62,21 +62,21 @@ export interface ICompilePatternsResult {
 // code documents
 
 export class CodeDocumentOffsetNotInRange extends Error {
-  constructor(offset: number, range: number, separator:string) {
-    super(`Current offset: ${offset} is out the total length ${range} of the file of separator ${separator}.`);
+  constructor(offset: number, range: number, separators:string[]) {
+    super(`Current offset: ${offset} is out the total length ${range} of the file of separator ${separators.join(' ')}.`);
   }
 
-  updateMessage(pos: Position, lineNum: number, charNum: number, separator:string) {
-    this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file seperated by ${separator}.`;
+  updateMessage(pos: Position, lineNum: number, charNum: number, separators:string[]) {
+    this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file seperated by ${separators.join(' ')}.`;
   }
 }
 
 export class CodeDocumentPositionNotInRange extends Error {
-  constructor(pos: Position, range: number, separator:string) {
-    super(`Current position: L${pos.line} C${pos.character} is out of the total length ${range} of the file of separator ${separator}.`);
+  constructor(pos: Position, range: number, separators:string[]) {
+    super(`Current position: L${pos.line} C${pos.character} is out of the total length ${range} of the file of separator ${separators.join(' ')}.`);
   }
 
-  updateMessage(pos: Position, lineNum: number, charNum: number, separator:string) {
-    this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file seperated by ${separator}.`;
+  updateMessage(pos: Position, lineNum: number, charNum: number, separators:string[]) {
+    this.message = `Current position: L${pos.line} C${pos.character} is out of the total length of L${lineNum} C${charNum} of the file seperated by ${separators.join(' ')}.`;
   }
 }

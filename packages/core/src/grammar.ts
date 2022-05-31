@@ -12,7 +12,7 @@ import {
 } from './common';
 import {clone} from './utils';
 import {
-  DEFAULT_SEPARATOR,
+  DEFAULT_SEPARATORS,
   ASTNode,
   CaptureRuleASTNode,
   BeginEndRuleASTNode,
@@ -26,7 +26,7 @@ import {
   Range,
 } from './types';
 import {BeginEndRule, BeginWhileRule, CaptureRule, MatchRule, Rule, RuleFactory} from './rule';
-import {IOnigCaptureIndex, OnigString} from '@monaco-imposture-tools/oniguruma-asm';
+import {IOnigCaptureIndex, OnigUTF8String} from '@monaco-imposture-tools/oniguruma-asm';
 import {createMatchers} from './matcher';
 import {
   IEmbeddedLanguagesMap,
@@ -74,6 +74,7 @@ function initGrammar(grammar: IRawGrammar, base: IRawRule | null | undefined): I
   grammar = clone(grammar);
 
   grammar.repository = grammar.repository || <any>{};
+  // todo rename $impostureLang
   grammar.repository.$self = {
     $impostureLang: grammar.$impostureLang,
     patterns: grammar.patterns,
@@ -83,18 +84,28 @@ function initGrammar(grammar: IRawGrammar, base: IRawRule | null | undefined): I
   return grammar;
 }
 
+/**
+ * do create a grammar object
+ * @param grammar
+ * @param initialLanguage
+ * @param embeddedLanguages
+ * @param tokenTypes
+ * @param grammarRepository
+ */
 export function createGrammar(
   grammar: IRawGrammar,
   initialLanguage: number,
-  embeddedLanguages: IEmbeddedLanguagesMap | null | undefined,
-  tokenTypes: ITokenTypeMap | null | undefined,
+  embeddedLanguages: IEmbeddedLanguagesMap | undefined,
+  tokenTypes: ITokenTypeMap | undefined,
   grammarRepository: IGrammarRepository & IThemeProvider
 ): Grammar {
   return new Grammar(grammar, initialLanguage, embeddedLanguages, tokenTypes, grammarRepository);
 }
 
 /**
- * Fill in `result` all external included scopes in `patterns`
+ * Fill in `result` all external lang name included scopes in `patterns`
+ *  e.g.
+ *    pick up `other-lang` from `other-lang#otherRule`
  */
 function _extractIncludedScopesInPatterns(result: IScopeNameSet, patterns: IRawRule[] | undefined): void {
   if (patterns?.length){
@@ -169,7 +180,7 @@ export interface Injection {
   readonly grammar: IRawGrammar;
 }
 
-function scopesAreMatching(thisScopeName: string | null | undefined, scopeName: string): boolean {
+function scopesAreMatching(thisScopeName: string | undefined, scopeName: string): boolean {
   if (!thisScopeName) {
     return false;
   }
@@ -177,9 +188,16 @@ function scopesAreMatching(thisScopeName: string | null | undefined, scopeName: 
     return true;
   }
   const len = scopeName.length;
-  return thisScopeName.length > len && thisScopeName.substr(0, len) === scopeName && thisScopeName[len] === '.';
+  return thisScopeName.length > len && thisScopeName.substring(0, len) === scopeName && thisScopeName[len] === '.';
 }
 
+/**
+ * A name matcher who find out whether identifiers could discretely match scopes or not.
+ * Identifiers should be a subset of scopes in the sequence.
+ *
+ * @param identifiers
+ * @param scopes
+ */
 function nameMatcher(identifiers: string[], scopes: string[]) {
   if (scopes.length < identifiers.length) {
     return false;
@@ -216,14 +234,14 @@ function collectInjections(
 }
 
 /**
- * The meta data containing the token type and theme rules of a scope name
+ * The metadata containing the scopeName, languageId, tokenType and matched theme rules of a scope name
  */
 export class ScopeMetadata {
   constructor(
     public readonly scopeName: string,
     public readonly languageId: number,
     public readonly tokenType: TemporaryStandardTokenType,
-    public readonly themeData: ThemeTrieElementRule[] | null
+    public readonly themeData: ThemeTrieElementRule[] | undefined
   ) {}
 }
 
@@ -234,12 +252,12 @@ class ScopeMetadataProvider {
   private _cache: Record<string, ScopeMetadata>;
   private _defaultMetaData: ScopeMetadata & {themeData: ThemeTrieElementRule[]};
   private readonly _embeddedLanguages: IEmbeddedLanguagesMap;
-  private readonly _embeddedLanguagesRegex: RegExp | null;
+  private readonly _embeddedLanguagesRegex: RegExp | undefined;
 
   constructor(
     private readonly _initialLanguage: number,
     private readonly _themeProvider: IThemeProvider,
-    embeddedLanguages: IEmbeddedLanguagesMap | null | undefined
+    embeddedLanguages: IEmbeddedLanguagesMap | undefined
   ) {
     this.onDidChangeTheme();
 
@@ -252,10 +270,10 @@ class ScopeMetadataProvider {
       for (let i = 0, len = scopes.length; i < len; i++) {
         const scope = scopes[i];
         const language = embeddedLanguages[scope];
+        // never hurts to be too careful
         if (typeof language !== 'number' || language === 0) {
           // eslint-disable-next-line no-console
           console.warn('Invalid embedded language found at scope ' + scope + ': <<' + language + '>>');
-          // never hurts to be too careful
           continue;
         }
         this._embeddedLanguages[scope] = language;
@@ -268,7 +286,7 @@ class ScopeMetadataProvider {
     );
     if (escapedScopes.length === 0) {
       // no scopes registered
-      this._embeddedLanguagesRegex = null;
+      this._embeddedLanguagesRegex = undefined;
     } else {
       escapedScopes.sort();
       escapedScopes.reverse();
@@ -294,8 +312,9 @@ class ScopeMetadataProvider {
     return value.replace(/[\-\\\{\}\*\+\?\|\^\$\.\,\[\]\(\)\#\s]/g, '\\$&');
   }
 
-  private static _NULL_SCOPE_METADATA = new ScopeMetadata('', 0, 0, null);
-  public getMetadataForScope(scopeName: string | null | undefined): ScopeMetadata {
+  private static _NULL_SCOPE_METADATA = new ScopeMetadata('', 0, 0, undefined);
+  public getMetadataForScope(scopeName: string | undefined): ScopeMetadata {
+    // never hurts to be too careful
     if (scopeName === null || scopeName === undefined) {
       return ScopeMetadataProvider._NULL_SCOPE_METADATA;
     }
@@ -334,7 +353,7 @@ class ScopeMetadataProvider {
       return 0;
     }
 
-    const language = this._embeddedLanguages[m[1]] || 0;
+    const language = this._embeddedLanguages[m[1]] ?? 0;
     if (!language) {
       return 0;
     }
@@ -363,6 +382,10 @@ class ScopeMetadataProvider {
 }
 
 export class Grammar implements IGrammar, IRuleFactoryHelper {
+  /**
+   * the rule id of the grammar root
+   * @private
+   */
   private _rootId: number;
   private _lastRuleId: number;
   private readonly _ruleId2desc: Rule[];
@@ -376,8 +399,8 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
   constructor(
     grammar: IRawGrammar,
     initialLanguage: number,
-    embeddedLanguages: IEmbeddedLanguagesMap | null | undefined,
-    tokenTypes: ITokenTypeMap | null | undefined,
+    embeddedLanguages: IEmbeddedLanguagesMap | undefined,
+    tokenTypes: ITokenTypeMap | undefined,
     grammarRepository: IGrammarRepository & IThemeProvider
   ) {
     this._scopeMetadataProvider = new ScopeMetadataProvider(initialLanguage, grammarRepository, embeddedLanguages);
@@ -387,7 +410,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     this._ruleId2desc = [];
     this._includedGrammars = {};
     this._grammarRepository = grammarRepository;
-    this._grammar = initGrammar(grammar, null);
+    this._grammar = initGrammar(grammar, undefined);
 
     this._tokenTypeMatchers = [];
     if (tokenTypes) {
@@ -468,7 +491,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     }
   }
 
-  public tokenizeLine(lineText: string, prevState: StackElement): ITokenizeLineResult {
+  public tokenizeLine(lineText: string, prevState: StackElement | undefined): ITokenizeLineResult {
     const r = this._tokenize(lineText, prevState, false);
     return {
       tokens: r.lineTokens.getResult(r.ruleStack, r.lineLength),
@@ -476,7 +499,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     };
   }
 
-  public tokenizeLine2(lineText: string, prevState: StackElement): ITokenizeLineResult2 {
+  public tokenizeLine2(lineText: string, prevState: StackElement | undefined): ITokenizeLineResult2 {
     const r = this._tokenize(lineText, prevState, true);
     return {
       tokens: r.lineTokens.getBinaryResult(r.ruleStack, r.lineLength),
@@ -484,14 +507,19 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     };
   }
 
-  private _tokenize(
-    lineText: string,
-    prevState: StackElement,
-    emitBinaryTokens: boolean
-  ): {lineLength: number; lineTokens: LineTokens; ruleStack: StackElement} {
+  private _ensureRulesCompiled():void{
     if (this._rootId === -1) {
       this._rootId = RuleFactory.getCompiledRuleId(this._grammar.repository.$self, this, this._grammar.repository);
     }
+  }
+
+  private _tokenize(
+    lineText: string,
+    prevState: StackElement | undefined,
+    emitBinaryTokens: boolean
+  ): {lineLength: number; lineTokens: LineTokens; ruleStack: StackElement} {
+
+    this._ensureRulesCompiled();
 
     let isFirstLine: boolean;
     if (!prevState || prevState === StackElement.NULL) {
@@ -506,22 +534,26 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
         defaultTheme.foreground,
         defaultTheme.background
       );
+      const defaultCustomized = defaultTheme.customized;
       // calculate the metadata of the root scope
-      const rootScopeName = this.getRule(this._rootId).getName(null, null)!;
+      const rootScopeName = this.getRule(this._rootId).getName(undefined, undefined)!;
       const rawRootMetadata = this._scopeMetadataProvider.getMetadataForScope(rootScopeName);
       // merge w/ the default metadata
-      const rootMetadata = ScopeListElement.mergeMetadata(defaultMetadata, null, rawRootMetadata);
+      const rootMetadataRecord = ScopeListElement.mergeMetadata({
+        metadata: defaultMetadata,
+        customized: defaultCustomized
+      }, undefined, rawRootMetadata);
 
-      const scopeList = new ScopeListElement(null, rootScopeName, rootMetadata);
+      const scopeList = new ScopeListElement(undefined, rootScopeName, rootMetadataRecord);
 
-      prevState = new StackElement(null, this._rootId, -1, null, scopeList, scopeList);
+      prevState = new StackElement(undefined, this._rootId, -1, undefined, scopeList, scopeList);
     } else {
       isFirstLine = false;
       prevState.reset();
     }
 
     lineText = lineText + '\n';
-    const onigLineText = new OnigString(lineText);
+    const onigLineText = new OnigUTF8String(lineText);
     const lineLength = onigLineText.length;
     const lineTokens = new LineTokens(emitBinaryTokens, lineText, this._tokenTypeMatchers);
     const nextState = _tokenizeString(this, onigLineText, isFirstLine, 0, prevState, lineTokens);
@@ -536,18 +568,17 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
   public parse(
     text: string,
     _option?: {
-      separator?: string;
+      separators?: string[];
     }
   ): CodeDocument {
-    const option =(_option || {
-      separator: DEFAULT_SEPARATOR,
+    const option =(_option ?? {
+      separators: DEFAULT_SEPARATORS,
     }) as {
-      separator: string;
+      separators: string[];
     };
 
-    if (this._rootId === -1) {
-      this._rootId = RuleFactory.getCompiledRuleId(this._grammar.repository.$self, this, this._grammar.repository);
-    }
+    this._ensureRulesCompiled();
+
     const rawDefaultMetadata = this._scopeMetadataProvider.getDefaultMetadata();
     const defaultTheme = rawDefaultMetadata.themeData[0];
     const defaultMetadata = StackElementMetadata.set(
@@ -558,15 +589,19 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
       defaultTheme.foreground,
       defaultTheme.background
     );
+    const defaultCustomized = defaultTheme.customized;
 
     const rootRule = this.getRule(this._rootId);
-    const rootScopeName = rootRule.getName(null, null)!;
+    const rootScopeName = rootRule.getName(undefined, undefined)!;
     const rawRootMetadata = this._scopeMetadataProvider.getMetadataForScope(rootScopeName);
-    const rootMetadata = ScopeListElement.mergeMetadata(defaultMetadata, null, rawRootMetadata);
+    const rootMetadataRecord = ScopeListElement.mergeMetadata({
+      metadata: defaultMetadata,
+      customized: defaultCustomized
+    }, undefined, rawRootMetadata);
 
-    const scopeList = new ScopeListElement(null, rootScopeName, rootMetadata);
+    const scopeList = new ScopeListElement(undefined, rootScopeName, rootMetadataRecord);
 
-    let prevState = new StackElement(null, this._rootId, -1, null, scopeList, scopeList);
+    let prevState = new StackElement(undefined, this._rootId, -1, undefined, scopeList, scopeList);
     const textLength = text.length;
 
     const rootNode = new IncludeOnlyRuleASTNode(
@@ -576,12 +611,12 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
      )
     rootNode.$impostureLang = rootRule.$impostureLang;
 
-    const codeDocuments = new CodeDocument(text, option.separator, rootNode);
+    const codeDocuments = new CodeDocument(text, option.separators, rootNode);
     let workingNode: ASTNode = rootNode;
 
     codeDocuments.lines.forEach((value, index) => {
-      const lineText = value + (index === codeDocuments.lines.length ? '':option.separator);
-      const onigText = new OnigString(lineText);
+      const lineText = value.text + value.lineTerminator;
+      const onigText = new OnigUTF8String(lineText);
       if (index !== 0){
         prevState.reset();
       }
@@ -616,7 +651,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
 
 function handleCaptures(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   stack: StackElement,
   lineTokens: LineTokens,
@@ -629,12 +664,12 @@ function handleCaptures(
 
   const len = Math.min(captures.length, captureIndices.length);
   const localStack: LocalStackElement[] = [];
-  // the first capture index is the whole match
+  // maxEnd for a capture is the end index of the whole match
   const maxEnd = captureIndices[0].end;
 
   for (let i = 0; i < len; i++) {
     const captureRule = captures[i];
-    if (captureRule === null) {
+    if (!captureRule) {
       // Not interested
       continue;
     }
@@ -650,7 +685,7 @@ function handleCaptures(
       // Capture going beyond consumed string
       break;
     }
-
+    // captures might encapsulate with others, thus produce them one by one
     // pop captures while needed
     while (localStack.length > 0 && localStack[localStack.length - 1].endPos <= captureIndex.start) {
       // pop!
@@ -665,6 +700,7 @@ function handleCaptures(
     }
 
     if (captureRule.retokenizeCapturedWithRuleId) {
+      // we got included rule beneath this capture rule
       // the capture requires additional matching
       const scopeName = captureRule.getName(lineText.toString(), captureIndices);
       const nameScopesList = stack.contentNameScopesList.push(grammar, scopeName);
@@ -674,13 +710,13 @@ function handleCaptures(
       const stackClone = stack.push(
         captureRule.retokenizeCapturedWithRuleId,
         captureIndex.start,
-        null,
+        undefined,
         nameScopesList,
         contentNameScopesList
       );
       _tokenizeString(
         grammar,
-        new OnigString(lineText.substring(0, captureIndex.end)),
+        new OnigUTF8String(lineText.substring(0, captureIndex.end)),
         isFirstLine && captureIndex.start === 0,
         captureIndex.start,
         stackClone,
@@ -690,7 +726,7 @@ function handleCaptures(
     }
 
     const captureRuleScopeName = captureRule.getName(lineText.toString(), captureIndices);
-    if (captureRuleScopeName !== null) {
+    if (!!captureRuleScopeName) {
       // push
       const base = localStack.length > 0 ? localStack[localStack.length - 1].scopes : stack.contentNameScopesList;
       const captureRuleScopesList = base.push(grammar, captureRuleScopeName);
@@ -722,15 +758,15 @@ function debugCompiledRuleToString(ruleScanner: ICompiledRule): string {
 function matchInjections(
   injections: Injection[],
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   stack: StackElement,
   anchorPosition: number
-): IMatchInjectionsResult | null {
+): IMatchInjectionsResult | undefined {
   // The lower the better
   let bestMatchRating = Number.MAX_VALUE;
-  let bestMatchCaptureIndices: IOnigCaptureIndex[] | null = null;
+  let bestMatchCaptureIndices: IOnigCaptureIndex[] | undefined = undefined;
   let bestMatchRuleId: number;
   let bestMatchResultPriority = 0;
 
@@ -744,7 +780,7 @@ function matchInjections(
     }
     const ruleScanner = grammar
       .getRule(injection.ruleId)
-      .compile(grammar, null, isFirstLine, linePos === anchorPosition);
+      .compile(grammar, undefined, isFirstLine, linePos === anchorPosition);
     const matchResult = ruleScanner.scanner.findNextMatchSync(lineText, linePos);
     if (debug.IN_DEBUG_MODE) {
       console.log('  scanning for injections');
@@ -780,7 +816,7 @@ function matchInjections(
     };
   }
 
-  return null;
+  return undefined;
 }
 
 interface IMatchResult {
@@ -790,12 +826,12 @@ interface IMatchResult {
 
 function matchRule(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   stack: StackElement,
   anchorPosition: number
-): IMatchResult | null {
+): IMatchResult | undefined {
   const rule = stack.getRule(grammar);
   const ruleScanner = rule.compile(grammar, stack.endRule, isFirstLine, linePos === anchorPosition);
   const r = ruleScanner.scanner.findNextMatchSync(lineText, linePos);
@@ -810,17 +846,17 @@ function matchRule(
       matchedRuleId: ruleScanner.rules[r.index],
     };
   }
-  return null;
+  return undefined;
 }
 
 function matchRuleOrInjections(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   stack: StackElement,
   anchorPosition: number
-): IMatchResult | null {
+): IMatchResult | undefined {
   // Look for normal grammar rule
   const matchResult = matchRule(grammar, lineText, isFirstLine, linePos, stack, anchorPosition);
 
@@ -875,7 +911,7 @@ interface IWhileCheckResult {
  */
 function _checkWhileConditions(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   stack: StackElement,
@@ -883,6 +919,7 @@ function _checkWhileConditions(
 ): IWhileCheckResult {
   let anchorPosition = -1;
   const whileRules: IWhileStack[] = [];
+  // collect all the whileRules from stack of scopeList
   for (let node = stack; node; node = node.pop()) {
     const nodeRule = node.getRule(grammar);
     if (nodeRule instanceof BeginWhileRule) {
@@ -892,7 +929,7 @@ function _checkWhileConditions(
       });
     }
   }
-
+  // match each while rule found in the current stack list
   for (let whileRule = whileRules.pop(); whileRule; whileRule = whileRules.pop()) {
     const ruleScanner = whileRule.rule.compileWhile(
       grammar,
@@ -909,7 +946,7 @@ function _checkWhileConditions(
     if (r) {
       const matchedRuleId = ruleScanner.rules[r.index];
       if (matchedRuleId !== -2) {
-        // we shouldn't end up here, it must be a whileRule,
+        // we should never reach over here, it must be a whileRule,
         // but it does no harm while being cautious
         stack = whileRule.stack.pop();
         break;
@@ -933,6 +970,7 @@ function _checkWhileConditions(
         }
       }
     } else {
+      // pop of to the parent of the while rule if it doesn't match the while rule
       stack = whileRule.stack.pop();
       break;
     }
@@ -943,7 +981,7 @@ function _checkWhileConditions(
 
 function _tokenizeString(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   stack: StackElement,
@@ -966,7 +1004,7 @@ function _tokenizeString(
   function scanNext(): void {
     if (debug.IN_DEBUG_MODE) {
       console.log('');
-      console.log('@@scanNext: |' + lineText.toString().replace(/\n$/, '\\n').substr(linePos) + '|');
+      console.log('@@scanNext: |' + lineText.toString().replace(/\n$/, '\\n').substring(linePos) + '|');
     }
     const r = matchRuleOrInjections(grammar, lineText, isFirstLine, linePos, stack, anchorPosition);
 
@@ -1017,7 +1055,7 @@ function _tokenizeString(
     } else {
       // We matched a rule!
       const _rule = grammar.getRule(matchedRuleId);
-
+      // produce a token of the current stack
       lineTokens.produce(stack, captureIndices[0].start);
 
       const beforePush = stack;
@@ -1026,7 +1064,7 @@ function _tokenizeString(
       const nameScopesList = stack.contentNameScopesList.push(grammar, scopeName);
       // populate identical name scope and name content scope and setContentNameScopesList latter if needed
       // like, the contentName is defined on the corresponding rule
-      stack = stack.push(matchedRuleId, linePos, null, nameScopesList, nameScopesList);
+      stack = stack.push(matchedRuleId, linePos, undefined, nameScopesList, nameScopesList);
 
       if (_rule instanceof BeginEndRule) {
         const pushedRule = <BeginEndRule>_rule;
@@ -1063,6 +1101,7 @@ function _tokenizeString(
         handleCaptures(grammar, lineText, isFirstLine, stack, lineTokens, pushedRule.beginCaptures, captureIndices);
         lineTokens.produce(stack, captureIndices[0].end);
         anchorPosition = captureIndices[0].end;
+
         const contentName = pushedRule.getContentName(lineText.toString(), captureIndices);
         const contentNameScopesList = nameScopesList.push(grammar, contentName);
         stack = stack.setContentNameScopesList(contentNameScopesList);
@@ -1120,7 +1159,7 @@ function _ensureMutableASTNodeChildren(node: ASTNode) {
 
 function _parseWhileConditions(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   lineOffset: number,
@@ -1201,7 +1240,7 @@ function _parseWhileConditions(
 
 function _parseCaptures(
   grammar: Grammar,
-  text: OnigString,
+  text: OnigUTF8String,
   isFirstLine: boolean,
   lineOffset: number,
   stack: StackElement,
@@ -1219,7 +1258,7 @@ function _parseCaptures(
 
   for (let i = 0; i < len; i++) {
     const captureRule = captures[i];
-    if (captureRule === null) {
+    if (!captureRule) {
       // Not interested
       continue;
     }
@@ -1246,10 +1285,10 @@ function _parseCaptures(
         parent
       );
       theOne.$impostureLang = captureRule.$impostureLang;
-      const stackClone = stack.push(captureRule.retokenizeCapturedWithRuleId, captureIndex.start, null);
+      const stackClone = stack.push(captureRule.retokenizeCapturedWithRuleId, captureIndex.start, undefined);
       _parseString(
         grammar,
-        new OnigString(text.substring(0, captureIndex.end)),
+        new OnigUTF8String(text.substring(0, captureIndex.end)),
         isFirstLine,
         captureIndex.start,
         lineOffset,
@@ -1261,7 +1300,7 @@ function _parseCaptures(
     }
 
     const captureRuleScopeName = captureRule.getName(text.toString(), captureIndices)!;
-    if (captureRuleScopeName !== null) {
+    if (!!captureRuleScopeName) {
       // push
       const toBePushed = new CaptureRuleASTNode(
         captureRuleScopeName,
@@ -1278,7 +1317,7 @@ function _parseCaptures(
 
 function _parseString(
   grammar: Grammar,
-  lineText: OnigString,
+  lineText: OnigUTF8String,
   isFirstLine: boolean,
   linePos: number,
   lineOffset: number,
@@ -1302,7 +1341,7 @@ function _parseString(
   function doParse() {
     if (debug.IN_DEBUG_MODE) {
       console.log('');
-      console.log('@@doParse: |' + lineText.toString().replace(/\n$/, '\\n').substr(linePos) + '|');
+      console.log('@@doParse: |' + lineText.toString().replace(/\n$/, '\\n').substring(linePos) + '|');
     }
     const r = matchRuleOrInjections(grammar, lineText, isFirstLine, linePos, stack, anchorPosition);
 
@@ -1367,7 +1406,7 @@ function _parseString(
       }
       const beforePush = stack;
       const scopeName = _rule.getName(lineText.toString(), captureIndices)!;
-      stack = stack.push(matchedRuleId, linePos, null);
+      stack = stack.push(matchedRuleId, linePos, undefined);
 
       if (_rule instanceof BeginEndRule) {
         const pushedRule = <BeginEndRule>_rule;
@@ -1467,7 +1506,7 @@ function _parseString(
           matchingRule.captures,
           captureIndices
         );
-        anchorPosition = captureIndices[0].end;
+        // anchorPosition = captureIndices[0].end;
 
         stack = stack.pop();
         _ensureMutableASTNodeChildren(workingNode);
@@ -1498,6 +1537,9 @@ function _parseString(
   };
 }
 
+/**
+ * Stack element integer metadata static utils
+ */
 export class StackElementMetadata {
   public static toBinaryStr(metadata: number): string {
     let r = metadata.toString(2);
@@ -1584,13 +1626,21 @@ export class StackElementMetadata {
   }
 }
 
+interface ScopeListElementMetadata{
+  metadata: number,
+  customized?: Record<string, any>
+}
+
+/**
+ * Immutable scope list element holds the list of scopes and their matched metadata.
+ */
 export class ScopeListElement {
   // _scopeListElementBrand: void;
 
   constructor(
-    public readonly parent: ScopeListElement | null,
+    public readonly parent: ScopeListElement | undefined,
     public readonly scope: string,
-    public readonly metadata: number
+    public readonly metadataRecord: ScopeListElementMetadata
   ) {}
 
   private static _equals(a: ScopeListElement, b: ScopeListElement): boolean {
@@ -1599,7 +1649,7 @@ export class ScopeListElement {
         return true;
       }
 
-      if (a.scope !== b.scope || a.metadata !== b.metadata) {
+      if (a.scope !== b.scope || a.metadataRecord.metadata !== b.metadataRecord.metadata) {
         return false;
       }
 
@@ -1627,19 +1677,37 @@ export class ScopeListElement {
     return ScopeListElement._equals(this, other);
   }
 
+  private static _hasScopeNameCombinator(scopeName:string): boolean{
+    if (scopeName.length< 1){
+      return false;
+    }
+    return scopeName[scopeName.length -1] === '>';
+  }
+
+  private static _purgeScopeNameCombinator(scopeName:string): [boolean, string]{
+    if (this._hasScopeNameCombinator(scopeName)){
+      return [true, scopeName.substring(0, scopeName.length-1)]
+    }
+    return [false, scopeName];
+  }
+
   private static _matchesScope(scope: string, selector: string, selectorWithDot: string): boolean {
     return selector === scope || scope.substring(0, selectorWithDot.length) === selectorWithDot;
   }
 
-  private static _matches(target: ScopeListElement | null, parentScopes: string[] | null): boolean {
-    if (parentScopes === null) {
+  private static _matches(target: ScopeListElement | undefined, parentScopes: string[] | undefined): boolean {
+    if (!parentScopes) {
       return true;
     }
 
     const len = parentScopes.length;
     let index = 0;
-    let selector = parentScopes[index];
+    // combinator would only exist on the parent scopes, but parentScope starts from the second
+    const [isFirstScopeNameCombinator, firstScopeName] = this._purgeScopeNameCombinator(parentScopes[index]);
+    let selector = firstScopeName;
     let selectorWithDot = selector + '.';
+    // the first scopeName with combinator would be ignored
+    let hasCombinator = isFirstScopeNameCombinator;
 
     while (target) {
       if (this._matchesScope(target.scope, selector, selectorWithDot)) {
@@ -1647,8 +1715,13 @@ export class ScopeListElement {
         if (index === len) {
           return true;
         }
-        selector = parentScopes[index];
+        const [isNextCombinator, nextScopeName] = this._purgeScopeNameCombinator(parentScopes[index]);
+        hasCombinator = isNextCombinator;
+        selector = nextScopeName;
         selectorWithDot = selector + '.';
+      }else if(hasCombinator){
+        // found a mismatched scope name of combinator
+        return false;
       }
       target = target.parent;
     }
@@ -1656,16 +1729,27 @@ export class ScopeListElement {
     return false;
   }
 
-  public static mergeMetadata(metadata: number, scopesList: ScopeListElement | null, source: ScopeMetadata | null): number {
-    if (source === null) {
-      return metadata;
+  /**
+   * Merge any matching rules' metadata into current target metadata
+   *
+   * @param metadataRecord        current target metadata record
+   * @param scopesList            current scope list element
+   * @param source                the source ScopeMetadata holding the rule might be matched
+   * @return mergedMetaData       the number of merged metadata
+   */
+  public static mergeMetadata(
+    metadataRecord: ScopeListElementMetadata, scopesList: ScopeListElement | undefined, source: ScopeMetadata | undefined
+  ): ScopeListElementMetadata {
+    if (!source) {
+      return metadataRecord;
     }
 
     let fontStyle = FontStyle.NotSet;
     let foreground = 0;
     let background = 0;
+    let customized: Record<string, any> | undefined = undefined;
 
-    if (source.themeData !== null) {
+    if (!!source.themeData) {
       // Find the first themeData that matches
       for (let i = 0, len = source.themeData.length; i < len; i++) {
         const themeData = source.themeData[i];
@@ -1674,26 +1758,37 @@ export class ScopeListElement {
           fontStyle = themeData.fontStyle;
           foreground = themeData.foreground;
           background = themeData.background;
+          customized = themeData.customized;
           break;
         }
       }
     }
 
-    return StackElementMetadata.set(metadata, source.languageId, source.tokenType, fontStyle, foreground, background);
+    return {
+      metadata:StackElementMetadata.set(metadataRecord.metadata, source.languageId, source.tokenType, fontStyle, foreground, background),
+      customized
+    }
   }
 
   private static _push(target: ScopeListElement, grammar: Grammar, scopes: string[]): ScopeListElement {
     for (let i = 0, len = scopes.length; i < len; i++) {
       const scope = scopes[i];
       const rawMetadata = grammar.getMetadataForScope(scope);
-      const metadata = ScopeListElement.mergeMetadata(target.metadata, target, rawMetadata);
+      const metadata = ScopeListElement.mergeMetadata(target.metadataRecord, target, rawMetadata);
       target = new ScopeListElement(target, scope, metadata);
     }
     return target;
   }
 
-  public push(grammar: Grammar, scope: string | null | undefined): ScopeListElement {
+  /**
+   * Append scope/scopes to the current list
+   *
+   * @param grammar
+   * @param scope     a single scopeName or multiple scopeName seperated by space
+   */
+  public push(grammar: Grammar, scope: string | undefined): ScopeListElement {
     if (scope === null || scope === undefined) {
+      // cannot push empty, return self
       return this;
     }
     if (scope.indexOf(' ') >= 0) {
@@ -1704,7 +1799,7 @@ export class ScopeListElement {
     return ScopeListElement._push(this, grammar, [scope]);
   }
 
-  private static _generateScopes(scopesList: ScopeListElement | null): string[] {
+  private static _generateScopes(scopesList: ScopeListElement | undefined): string[] {
     const result: string[] = [];
     let resultLen = 0;
     while (scopesList) {
@@ -1715,6 +1810,12 @@ export class ScopeListElement {
     return result;
   }
 
+  /**
+   * Generate scopes of current list descending like:
+   *    segment1.segment2.segment3
+   *    segment1.segment2
+   *    segment1
+   */
   public generateScopes(): string[] {
     return ScopeListElement._generateScopes(this);
   }
@@ -1726,7 +1827,10 @@ export class ScopeListElement {
 export class StackElement implements StackElementDef {
   _stackElementBrand: void;
 
-  public static NULL = new StackElement(null, 0, 0, null, null as any, null as any);
+  /**
+   * Ad-hoc NULL stack element
+   */
+  public static NULL = new StackElement(undefined, 0, 0, undefined, undefined as any, undefined as any);
 
   /**
    * The position on the current line where this state was pushed.
@@ -1738,7 +1842,7 @@ export class StackElement implements StackElementDef {
   /**
    * The previous state on the stack (or null for the root state).
    */
-  public readonly parent: StackElement | null;
+  public readonly parent?: StackElement;
   /**
    * The depth of the stack.
    */
@@ -1751,7 +1855,7 @@ export class StackElement implements StackElementDef {
   /**
    * The "pop" (end) condition for this state in case that it was dynamically generated through captured text.
    */
-  public readonly endRule: string | null;
+  public readonly endRule?: string;
   /**
    * The list of scopes containing the "name" for this state.
    */
@@ -1759,14 +1863,15 @@ export class StackElement implements StackElementDef {
   /**
    * The list of scopes containing the "contentName" (besides "name") for this state.
    * This list **must** contain as an element `scopeName`.
+   * todo: consider deprecate it
    */
   public readonly contentNameScopesList: ScopeListElement;
 
   constructor(
-    parent: StackElement | null,
+    parent: StackElement | undefined,
     ruleId: number,
     enterPos: number,
-    endRule: string | null,
+    endRule: string | undefined,
     nameScopesList: ScopeListElement,
     contentNameScopesList: ScopeListElement
   ) {
@@ -1826,14 +1931,14 @@ export class StackElement implements StackElementDef {
   }
 
   public equals(other: StackElement): boolean {
-    if (other === null) {
+    if (!other) {
       return false;
     }
     return StackElement._equals(this, other);
   }
 
   private static _reset(_el: StackElement): void {
-    let el:StackElement | null = _el;
+    let el:StackElement | undefined = _el;
     while (el) {
       el._enterPos = -1;
       el = el.parent;
@@ -1859,12 +1964,12 @@ export class StackElement implements StackElementDef {
   public push(
     ruleId: number,
     enterPos: number,
-    endRule: string | null,
+    endRule: string | undefined,
     nameScopesList?: ScopeListElement,
     contentNameScopesList?: ScopeListElement
   ): StackElement {
-    nameScopesList = nameScopesList || this.nameScopesList;
-    contentNameScopesList = contentNameScopesList || this.contentNameScopesList;
+    nameScopesList = nameScopesList ?? this.nameScopesList;
+    contentNameScopesList = contentNameScopesList ?? this.contentNameScopesList;
     return new StackElement(this, ruleId, enterPos, endRule, nameScopesList, contentNameScopesList);
   }
 
@@ -1969,23 +2074,24 @@ class LineTokens {
       return;
     }
 
+    const metadataRecord = scopesList.metadataRecord;
+
     if (this._emitBinaryTokens) {
-      let metadata = scopesList.metadata;
 
       for (const tokenType of this._tokenTypeOverrides) {
         if (tokenType.matcher(scopesList.generateScopes())) {
-          metadata = StackElementMetadata.set(metadata, 0, toTemporaryType(tokenType.type), FontStyle.NotSet, 0, 0);
+          metadataRecord.metadata = StackElementMetadata.set(metadataRecord.metadata, 0, toTemporaryType(tokenType.type), FontStyle.NotSet, 0, 0);
         }
       }
 
-      if (this._binaryTokens.length > 0 && this._binaryTokens[this._binaryTokens.length - 1] === metadata) {
+      if (this._binaryTokens.length > 0 && this._binaryTokens[this._binaryTokens.length - 1] === metadataRecord.metadata) {
         // no need to push a token with the same metadata
         this._lastTokenEndIndex = endIndex;
         return;
       }
 
       this._binaryTokens.push(this._lastTokenEndIndex);
-      this._binaryTokens.push(metadata);
+      this._binaryTokens.push(metadataRecord.metadata);
 
       this._lastTokenEndIndex = endIndex;
       return;
@@ -2007,6 +2113,8 @@ class LineTokens {
       endIndex: endIndex,
       // value: lineText.substring(lastTokenEndIndex, endIndex),
       scopes: scopes,
+      meta: metadataRecord.metadata,
+      customized: metadataRecord.customized,
     });
 
     this._lastTokenEndIndex = endIndex;
@@ -2049,28 +2157,83 @@ class LineTokens {
   }
 }
 
+interface SplitLine{
+  text: string,
+  lineTerminator: string
+}
+
 export class CodeDocument {
 
-  public readonly lines: string[];
+  private static splitOnLineTerminator(text: string, separators: string[]):SplitLine[]{
+    // kudos to m-query lang parser, thanks for the help
+    if (separators.length>0){
+      const lines:SplitLine[] = text.split(separators[0]).map((lineText:string) => ({
+        text: lineText,
+        lineTerminator: separators[0]
+      }));
+
+      const otherLineTerminators = separators.slice(1);
+
+      if (otherLineTerminators.length){
+        let index =0;
+        while (index < lines.length){
+          let indexWasExpanded = false;
+
+          for (const lineTerminator of otherLineTerminators){
+            const currentSplitLine = lines[index];
+            const text = currentSplitLine.text;
+            if(text.indexOf(lineTerminator) !== -1){
+              indexWasExpanded = true;
+              const newSplitLines = text.split(lineTerminator).map((lineText:string) => ({
+                text: lineText,
+                lineTerminator
+              }));
+              newSplitLines[newSplitLines.length-1].lineTerminator = currentSplitLine.lineTerminator;
+              lines.splice(index, 1, ...newSplitLines);
+            }
+          }
+
+          if (!indexWasExpanded){
+            index+=1;
+          }
+        }
+      }
+
+      lines[lines.length - 1].lineTerminator = "";
+
+      return lines;
+    }else{
+      return [{text, lineTerminator:''}];
+    }
+  }
+
+  public readonly lines: SplitLine[];
+  /**
+   * Accumulated line length
+   * @private
+   */
   private readonly accLineLength: number[] = [];
 
-  get separator(){
-    return this._separator;
+  get separators(){
+    return this._separators;
   }
 
   constructor(
     public readonly text: string,
-    private _separator: string = DEFAULT_SEPARATOR,
+    private _separators: string[] = DEFAULT_SEPARATORS,
     public readonly root?: ASTNode
   ) {
 
-    this.lines = text.split(_separator);
+    this.lines = CodeDocument.splitOnLineTerminator(text, this._separators);
 
     this.lines.forEach((value, i) => {
       if (i === 0) {
         this.accLineLength[i] = 0;
       } else {
-        this.accLineLength[i] = this.accLineLength[i - 1] + this.lines[i - 1].length + this._separator.length;
+        this.accLineLength[i] =
+          this.accLineLength[i - 1] +
+          this.lines[i - 1].text.length +
+          this.lines[i - 1].lineTerminator.length;
       }
     });
   }
@@ -2161,7 +2324,7 @@ export class CodeDocument {
   }
 
   getNodeContent(node: ASTNode) {
-    return this.text.substr(node.offset, node.length);
+    return this.text.substring(node.offset, node.offset + node.length);
   }
 
   /**
@@ -2169,18 +2332,18 @@ export class CodeDocument {
    */
   positionAt(offset: number): Position {
     if ( typeof this.text !== 'string' || this.text.length < offset) {
-      throw new CodeDocumentOffsetNotInRange(offset, this.text?.length || 0, this._separator);
+      throw new CodeDocumentOffsetNotInRange(offset, this.text?.length ?? 0, this._separators);
     }
     let theLine = 0,
-      theChar = 0,
-      curOffset = 0;
+      theChar = 0;
+    // todo enhance it to binary search?
     this.lines.some((one, index) => {
-      if (curOffset + one.length + 1 > offset) {
+      const curOffset = this.accLineLen(index)
+      if (curOffset + one.text.length + one.lineTerminator.length >= offset) {
         theLine = index;
         theChar = offset - curOffset;
         return true;
       }
-      curOffset += one.length + 1;
       return false;
     });
     return new Position(theLine, theChar);
@@ -2190,23 +2353,14 @@ export class CodeDocument {
    * @param pos
    */
   offsetAt(pos: Position): number {
-    let result = 0;
     if (pos.line < 0 || pos.line >= this.lines.length) {
-      throw new CodeDocumentPositionNotInRange(pos, this.text?.length || 0, this._separator);
-    } else if (pos.character < 0 || pos.character > this.lines[pos.line].length) {
-      const theErr = new CodeDocumentPositionNotInRange(pos, this.text?.length || 0, this._separator);
-      theErr.updateMessage(pos, pos.line, this.lines[pos.line].length, this._separator);
+      throw new CodeDocumentPositionNotInRange(pos, this.text?.length ?? 0, this._separators);
+    } else if (pos.character < 0 || pos.character > this.lines[pos.line].text.length + this.lines[pos.line].lineTerminator.length) {
+      const theErr = new CodeDocumentPositionNotInRange(pos, this.text.length ?? 0, this._separators);
+      theErr.updateMessage(pos, pos.line, this.lines[pos.line].text.length + this.lines[pos.line].lineTerminator.length, this._separators);
       throw theErr;
     }
-    this.lines.some((one, index) => {
-      if (index === pos.line) {
-        result += pos.character;
-        return true;
-      }
-      result += one.length + 1;
-      return false;
-    });
-    return result;
+    return this.accLineLen(pos.line) + pos.character;
   }
 
   get lineCount(): number {

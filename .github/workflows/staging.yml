@@ -13,11 +13,12 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v2
         with:
-          node-version: "14"
+          node-version: "16"
       - run: cat /etc/lsb-release
       - run: echo $(cmake --version)
       - run: echo node-js $(node -v)
       - run: npm ci
       - run: npm run setup
       - run: npm run compile
+      - run: npm run audit
 #      - run: npm run coverage

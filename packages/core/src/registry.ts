@@ -4,6 +4,7 @@ import {IRawGrammar} from './types';
 import {IGrammar, IEmbeddedLanguagesMap, ITokenTypeMap} from './main';
 import {Theme, ThemeTrieElementRule} from './theme';
 
+// todo combine the one in the main
 export class SyncRegistry implements IGrammarRepository, IThemeProvider {
   private readonly _grammars: Record<string, Grammar>;
   private readonly _rawGrammars: Record<string, IRawGrammar>;
@@ -79,15 +80,14 @@ export class SyncRegistry implements IGrammarRepository, IThemeProvider {
   public grammarForScopeName(
     scopeName: string,
     initialLanguage: number,
-    embeddedLanguages: IEmbeddedLanguagesMap | null | undefined,
-    tokenTypes: ITokenTypeMap | null | undefined
-  ): IGrammar | null {
+    embeddedLanguages: IEmbeddedLanguagesMap | undefined,
+    tokenTypes: ITokenTypeMap | undefined
+  ): IGrammar | undefined {
     if (!this._grammars[scopeName]) {
       const rawGrammar = this._rawGrammars[scopeName];
       if (!rawGrammar) {
-        return null;
+        return undefined;
       }
-
       this._grammars[scopeName] = createGrammar(rawGrammar, initialLanguage, embeddedLanguages, tokenTypes, this);
     }
     return this._grammars[scopeName];

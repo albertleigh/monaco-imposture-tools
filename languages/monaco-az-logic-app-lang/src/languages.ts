@@ -1,5 +1,5 @@
 import {Registry, ValueEventEmitter} from '@monaco-imposture-tools/core';
-import {loadWASM} from '@monaco-imposture-tools/oniguruma-asm';
+import {initOnigasm} from '@monaco-imposture-tools/oniguruma-asm';
 import {ValidateResult} from './validateHelper';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
 import {AzLogicAppLangConstants, ErrorHandler, TraceHandler} from "./base";
@@ -74,24 +74,12 @@ export class AzLogicAppExpressionLanguage {
     let azLgcExpDoc: AzLgcExpDocument | undefined = undefined;
     try{
       const codeDoc = this.grammar!.parse(text);
-      if (AzLogicAppExpressionLanguage.inSyntaxDebugMode){
-        if (codeDoc.separator === '\r\n'){
-          console.log('[AzLogicAppExpressionLanguage::manuallySyncParse] EOF CRLF');
-        }else{
-          console.log('[AzLogicAppExpressionLanguage::manuallySyncParse] EOF LF');
-        }
-      }
       azLgcExpDoc = parseAzLgcExpDocument(codeDoc, symbolTable);
       AzLogicAppExpressionLanguage.inSyntaxDebugMode &&
       console.log("[azLgcLang::manuallySyncParse]", azLgcExpDoc?.entries, azLgcExpDoc?.validateResult, azLgcExpDoc);
       AzLogicAppExpressionLanguage.inSyntaxDebugMode &&
       azLgcExpDoc?.consoleLogSyntaxNodes();
       if (this.globalTraceHandler){
-        if (codeDoc.separator === '\r\n'){
-          this.globalTraceHandler('[AzLogicAppExpressionLanguage::manuallySyncParse] EOF CRLF');
-        }else{
-          this.globalTraceHandler('[AzLogicAppExpressionLanguage::manuallySyncParse] EOF LF');
-        }
         this.globalTraceHandler('[AzLogicAppExpressionLanguage::manuallySyncParse] succeed')
       }
     }catch (error) {
@@ -105,16 +93,13 @@ export class AzLogicAppExpressionLanguage {
   }
 
   public static activate(
-    scannerOrItsPath: string | ArrayBuffer = this._scannerOrItsPath,
     grammarContent: Promise<string | object> | string | object = this._grammarContent
   ):Promise<any> {
     if (this.init) return this.init;
 
-    this._scannerOrItsPath = scannerOrItsPath;
     this._grammarContent = grammarContent;
 
     if (
-      (typeof scannerOrItsPath !== 'string' && !(scannerOrItsPath instanceof ArrayBuffer)) ||
       (!(grammarContent instanceof Promise) &&
         typeof grammarContent !== 'string' &&
         typeof grammarContent !== 'object'
@@ -126,7 +111,7 @@ export class AzLogicAppExpressionLanguage {
     }
 
     AzLogicAppLangConstants._init = (async () => {
-      await loadWASM(scannerOrItsPath);
+      await initOnigasm();
       AzLogicAppLangConstants._registry = new Registry({
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         debug: AzLogicAppExpressionLanguage.inLexicalDebugMode,

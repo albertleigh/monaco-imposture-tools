@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "esnext",
+    "target": "ES2021",
+    "module": "ESNext",
     "outDir": "lib",
     "declarationDir": "lib/typings",
     "downlevelIteration": true,
+    "useDefineForClassFields": false,
     "noImplicitAny": false,
     "sourceMap": true,
     "declaration": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true,
+    "resolveJsonModule": false,
     "strictNullChecks": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["dom", "dom.iterable", "esnext"]

@@ -1,5 +1,4 @@
 import {
-  DEFAULT_SEPARATOR,
   INITIAL,
   IRawTheme,
   Position as TmPosition,
@@ -7,7 +6,7 @@ import {
   StackElement,
   ValueEventEmitter
 } from '@monaco-imposture-tools/core';
-import {loadWASM} from '@monaco-imposture-tools/oniguruma-asm';
+import {initOnigasm} from '@monaco-imposture-tools/oniguruma-asm';
 import {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from './editor.api';
 import {ValidateResult} from './validateHelper';
 import {debounce} from './debounce';
@@ -136,15 +135,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
         if (!_cur || !versionId || versionId === -1 || _cur?.versionId !== versionId) {
 
           // force to use the default LF as EOL
-          const codeDoc = this.grammar!.parse(text || '');
-
-          if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
-            if (codeDoc.separator === '\r\n'){
-              console.log('[azLgcLang::parseAzLgcExpDocument] EOF CRLF');
-            }else{
-              console.log('[azLgcLang::parseAzLgcExpDocument] EOF LF');
-            }
-          }
+          const codeDoc = this.grammar!.parse(text ?? '');
 
           const azLgcExpDoc = parseAzLgcExpDocument(codeDoc, itsGlobalSymbolTable);
           azLgcExpDocResult?.emit(azLgcExpDoc);
@@ -154,11 +145,6 @@ export class AzLogicAppExpressionLangMonacoEditor {
           AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
           azLgcExpDoc?.consoleLogSyntaxNodes();
           if (this.globalTraceHandler){
-            if (codeDoc.separator === '\r\n'){
-              this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] EOF CRLF');
-            }else{
-              this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] EOF LF');
-            }
             this.globalTraceHandler('[azLgcLang::parseAzLgcExpDocument] succeed')
           }
 
@@ -277,24 +263,12 @@ export class AzLogicAppExpressionLangMonacoEditor {
     let azLgcExpDoc: AzLgcExpDocument | undefined = undefined;
     try{
       const codeDoc = this.grammar!.parse(text);
-      if (AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode){
-        if (codeDoc.separator === '\r\n'){
-          console.log('[azLgcLang::manuallySyncParse] EOF CRLF');
-        }else{
-          console.log('[azLgcLang::manuallySyncParse] EOF LF');
-        }
-      }
       azLgcExpDoc = parseAzLgcExpDocument(codeDoc, symbolTable);
       AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
       console.log("[azLgcLang::manuallySyncParse]", azLgcExpDoc?.entries, azLgcExpDoc?.validateResult, azLgcExpDoc);
       AzLogicAppExpressionLangMonacoEditor.inSyntaxDebugMode &&
       azLgcExpDoc?.consoleLogSyntaxNodes();
       if (this.globalTraceHandler){
-        if (codeDoc.separator === '\r\n'){
-          this.globalTraceHandler('[azLgcLang::manuallySyncParse] EOF CRLF');
-        }else{
-          this.globalTraceHandler('[azLgcLang::manuallySyncParse] EOF LF');
-        }
         this.globalTraceHandler('[azLgcLang::manuallySyncParse] succeed')
       }
     }catch (error) {
@@ -308,18 +282,15 @@ export class AzLogicAppExpressionLangMonacoEditor {
   }
 
   public static activate(
-    scannerOrItsPath: string | ArrayBuffer = this._scannerOrItsPath,
     realMonaco: typeof monaco = AzLogicAppLangConstants._monaco!,
     grammarContent: Promise<string | object> | string | object = this._grammarContent
   ):Promise<any> {
     if (this.init) return this.init;
 
-    this._scannerOrItsPath = scannerOrItsPath;
     AzLogicAppLangConstants._monaco = realMonaco;
     this._grammarContent = grammarContent;
 
     if (
-      (typeof scannerOrItsPath !== 'string' && !(scannerOrItsPath instanceof ArrayBuffer)) ||
       (!(grammarContent instanceof Promise) &&
         typeof grammarContent !== 'string' &&
         typeof grammarContent !== 'object') ||
@@ -331,7 +302,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
     }
 
     AzLogicAppLangConstants._init = (async () => {
-      await loadWASM(scannerOrItsPath);
+      await initOnigasm();
       AzLogicAppLangConstants._registry = new Registry({
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         debug: AzLogicAppExpressionLangMonacoEditor.inLexicalDebugMode,
@@ -483,14 +454,14 @@ export class AzLogicAppExpressionLangMonacoEditor {
               if (
                 !theAzLgcExpDoc ||
                 modelLines.length !== theAzLgcExpDoc.codeDocument.lines.length ||
-                modelLines.some((value, index) => value !== theAzLgcExpDoc.codeDocument.lines[index])
+                modelLines.some((value, index) => value !== theAzLgcExpDoc.codeDocument.lines[index].text)
               ) {
                 theAzLgcExpDoc =
                   (await this._doParse(
-                    modelLines.join(theLgcExpDocEditor.getEndOfLine()),
+                    model.getValue(),
                     model.getVersionId(),
                     theLgcExpDocEditor
-                  )) || theAzLgcExpDoc;
+                  )) ?? theAzLgcExpDoc;
               }
               const originalRes = generateCompletion(theLgcExpDocEditor, theAzLgcExpDoc, model, position, context, token);
               let res: MonacoLangCompletionListResult = originalRes;
@@ -560,12 +531,6 @@ export class AzLogicAppExpressionLangMonacoEditor {
   private _rootSymbolTable: SymbolTable;
   private _valueDescriptionDict: ValueDescriptionDictionary;
 
-  public getEndOfLine(){
-    if(this.standaloneCodeEditor){
-      return this.standaloneCodeEditor.getModel()?.getEOL() || DEFAULT_SEPARATOR;
-    }
-    return DEFAULT_SEPARATOR;
-  }
 
   public get rootSymbolTable(): SymbolTable{
     return this._rootSymbolTable;
