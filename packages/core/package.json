@@ -1,6 +1,6 @@
 {
   "name": "@monaco-imposture-tools/core",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "",
   "main": "lib/main.js",
   "typings": "lib/main.d.ts",
@@ -29,10 +29,10 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "@monaco-imposture-tools/oniguruma-asm": "^0.1.7"
+    "@monaco-imposture-tools/oniguruma-asm": "^0.2.0"
   },
   "devDependencies": {
-    "@monaco-imposture-tools/grammars": "^0.1.7",
+    "@monaco-imposture-tools/grammars": "^0.2.0",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
     "@types/node": "^16.11.32",
