@@ -47,8 +47,7 @@ export const enum TemporaryStandardTokenType {
   Other = 0,
   Comment = 1,
   String = 2,
-  RegEx = 4,
-  MetaEmbedded = 8,
+  RegEx = 4
 }
 
 function toTemporaryType(standardType: StandardTokenType): TemporaryStandardTokenType {
@@ -61,9 +60,7 @@ function toTemporaryType(standardType: StandardTokenType): TemporaryStandardToke
       return TemporaryStandardTokenType.Comment;
     case StandardTokenType.Other:
     default:
-      // `MetaEmbedded` is the same scope as `Other`
-      // but it overwrites existing token types in the stack.
-      return TemporaryStandardTokenType.MetaEmbedded;
+      return TemporaryStandardTokenType.Other;
   }
 }
 
@@ -361,7 +358,7 @@ class ScopeMetadataProvider {
     return language;
   }
 
-  private static STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex|meta\.embedded)\b/;
+  private static STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex)\b/;
   private _toStandardTokenType(tokenType: string): TemporaryStandardTokenType {
     const m = tokenType.match(ScopeMetadataProvider.STANDARD_TOKEN_TYPE_REGEXP);
     if (!m) {
@@ -374,8 +371,6 @@ class ScopeMetadataProvider {
         return TemporaryStandardTokenType.String;
       case 'regex':
         return TemporaryStandardTokenType.RegEx;
-      case 'meta.embedded':
-        return TemporaryStandardTokenType.MetaEmbedded;
     }
     throw new Error('Unexpected match for standard token type!');
   }
@@ -1603,7 +1598,7 @@ export class StackElementMetadata {
       _languageId = languageId;
     }
     if (tokenType !== TemporaryStandardTokenType.Other) {
-      _tokenType = tokenType === TemporaryStandardTokenType.MetaEmbedded ? StandardTokenType.Other : tokenType;
+      _tokenType = tokenType;
     }
     if (fontStyle !== FontStyle.NotSet) {
       _fontStyle = fontStyle;
