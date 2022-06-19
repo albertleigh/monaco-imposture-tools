@@ -233,35 +233,35 @@ export interface ITokenizeLineResult {
 }
 
 /**
- * Helpers to manage the "collapsed" metadata of an entire StackElement stack.
- * The following assumptions have been made:
- *  - languageId < 256 => needs 8 bits
- *  - unique color count < 512 => needs 9 bits
- *
- * The binary format is:
+ * The tokens on the line in a binary, encoded format. Each token occupies two array indices. For token i:
+ *  - at offset 2*i => startIndex
+ *  - at offset 2*i + 1 => metadata
+ * Meta data is in binary format:
  * - -------------------------------------------
  *     3322 2222 2222 1111 1111 1100 0000 0000
  *     1098 7654 3210 9876 5432 1098 7654 3210
  * - -------------------------------------------
- *     xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
- *     bbbb bbbb bfff ffff ffFF FTTT LLLL LLLL
+ *     bbbb bbbb bfff ffff ffFF FFTT LLLL LLLL
  * - -------------------------------------------
- *  - L = LanguageId (8 bits)
- *  - T = StandardTokenType (3 bits)
- *  - F = FontStyle (3 bits)
- *  - f = foreground color (9 bits)
- *  - b = background color (9 bits)
+ *  - L = EncodedLanguageId (8 bits): Use `getEncodedLanguageId` to get the encoded ID of a language.
+ *  - T = StandardTokenType (2 bits): Other = 0, Comment = 1, String = 2, RegEx = 3.
+ *  - F = FontStyle (4 bits): None = 0, Italic = 1, Bold = 2, Underline = 4, Strikethrough = 8.
+ *  - f = foreground ColorId (9 bits)
+ *  - b = background ColorId (9 bits)
+ *  - The color value for each colorId is defined in IStandaloneThemeData.customTokenColors:
+ * e.g. colorId = 1 is stored in IStandaloneThemeData.customTokenColors[1]. Color id = 0 means no color,
+ * id = 1 is for the default foreground color, id = 2 for the default background.
  */
 export const enum MetadataConsts {
   LANGUAGEID_MASK = 0b00000000000000000000000011111111,
-  TOKEN_TYPE_MASK = 0b00000000000000000000011100000000,
-  FONT_STYLE_MASK = 0b00000000000000000011100000000000,
-  FOREGROUND_MASK = 0b00000000011111111100000000000000,
+  TOKEN_TYPE_MASK = 0b00000000000000000000001100000000,
+  FONT_STYLE_MASK = 0b00000000000000000011110000000000,
+  FOREGROUND_MASK = 0b0000000001111111110000000000000,
   BACKGROUND_MASK = 0b11111111100000000000000000000000,
 
   LANGUAGEID_OFFSET = 0,
   TOKEN_TYPE_OFFSET = 8,
-  FONT_STYLE_OFFSET = 11,
+  FONT_STYLE_OFFSET = 10,
   FOREGROUND_OFFSET = 14,
   BACKGROUND_OFFSET = 23,
 }
