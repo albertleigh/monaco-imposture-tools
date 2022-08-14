@@ -15,7 +15,7 @@
     "typescript": "^4.6.4"
   },
   "scripts": {
-    "_postinstall": "lerna bootstrap --ci",
+    "postinstall": "lerna bootstrap --ci",
     "setup:emsdk": "npx ts-node ./scripts/setup-emsdk.ts 3.1.9",
     "setup:oniguruma": "npx ts-node ./scripts/setup-oniguruma.ts c30fd2dba48efe0b2cd3324c14da70b77ff7c6be",
     "setup": "npm run setup:emsdk && npm run setup:oniguruma",
