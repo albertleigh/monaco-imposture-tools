@@ -12,16 +12,16 @@ import {
 } from './common';
 import {clone} from './utils';
 import {
-  DEFAULT_SEPARATORS,
   ASTNode,
-  CaptureRuleASTNode,
   BeginEndRuleASTNode,
   BeginWhileRuleASTNode,
+  CaptureRuleASTNode,
+  DEFAULT_SEPARATORS,
   IncludeOnlyRuleASTNode,
-  MatchRuleASTNode,
   IRawGrammar,
   IRawRepository,
   IRawRule,
+  MatchRuleASTNode,
   Position,
   Range,
 } from './types';
@@ -338,24 +338,19 @@ class ScopeMetadataProvider {
    */
   private _scopeToLanguage(scope: string): number {
     if (!scope) {
-      return 0;
+      return this._initialLanguage;
     }
     if (!this._embeddedLanguagesRegex) {
       // no scopes registered
-      return 0;
+      return this._initialLanguage;
     }
     const m = scope.match(this._embeddedLanguagesRegex);
     if (!m) {
       // no scopes matched
-      return 0;
+      return this._initialLanguage;
     }
 
-    const language = this._embeddedLanguages[m[1]] ?? 0;
-    if (!language) {
-      return 0;
-    }
-
-    return language;
+    return this._embeddedLanguages[m[1]] ?? this._initialLanguage;
   }
 
   private static STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex)\b/;
@@ -2075,7 +2070,8 @@ class LineTokens {
 
       for (const tokenType of this._tokenTypeOverrides) {
         if (tokenType.matcher(scopesList.generateScopes())) {
-          metadataRecord.metadata = StackElementMetadata.set(metadataRecord.metadata, 0, toTemporaryType(tokenType.type), FontStyle.NotSet, 0, 0);
+          // todo fix this zero language id
+          metadataRecord.metadata = StackElementMetadata.set(metadataRecord.metadata, 6, toTemporaryType(tokenType.type), FontStyle.NotSet, 0, 0);
         }
       }
 

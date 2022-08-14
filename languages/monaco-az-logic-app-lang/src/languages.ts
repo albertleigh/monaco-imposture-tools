@@ -128,7 +128,7 @@ export class AzLogicAppExpressionLanguage {
         },
       });
 
-      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME);
+      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME, 0);
       AzLogicAppLangConstants._grammar = grammar;
 
 

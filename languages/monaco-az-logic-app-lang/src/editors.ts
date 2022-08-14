@@ -7,7 +7,15 @@ import {
   ValueEventEmitter
 } from '@monaco-imposture-tools/core';
 import {initOnigasm} from '@monaco-imposture-tools/oniguruma-asm';
-import {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from './editor.api';
+import {
+  CancellationToken,
+  default as monaco,
+  editor,
+  IDisposable,
+  languages,
+  Position,
+  Range
+} from './editor.api';
 import {ValidateResult} from './validateHelper';
 import {debounce} from './debounce';
 import {TMToMonacoToken} from './tm-to-monaco-token';
@@ -319,10 +327,19 @@ export class AzLogicAppExpressionLangMonacoEditor {
         },
       });
 
-      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME);
+      realMonaco.languages.register({id: AzLogicAppLangConstants.LANGUAGE_ID});
+
+      const languageId = realMonaco.languages.getEncodedLanguageId(AzLogicAppLangConstants.LANGUAGE_ID);
+
+      if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+        AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::grammar::register] init', {
+          languageId
+        })
+      }
+
+      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME, languageId);
       AzLogicAppLangConstants._grammar = grammar;
 
-      realMonaco.languages.register({id: AzLogicAppLangConstants.LANGUAGE_ID});
       realMonaco.languages.setLanguageConfiguration(AzLogicAppLangConstants.LANGUAGE_ID, conf);
       realMonaco.languages.setMonarchTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, language);
 

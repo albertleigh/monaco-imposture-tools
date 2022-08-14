@@ -397,8 +397,8 @@ export const mount = (root:HTMLDivElement)=> {
   const theEditor = new AzLogicAppExpressionLangMonacoEditor(
     root,
     {
-      // theme: 'vs',
-      theme: 'hc-black',
+      theme: 'vs',
+      // theme: 'hc-black',
       // theme: 'vs-code-theme-converted',
       // readOnly: true,
       contextmenu: false,

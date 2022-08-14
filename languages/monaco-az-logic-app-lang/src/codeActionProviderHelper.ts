@@ -29,8 +29,9 @@ function collect_for_NEED_PRECEDING_SEPARATOR(
       edit: {
         edits: [
           {
+            versionId: model.getVersionId(),
             resource: model.uri,
-            edit: {
+            textEdit: {
               range: {
                 startLineNumber: maker.startLineNumber,
                 startColumn: theStartCol,
@@ -70,8 +71,9 @@ function collect_for_IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL(
         edit: {
           edits: [
             {
+              versionId: model.getVersionId(),
               resource: model.uri,
-              edit: {
+              textEdit: {
                 range: {
                   startLineNumber: maker.startLineNumber,
                   startColumn: maker.startColumn,
@@ -107,8 +109,9 @@ function collect_for_MISMATCHED_CASES_FOUND(
         edit: {
           edits: [
             {
+              versionId: model.getVersionId(),
               resource: model.uri,
-              edit: {
+              textEdit: {
                 range: {
                   startLineNumber: maker.startLineNumber,
                   startColumn: maker.startColumn,
