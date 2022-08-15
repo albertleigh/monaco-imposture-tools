@@ -344,7 +344,7 @@ pipeline()
         expect(problems[0].startPos.line).eq(1);
         expect(problems[0].startPos.character).greaterThanOrEqual(27);
         expect(problems[0].endPos.line).eq(3);
-        expect(problems[0].endPos.character).lessThanOrEqual(4);
+        expect(problems[0].endPos.character).lessThanOrEqual(9);
 
         await page.keyboard.press('ArrowUp');
         await page.keyboard.press('End');

@@ -88,7 +88,7 @@ function generateAtSymbolTests(openOnePage, closeOnePage) {
     })
 
     it('multiple identifiers exist within the root statement', async ()=>{
-      let nextText, content, problems, warnings, hints, allCompletionList;
+      let nextText, content, problems, warnings, hints, allCompletionList, hoverRows;
 
       nextText = "@add(1, 2)@concat('a', 'b')";
       await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
@@ -101,8 +101,8 @@ function generateAtSymbolTests(openOnePage, closeOnePage) {
       // Cannot have multiple identifiers within the root statement
       expect(problems[1].code).eq(10);
 
-      await hoverOneSpanContaining(page, 'concat');
-      const hoverRows  = await page.$$('.monaco-hover-content .hover-row');
+      await hoverOneSpanContaining(page, 'concat(');
+      hoverRows  = await page.$$('.monaco-hover-content .hover-row');
       expect(hoverRows.length).eq(5);
     })
   });

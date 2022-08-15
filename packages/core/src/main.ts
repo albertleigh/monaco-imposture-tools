@@ -1,6 +1,6 @@
 import {SyncRegistry} from './registry';
 import {parseJSONGrammar} from './grammarReader';
-import {Theme} from './theme';
+import {ITokenThemeRulesAndColors, Theme} from './theme';
 import {StackElement as StackElementImpl} from './grammar';
 import {
   IRawGrammar,
@@ -45,6 +45,13 @@ export class Registry {
    */
   public setTheme(theme: IRawTheme): void {
     this._syncRegistry.setTheme(Theme.createFromRawTheme(theme));
+  }
+
+  /**
+   * Get the part of ThemeData for monaco editor
+   */
+  public getThemeRulesAndColors(): ITokenThemeRulesAndColors {
+    return this._syncRegistry.getThemeRulesAndColors();
   }
 
   /**

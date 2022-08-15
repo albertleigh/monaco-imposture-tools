@@ -1044,7 +1044,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         expect(problems[0].startPos.line).eq(0);
         expect(problems[0].startPos.character).greaterThanOrEqual(13);
         expect(problems[0].endPos.line).eq(1);
-        expect(problems[0].endPos.character).lessThanOrEqual(3);
+        expect(problems[0].endPos.character).lessThanOrEqual(7);
 
       })
 
@@ -1184,8 +1184,8 @@ pipeline().globalParameters.oneGlobalFloat
         expect(problems[0].code).eq(16);
         expect(problems[0].startPos.line).eq(0);
         expect(problems[0].startPos.character).greaterThanOrEqual(33);
-        expect(problems[0].endPos.line).eq(2);
-        expect(problems[0].endPos.character).lessThanOrEqual(5);
+        expect(problems[0].endPos.line).eq(3);
+        expect(problems[0].endPos.character).lessThanOrEqual(1);
 
       })
 

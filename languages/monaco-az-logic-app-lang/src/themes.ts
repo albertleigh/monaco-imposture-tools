@@ -1,21 +1,38 @@
 import {IRawTheme} from '@monaco-imposture-tools/core';
+import {editor} from "./editor.api";
+import BuiltinTheme = editor.BuiltinTheme;
 
-/*
+/**
+ * Convert a nullable themeName to a built-in theme name
+ * @param themeName
+ */
+export function covert2BuiltInBaseTheme(themeName?: string): BuiltinTheme {
+  let result: BuiltinTheme = 'vs';
+  if (!themeName) {
+    return result;
+  } else if (themeName.indexOf('hc-black') > -1) {
+    result = 'hc-black';
+  } else if (themeName.indexOf('vs-dark') > -1) {
+    result = 'vs-dark';
+  }
+  return result;
+}
+
+/**
     convert a Number to a two character hex string
     must round, or we will end up with more digits than expected (2)
     note: can also result in single digit, which will need to be padded with a 0 to the left
     @param: num         => the number to convert to hex
     @returns: string    => the hex representation of the provided number
 */
-function int_to_hex(num:number)
-{
+function int_to_hex(num: number) {
   let hex = Math.round(num).toString(16);
   if (hex.length == 1)
     hex = '0' + hex;
   return hex;
 }
 
-/*
+/**
     blend two colors to create the color that is at the percentage away from the first color
     this is a 5 step process
         1: validate input
@@ -28,7 +45,7 @@ function int_to_hex(num:number)
     @param: percentage  => the distance from the first color, as a decimal between 0 and 1 (ie: 0.5)
     @returns: string    => the third color, hex, represenatation of the blend between color1 and color2 at the given percentage
 */
-function blend_colors(color1:string, color2:string, percentage:number, debugMode = false):string{
+function blend_colors(color1: string, color2: string, percentage: number, debugMode = false): string {
   // check input
   color1 = color1 || '#000000';
   color2 = color2 || '#ffffff';
@@ -85,7 +102,7 @@ function blend_colors(color1:string, color2:string, percentage:number, debugMode
 
 export function createAzLgcTheme(
   name: string,
-  opt:{
+  opt: {
     expressionFg: string,
     atSymbolFg: string,
     atTemplateFg: string,
@@ -101,7 +118,7 @@ export function createAzLgcTheme(
     incompleteFunctionNameFg?: string,
     incompleteVariableFg?: string,
   }
-):IRawTheme{
+): IRawTheme {
 
   const {
     expressionFg,
@@ -128,7 +145,7 @@ export function createAzLgcTheme(
         scope: [
           'source.azLgcAppExp'
         ],
-        settings:{
+        settings: {
           foreground: expressionFg         //--vscode-debugTokenExpression-string
         }
       },
@@ -136,7 +153,7 @@ export function createAzLgcTheme(
         scope: [
           'constant.character.escape.azLgcAppExp'
         ],
-        settings:{
+        settings: {
           foreground: escapedAtSymbolFg
         }
       },
@@ -144,7 +161,7 @@ export function createAzLgcTheme(
         scope: [
           'keyword.symbol.at'
         ],
-        settings:{
+        settings: {
           foreground: atSymbolFg
         }
       },
@@ -152,7 +169,7 @@ export function createAzLgcTheme(
         scope: [
           'meta.expression.function.call.incomplete keyword.symbol.at',
         ],
-        settings:{
+        settings: {
           foreground: incompleteAtSymbolFg
         }
       },
@@ -162,7 +179,7 @@ export function createAzLgcTheme(
           'punctuation.definition.template.expression',
           'meta.template.expression.azLgcAppExp keyword.symbol.at'
         ],
-        settings:{
+        settings: {
           foreground: atTemplateFg
         }
       },
@@ -172,7 +189,7 @@ export function createAzLgcTheme(
           'meta.brace',
           'punctuation',
         ],
-        settings:{
+        settings: {
           foreground: punctuationFg         // --vscode-editorSuggestWidget-background
         }
       },
@@ -181,7 +198,7 @@ export function createAzLgcTheme(
           'string.quoted',
           'punctuation.definition.string',
         ],
-        settings:{
+        settings: {
           foreground: stringFg         // --vscode-editorMarkerNavigationError-background
         }
       },
@@ -200,7 +217,7 @@ export function createAzLgcTheme(
         scope: [
           'variable'
         ],
-        settings:{
+        settings: {
           foreground: variableFg
         }
       },
@@ -208,19 +225,19 @@ export function createAzLgcTheme(
         scope: [
           'meta.expression.function.call.incomplete variable',
         ],
-        settings:{
+        settings: {
           foreground: incompleteVariableFg
         }
       },
       {
         scope: 'variable.other.constant',
-        settings:{
+        settings: {
           fontStyle: 'bold'
         }
       },
       {
         scope: 'constant.numeric',
-        settings:{
+        settings: {
           foreground: numericFg
         }
       },
@@ -229,7 +246,7 @@ export function createAzLgcTheme(
           'meta.function-call',
           'storage.type.numeric',
         ],
-        settings:{
+        settings: {
           foreground: functionFg         // --vscode-editorSuggestWidget-foreground
         }
       },
@@ -238,7 +255,7 @@ export function createAzLgcTheme(
           'constant.language.boolean',
           'constant.language.null',
         ],
-        settings:{
+        settings: {
           foreground: constantFg
         }
       },
@@ -246,7 +263,7 @@ export function createAzLgcTheme(
         scope: [
           'entity.name.function',
         ],
-        settings:{
+        settings: {
           foreground: functionNameFg,
           fontStyle: 'bold'
         }
@@ -255,7 +272,7 @@ export function createAzLgcTheme(
         scope: [
           'meta.expression.function.call.incomplete entity.name.function',
         ],
-        settings:{
+        settings: {
           foreground: incompleteFunctionNameFg,
         }
       },

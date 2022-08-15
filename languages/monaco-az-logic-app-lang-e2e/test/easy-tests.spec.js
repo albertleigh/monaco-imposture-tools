@@ -13,7 +13,7 @@ const IS_CI = process.env.CI === 'true';
 
 
 describe('e2e easy test', () => {
-  it('dummy test', async () => {
+  it.only('dummy test', async () => {
     const browser = await puppeteer.launch({
       headless: IS_CI, slowMo: 50, devtools:!IS_CI,
       args:[
@@ -35,43 +35,25 @@ describe('e2e easy test', () => {
     let nextText, content, problems, warnings, hints, allCompletionList, hoverRows;
 
     nextText =
-`{
-    "@type": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "themeColor": "0076D7",
-    "summary": "Pipeline run result",
-    "@summary2": "@min",
-    "sections": [
-        {
-            "activityTitle": "ADF MSAL Usage Query Result​​​​",
-            "facts": [
-                {
-                    "name": "Pipeline run result",
-                    "value": "@{pipeline().globalParameters.firstGlobalStrPara}"
-                },
-                {
-                    "name": "Notification time (UTC):",
-                    "value": "@{utcNow()}"
-                }
-            ],
-            "markdown": true
-        }
-    ],
-    "potentialAction": [
-    ]
-}`
+        `@activity('Get Default 1').output[
+    string(1), string(1)
+`;
 
-    await manuallySetModelText(page, nextText);
+    await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+
     content = await seizeCurExpTxt(page);
     problems = await seizeCurExpProb(page);
-    expect(content).eq(nextText);
-    expect(problems.length).eq(0);
+    expect(content).ok;
+    expect(problems.length).eq(1);
+    // FUNCTION_PARAMETER_TYPE_MISMATCHES code 0x006
+    // Cannot fit package::**Return package pipeline** into the function parameter string list item.
+    expect(problems[0].code).eq(16);
+    expect(problems[0].startPos.line).eq(0);
+    expect(problems[0].startPos.character).greaterThanOrEqual(33);
+    expect(problems[0].endPos.line).eq(3);
+    expect(problems[0].endPos.character).lessThanOrEqual(1);
 
-    await hoverOneSpanContaining(page, 'summary2');
-    hoverRows  = await page.$$('.monaco-hover-content .hover-row');
-    expect(hoverRows.length).eq(1);
-
-  });
+  }).timeout(0);
 
 
   describe('Bunch of valid expressions', ()=>{
