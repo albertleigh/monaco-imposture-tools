@@ -1,6 +1,6 @@
 {
   "name": "monaco-azure-logic-app-lang",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "",
   "main": "./lib/index.js",
   "typings": "./lib/typings/index.d.ts",
@@ -25,11 +25,11 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "@monaco-imposture-tools/core": "^0.2.4",
-    "@monaco-imposture-tools/oniguruma-asm": "^0.2.4"
+    "@monaco-imposture-tools/core": "^0.2.5",
+    "@monaco-imposture-tools/oniguruma-asm": "^0.2.5"
   },
   "devDependencies": {
-    "@monaco-imposture-tools/grammars": "^0.2.4",
+    "@monaco-imposture-tools/grammars": "^0.2.5",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
     "@types/node": "^16.11.32",
