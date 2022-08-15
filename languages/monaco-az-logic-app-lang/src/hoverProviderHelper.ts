@@ -26,20 +26,6 @@ export function generateHover(node: SyntaxNode<AzLgcLangSyntaxNodeContext> | und
     if (
       node.syntaxNodeContext.beneathIncompleteRootFunctionCall
     ){
-      if (!(node instanceof AtSymbolNode)){
-        const closestRootFunctionCall = node.findOneClosestAncestor<AzLgcLangSyntaxNodeContext>(one => one instanceof RootFunctionCallNode);
-        if (closestRootFunctionCall){
-          return {
-            contents: [
-              {
-                value: `'${_azLgcExpDocument.codeDocument.getNodeContent(closestRootFunctionCall.astNode)}' would be regarded as a plain string.`,
-                isTrusted: true,
-              },
-            ],
-          };
-        }
-      }
-
       // show no hover message for any nodes beneath an incomplete root function call
       return {
         contents: [],

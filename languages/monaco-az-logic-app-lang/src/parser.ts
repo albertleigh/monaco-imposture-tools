@@ -1240,7 +1240,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
 
     if(!!ctx.beneathIncompleteRootFunctionCall){
       ctx.vr.addOneProblem({
-        severity: DiagnosticSeverity.Hint,
+        severity: DiagnosticSeverity.Information,
         code: ErrorCode.INCOMPLETE_ROOT_FUNCTION_CALL_STRING,
         message: `'${ctx.vr.codeDocument.getNodeContent(rootFunctionCall.astNode)}' would be regarded as a plain string.`,
         startPos: ctx.vr.codeDocument.positionAt(rootFunctionCall.offset),

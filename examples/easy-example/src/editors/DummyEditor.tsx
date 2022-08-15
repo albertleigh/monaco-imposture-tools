@@ -434,12 +434,17 @@ const useStyles = makeStyles((theme) => ({
 // @item().one['two'].
 
 const sampleCodes =
-`@json('{
-    "str": "another",
-    "num": 2,
-    "bool": true,
-    "null": null,
-}')`;
+`{
+    "@()": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Pipeline run result",
+    "@summary2": "@min",
+    "sections": [
+    ],
+    "potentialAction": [
+    ]
+}`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

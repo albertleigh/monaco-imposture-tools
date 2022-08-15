@@ -27,10 +27,10 @@ export enum ErrorCode {
   MISMATCHED_CASES_FOUND = 0X201,
 
   // infos 0x400
+  INCOMPLETE_ROOT_FUNCTION_CALL_STRING = 0x401,
 
   // hints
   IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL = 0x801,
-  INCOMPLETE_ROOT_FUNCTION_CALL_STRING,
 }
 
 export enum DiagnosticSeverity {
@@ -54,28 +54,29 @@ export interface Problem {
 export class ValidateResult {
   private _problems: Problem[] = [];
 
-  get problems(){
+  get problems() {
     return this._problems.slice();
   }
 
   constructor(
     public readonly codeDocument: CodeDocument,
     public readonly globalSymbolTable = SymbolTable.globalSymbolTable
-  ) {}
+  ) {
+  }
 
-  get errors(){
-    return this._problems.filter(one=>one.code < 0x200);
+  get errors() {
+    return this._problems.filter(one => one.code < 0x200);
   }
 
   public hasProblems(): boolean {
     return !!this.errors.length
   }
 
-  public addOneProblem(problem:Problem, ctx:ValidationIntermediateContext){
+  public addOneProblem(problem: Problem, ctx: ValidationIntermediateContext) {
 
     //beneathIncompleteRootFunctionCall
-    if (!!ctx.beneathIncompleteRootFunctionCall){
-      if (problem.severity !== DiagnosticSeverity.Error){
+    if (!!ctx.beneathIncompleteRootFunctionCall) {
+      if (problem.severity !== DiagnosticSeverity.Error) {
         this._problems.push(problem);
       }
       return;
