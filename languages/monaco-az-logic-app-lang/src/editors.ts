@@ -15,10 +15,12 @@ import {generateHover} from './hoverProviderHelper';
 import {generateCompletion} from './completionProviderHelper';
 import {conf, language} from './languageConfiguration';
 import {generateCodeActions} from './codeActionProviderHelper';
-import {themes} from './themes';
+import {covert2BuiltInBaseTheme, themes} from './themes';
 import {AzLgcExpDocument, parseAzLgcExpDocument} from "./parser";
 import {AzLogicAppLangConstants, ErrorHandler, TraceHandler} from "./base";
 import {SymbolTable, ValueDescriptionDictionary, PackageDescription} from './values';
+
+const CURRENT_THEME_NAME = "az-lgc-exp-cur-them";
 
 class TokenizerState implements languages.IState {
   constructor(private _ruleStack: StackElement) {}
@@ -88,15 +90,24 @@ export class AzLogicAppExpressionLangMonacoEditor {
     return AzLogicAppLangConstants._grammar;
   }
 
-  static get theme():IRawTheme{
+  public static get theme():IRawTheme{
     return AzLogicAppLangConstants._theme;
 
   }
-  static set theme(nextTheme){
+  public static set theme(nextTheme){
     AzLogicAppLangConstants._usingBuiltInTheme = false;
     AzLogicAppLangConstants._theme = nextTheme;
     if (AzLogicAppLangConstants._registry){
+      // update the theme rules for the registry
       AzLogicAppLangConstants._registry.setTheme(nextTheme);
+      if (!this.emitBinaryTokens){
+        // update the current registered theme in the monaco editor
+        AzLogicAppLangConstants._monaco!.editor.defineTheme(CURRENT_THEME_NAME,{
+          base: covert2BuiltInBaseTheme(nextTheme.name),
+          inherit: true,
+          ...AzLogicAppLangConstants._registry.getThemeRulesAndColors()
+        });
+      }
     }
   }
 
@@ -361,6 +372,11 @@ export class AzLogicAppExpressionLangMonacoEditor {
           }
         })
       }else{
+        realMonaco.editor.defineTheme(CURRENT_THEME_NAME,{
+          base: covert2BuiltInBaseTheme(AzLogicAppLangConstants._theme.name),
+          inherit: true,
+          ...AzLogicAppLangConstants._registry.getThemeRulesAndColors()
+        });
         this._tokenProvider = realMonaco.languages.setTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, {
           getInitialState(): languages.IState {
             return new TokenizerState(INITIAL);

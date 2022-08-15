@@ -2,6 +2,21 @@ import {FontStyle} from './common';
 import {IRawTheme} from './types';
 
 /**
+ * Part of monaco ThemeData of the current theme
+ */
+export interface ITokenThemeRulesAndColors {
+  rules: Array<{
+    token: string;
+    foreground?: string;
+    background?: string;
+    fontStyle?: string;
+  }>
+  colors: {
+    [colorId: string]: string;
+  }
+}
+
+/**
  * An initially parsed rule of a scopeList from raw theme
  *  a scope list would be like:
  *    "scope1 scope2 scope3 scope4"
@@ -24,7 +39,8 @@ export class ParsedThemeRule {
     public readonly foreground: string | undefined,
     public readonly background: string | undefined,
     public readonly customized?: Record<string, any>
-  ) {}
+  ) {
+  }
 }
 
 function isValidHexColor(hex: string): boolean {
@@ -163,7 +179,7 @@ function resolveParsedThemeRules(parsedThemeRules: ParsedThemeRule[]): Theme {
   let defaultFontStyle = FontStyle.None;
   let defaultForeground = '#000000';
   let defaultBackground = '#ffffff';
-  let defaultCustomized:Record<string, any> | undefined = undefined;
+  let defaultCustomized: Record<string, any> | undefined = undefined;
   while (parsedThemeRules.length >= 1 && parsedThemeRules[0].scope === '') {
     const incomingDefaults = parsedThemeRules.shift()!;
     if (incomingDefaults.fontStyle !== FontStyle.NotSet) {
@@ -175,7 +191,7 @@ function resolveParsedThemeRules(parsedThemeRules: ParsedThemeRule[]): Theme {
     if (!!incomingDefaults.background) {
       defaultBackground = incomingDefaults.background;
     }
-    if (!!incomingDefaults.customized){
+    if (!!incomingDefaults.customized) {
       defaultCustomized = incomingDefaults.customized;
     }
   }
@@ -216,13 +232,13 @@ export class ColorMap {
 
   private _lastColorId = 0;
   private readonly _id2color: string[] = [];
-  private readonly _color2id: {[color: string]: number} = Object.create(null);
+  private readonly _color2id: { [color: string]: number } = Object.create(null);
 
   constructor() {
     // noop
   }
 
-  public getId(color: string | undefined |null): number {
+  public getId(color: string | undefined | null): number {
     if (typeof color !== 'string') {
       return 0;
     }
@@ -270,6 +286,22 @@ export class Theme {
 
   public getDefaults(): ThemeTrieElementRule {
     return this._defaults;
+  }
+
+  public getThemeRulesAndColors(): ITokenThemeRulesAndColors {
+    const themeRulesAndColors: ITokenThemeRulesAndColors = {
+      rules: [],
+      colors: {}
+    }
+    const colorMap = this.getColorMap();
+    if (this._defaults.ofThemeValues) {
+      themeRulesAndColors.colors['editor.foreground'] = this._defaults.getForegroundValue(colorMap, false) ?? themeRulesAndColors.colors['editor.foreground'];
+      themeRulesAndColors.colors['editor.background'] = this._defaults.getBackgroundValue(colorMap, false) ?? themeRulesAndColors.colors['editor.background'];
+    }
+
+    this._root.collectThemeRules("", {...themeRulesAndColors, colorMap});
+
+    return themeRulesAndColors;
   }
 
   /**
@@ -336,7 +368,8 @@ export class ThemeTrieElementRule {
     public foreground: number,
     public background: number,
     public customized?: Record<string, any>
-  ) {}
+  ) {
+  }
 
   public static cloneArr(arr: ThemeTrieElementRule[]): ThemeTrieElementRule[] {
     const r: ThemeTrieElementRule[] = [];
@@ -344,6 +377,49 @@ export class ThemeTrieElementRule {
       r[i] = arr[i].clone();
     }
     return r;
+  }
+
+  get ofThemeValues(): boolean {
+    return (this.fontStyle !== -1 && this.fontStyle !== 0) ||
+      this.foreground > 0 ||
+      this.background > 0;
+  }
+
+  getFontStyleValue(): string | undefined {
+    switch (this.fontStyle) {
+      case 4:
+        return 'underline';
+      case 2:
+        return 'bold';
+      case 1:
+        return 'italic';
+      case 0:
+      case -1:
+      default:
+        return undefined;
+    }
+  }
+
+  getForegroundValue(colorMap: string[], removeSharp = true): string | undefined {
+    let theValue = colorMap[this.foreground ?? 0];
+    if (theValue) {
+      if (removeSharp && theValue.startsWith("#")) {
+        theValue = theValue.substring(1);
+      }
+      return theValue;
+    }
+    return undefined;
+  }
+
+  getBackgroundValue(colorMap: string[], removeSharp = true): string | undefined {
+    let theValue = colorMap[this.background ?? 0];
+    if (theValue) {
+      if (removeSharp && theValue.startsWith("#")) {
+        theValue = theValue.substring(1);
+      }
+      return theValue;
+    }
+    return undefined;
   }
 
   public clone(): ThemeTrieElementRule {
@@ -374,7 +450,7 @@ export class ThemeTrieElementRule {
     if (background !== 0) {
       this.background = background;
     }
-    if (!!customized){
+    if (!!customized) {
       this.customized = this.customized ? {...this.customized, ...customized} : {...customized};
     }
   }
@@ -396,8 +472,9 @@ export class ThemeTrieElement {
     /**
      * Children rules beneath current element
      */
-    private readonly _children: Record<string, ThemeTrieElement> = {}
-  ) {}
+    private readonly _children: Map<string, ThemeTrieElement> = new Map()
+  ) {
+  }
 
   private static _sortBySpecificity(arr: ThemeTrieElementRule[]): ThemeTrieElementRule[] {
     if (arr.length === 1) {
@@ -429,7 +506,7 @@ export class ThemeTrieElement {
     return b.scopeDepth - a.scopeDepth;
   }
 
-  private getScopeHeadTailPair(scope:string):[string, string]{
+  private getScopeHeadTailPair(scope: string): [string, string] {
     const dotIndex = scope.indexOf('.');
     let head: string;
     let tail: string;
@@ -450,8 +527,8 @@ export class ThemeTrieElement {
 
     const [head, tail] = this.getScopeHeadTailPair(scope);
 
-    if (this._children.hasOwnProperty(head)) {
-      return this._children[head].match(tail);
+    if (this._children.has(head)) {
+      return this._children.get(head)!.match(tail);
     }
 
     return ThemeTrieElement._sortBySpecificity(([] as any[]).concat(this._mainRule).concat(this._rulesWithParentScopes));
@@ -460,11 +537,11 @@ export class ThemeTrieElement {
   public insert(
     scopeDepth: number,
     scope: string,
-    parentScopes: string[]|undefined,
+    parentScopes: string[] | undefined,
     fontStyle: number,
     foreground: number,
     background: number,
-    customized?:Record<string, any>
+    customized?: Record<string, any>
   ): void {
     if (scope === '') {
       this._doInsertHere(scopeDepth, parentScopes, fontStyle, foreground, background, customized);
@@ -474,11 +551,11 @@ export class ThemeTrieElement {
     const [head, tail] = this.getScopeHeadTailPair(scope);
 
     let child: ThemeTrieElement;
-    if (this._children.hasOwnProperty(head)) {
-      child = this._children[head];
+    if (this._children.has(head)) {
+      child = this._children.get(head)!;
     } else {
       child = new ThemeTrieElement(this._mainRule.clone(), ThemeTrieElementRule.cloneArr(this._rulesWithParentScopes));
-      this._children[head] = child;
+      this._children.set(head, child);
     }
 
     child.insert(scopeDepth + 1, tail, parentScopes, fontStyle, foreground, background, customized);
@@ -490,7 +567,7 @@ export class ThemeTrieElement {
     fontStyle: number,
     foreground: number,
     background: number,
-    customized:Record<string, any> | undefined
+    customized: Record<string, any> | undefined
   ): void {
     if (!parentScopes) {
       // merge into the main rule
@@ -521,12 +598,33 @@ export class ThemeTrieElement {
     if (background === 0) {
       background = this._mainRule.background;
     }
-    if (!customized){
+    if (!customized) {
       customized = this._mainRule.customized;
     }
 
     this._rulesWithParentScopes.push(
       new ThemeTrieElementRule(scopeDepth, parentScopes, fontStyle, foreground, background, customized)
     );
+  }
+
+  public collectThemeRules(currentPath: string, context: ITokenThemeRulesAndColors & { colorMap: string[] }) {
+    const hasCurrentPath = !!currentPath;
+
+    if (this._mainRule.ofThemeValues) {
+      if (hasCurrentPath) {
+        context.rules.push({
+          token: currentPath,
+          fontStyle: this._mainRule.getFontStyleValue(),
+          foreground: this._mainRule.getForegroundValue(context.colorMap),
+          background: this._mainRule.getBackgroundValue(context.colorMap),
+        })
+      } else {
+        context.colors['editor.foreground'] = this._mainRule.getForegroundValue(context.colorMap, false) ?? context.colors['editor.foreground'];
+        context.colors['editor.background'] = this._mainRule.getBackgroundValue(context.colorMap, false) ?? context.colors['editor.background'];
+      }
+    }
+    for (const [childPath, child] of this._children) {
+      child.collectThemeRules(hasCurrentPath ? `${currentPath}.${childPath}` : childPath, context);
+    }
   }
 }

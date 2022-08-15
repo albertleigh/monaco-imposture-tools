@@ -2,7 +2,7 @@ import {IScopeNameSet, IThemeProvider, IGrammarRepository} from './common';
 import {createGrammar, Grammar, collectIncludedScopes} from './grammar';
 import {IRawGrammar} from './types';
 import {IGrammar, IEmbeddedLanguagesMap, ITokenTypeMap} from './main';
-import {Theme, ThemeTrieElementRule} from './theme';
+import {ITokenThemeRulesAndColors, Theme, ThemeTrieElementRule} from './theme';
 
 // todo combine the one in the main
 export class SyncRegistry implements IGrammarRepository, IThemeProvider {
@@ -65,6 +65,13 @@ export class SyncRegistry implements IGrammarRepository, IThemeProvider {
    */
   public getDefaults(): ThemeTrieElementRule {
     return this._theme.getDefaults();
+  }
+
+  /**
+   * Get the part of ThemeData for monaco editor
+   */
+  public getThemeRulesAndColors(): ITokenThemeRulesAndColors {
+    return this._theme.getThemeRulesAndColors();
   }
 
   /**

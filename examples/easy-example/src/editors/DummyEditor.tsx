@@ -26,7 +26,7 @@ AzLogicAppExpressionLang.monaco = monaco;
 AzLogicAppExpressionLang.inLexicalDebugMode = false;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;
 AzLogicAppExpressionLang.inSemanticDebugMode = true;
-AzLogicAppExpressionLang.emitBinaryTokens = true;
+AzLogicAppExpressionLang.emitBinaryTokens = false;
 // AzLogicAppExpressionLang.caseMode = 'CASE_INSENSITIVE';
 
 let ST_GENERATOR_SEED = 1;
@@ -434,7 +434,12 @@ const useStyles = makeStyles((theme) => ({
 // @item().one['two'].
 
 const sampleCodes =
-`@pipeline().DataFactory`;
+`@json('{
+    "str": "another",
+    "num": 2,
+    "bool": true,
+    "null": null,
+}')`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

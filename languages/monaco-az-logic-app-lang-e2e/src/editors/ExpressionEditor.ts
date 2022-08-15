@@ -14,7 +14,7 @@ import {
 } from 'monaco-azure-logic-app-lang';
 
 AzLogicAppExpressionLang.monaco = monaco;
-AzLogicAppExpressionLang.emitBinaryTokens = true;
+AzLogicAppExpressionLang.emitBinaryTokens = false;
 AzLogicAppExpressionLang.inSyntaxDebugMode = true;
 AzLogicAppExpressionLang.inSemanticDebugMode = true;
 
@@ -397,8 +397,8 @@ export const mount = (root:HTMLDivElement)=> {
   const theEditor = new AzLogicAppExpressionLangMonacoEditor(
     root,
     {
-      // theme: 'vs',
-      theme: 'hc-black',
+      theme: 'vs',
+      // theme: 'hc-black',
       // theme: 'vs-code-theme-converted',
       // readOnly: true,
       contextmenu: false,
