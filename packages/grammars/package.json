@@ -1,6 +1,6 @@
 {
   "name": "@monaco-imposture-tools/grammars",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Textmate grammars for monaco imposture tools.",
   "main": "index.js",
   "scripts": {
