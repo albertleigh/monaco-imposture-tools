@@ -27,6 +27,6 @@ export {
 export {Problem, ValidateResult} from './validateHelper';
 export {AzLogicAppExpressionLangMonacoEditor} from './editors';
 export {AzLogicAppExpressionLanguage} from './languages';
-export {AzLgcExpDocument} from './parser';
+export * from './parser';
 
 export default AzLogicAppExpressionLangMonacoEditor;
