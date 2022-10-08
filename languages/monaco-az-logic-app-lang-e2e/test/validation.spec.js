@@ -124,7 +124,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
     "num": 2,
     "bool": true,
     "null": null
-}')`
+}')`,
+"@{(}",
     ].forEach((value, index)=>{
         it(`Strict manually input valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -279,7 +280,6 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@addDays('2015-03-15T13:27:36Z', -20)",
         "@contains( variables('splitStates'), variables('stateItem'))",
         "@{addDays(utcNow(), 1)}",
-        "@{(}",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -952,13 +952,19 @@ function generateValidationTests(openOnePage, closeOnePage) {
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
-        expect(problems.length).eq(1);
+        expect(problems.length).eq(2);
         // The function call must take the completion string
         expect(problems[0].code).eq(13);
         expect(problems[0].startPos.line).eq(0);
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].startPos.character).greaterThanOrEqual(0);
         expect(problems[0].endPos.character).lessThanOrEqual(0);
+
+        expect(problems[1].code).eq(20);
+        expect(problems[1].startPos.line).eq(0);
+        expect(problems[1].endPos.line).eq(0);
+        expect(problems[1].startPos.character).greaterThanOrEqual(1);
+        expect(problems[1].endPos.character).lessThanOrEqual(8);
       })
 
       it('expression shown after a template', async ()=>{
