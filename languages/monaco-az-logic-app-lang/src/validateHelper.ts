@@ -22,6 +22,7 @@ export enum ErrorCode {
   INCORRECT_FIRST_ITEM_TYPE_OF_BRACKET_NOTATION_IDENTIFIER,
   IDENTIFIER_ACCESSOR_MUST_BE_OPTIONAL,
   Q_STRING_DOUBLE_IS_NOT_ALLOWED,
+  INCOMPLETE_FUNCTION_CALL,
 
   // warnings 0x200
   MISMATCHED_CASES_FOUND = 0X201,
@@ -72,7 +73,7 @@ export class ValidateResult {
     return !!this.errors.length
   }
 
-  public addOneProblem(problem: Problem, ctx: ValidationIntermediateContext) {
+  public addOneProblem(problem: Problem, ctx: {beneathIncompleteRootFunctionCall?: boolean}) {
 
     //beneathIncompleteRootFunctionCall
     if (!!ctx.beneathIncompleteRootFunctionCall) {
