@@ -32,6 +32,10 @@ export type AzLgcLangSyntaxNodeContext = ValidationIntermediateContext;
 
 // ------------------------ gen ir nodes  ----------------------------
 
+export type TraverseCallbackResponse<TraverseContext> = {stop?: boolean, nextTraverseContext?: TraverseContext} | void;
+export type TraverseCallback<TraverseContext> = (visitedSyntaxNodes:SyntaxNode[], context:TraverseContext)
+  =>TraverseCallbackResponse<TraverseContext>
+
 // base ir nodes
 export abstract class SyntaxNode<SyntaxNodeContext extends Record<any, any> = any> {
 
@@ -149,7 +153,7 @@ export abstract class SyntaxNode<SyntaxNodeContext extends Record<any, any> = an
     return this.astNode.length ?? 0;
   }
 
-  abstract traverse(cb:(syntaxNode:SyntaxNode, depth:number)=>void, depth:number):void;
+  abstract traverse<TraverseContext>(cb:TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], traverseContext: TraverseContext):void;
 
   findOneClosestAncestor<C extends SyntaxNodeContext = SyntaxNodeContext>(matcher:(one:SyntaxNode<C>)=>boolean): SyntaxNode<C>|undefined{
     let result:SyntaxNode|undefined = undefined;
@@ -187,10 +191,14 @@ export class ParenthesisNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLa
     return this.content;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.children.forEach(one=> one.traverse(cb, nextDepth));
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.children.forEach(one=> one.traverse(cb, nextVisitedSyntaxNodes, nextContext));
+    }
   }
 
   private _cachedLastNodeWithReturnValue: SyntaxNode | undefined;
@@ -358,10 +366,14 @@ export class FunctionCallNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcL
     return this._cachedChildren;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.children.forEach(one=> one.traverse(cb, nextDepth));
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.children.forEach(one=> one.traverse(cb, nextVisitedSyntaxNodes, nextContext));
+    }
   }
 
   _rValue: ReferenceValueDescription | PackageDescription | undefined = undefined;
@@ -446,8 +458,10 @@ export abstract class LiteralValueNode<SynCtx extends AzLgcLangSyntaxNodeContext
     return this._valueDesc;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    cb(this, depth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    cb(nextVisitedSyntaxNodes, context);
   }
 
 }
@@ -654,10 +668,14 @@ export class LiteralArrayNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcL
     return this.content;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.children.forEach(one=> one.traverse(cb, nextDepth));
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.children.forEach(one=> one.traverse(cb, nextVisitedSyntaxNodes, nextContext));
+    }
   }
 
   private _cachedCommaIndices:number[];
@@ -751,7 +769,7 @@ export class LiteralArrayNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcL
       return -1;
     }
   }
-  
+
 }
 
 // identifier
@@ -771,8 +789,10 @@ export class IdentifierNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLan
     super(astNode, synCtx);
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    cb(this, depth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    cb(nextVisitedSyntaxNodes, context);
   }
 
   get lValue(){
@@ -820,10 +840,14 @@ export class FunctionCallTarget<SynCtx extends AzLgcLangSyntaxNodeContext = AzLg
     return this._cachedChildren;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.children.forEach(one => one.traverse(cb, nextDepth));
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.children.forEach(one=> one.traverse(cb, nextVisitedSyntaxNodes, nextContext));
+    }
   }
 
   get lValue(){
@@ -853,10 +877,14 @@ export class IdentifierNodeWithPunctuation<SynCtx extends AzLgcLangSyntaxNodeCon
     return this._cachedChildren;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.prefixAccessor.traverse(cb, nextDepth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.prefixAccessor.traverse(cb, nextVisitedSyntaxNodes, nextContext);
+    }
   }
 
   get isOptional(){
@@ -885,10 +913,14 @@ export class IdentifierNodeInBracketNotation<SynCtx extends AzLgcLangSyntaxNodeC
     return this._cachedChildren;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.literalArrayNode.traverse(cb, nextDepth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.literalArrayNode.traverse(cb, nextVisitedSyntaxNodes, nextContext);
+    }
   }
 
 }
@@ -906,8 +938,10 @@ export class Punctuator<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangSyn
     super(astNode, synCtx);
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    cb(this, depth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    cb(nextVisitedSyntaxNodes, context);
   }
 
   get lValue(){
@@ -974,8 +1008,10 @@ export class AtSymbolNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgcLangS
     super(astNode, synCtx);
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    cb(this, depth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    cb(nextVisitedSyntaxNodes, context);
   }
 
 }
@@ -1005,8 +1041,10 @@ export class EscapedAtSymbolNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzL
     super(astNode, synCtx);
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    cb(this, depth);
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    cb(nextVisitedSyntaxNodes, context);
   }
 
   get returnValue(){
@@ -1051,10 +1089,14 @@ export class RootFunctionCallNode<SynCtx extends AzLgcLangSyntaxNodeContext = Az
     return this._cachedChildren;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.children.forEach(one=>one.traverse(cb, nextDepth));
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.children.forEach(one=> one.traverse(cb, nextVisitedSyntaxNodes, nextContext));
+    }
   }
 
   public get rValue(): ValueDescription | undefined{
@@ -1089,10 +1131,14 @@ export class ExpressionTemplateNode<SynCtx extends AzLgcLangSyntaxNodeContext = 
     return this.content;
   }
 
-  traverse(cb: (syntaxNode: SyntaxNode, depth:number) => void, depth) {
-    const nextDepth = depth+1;
-    cb(this, depth);
-    this.children.forEach(one=>one.traverse(cb, nextDepth));
+  traverse<TraverseContext>(cb: TraverseCallback<TraverseContext>, visitedSyntaxNodes:SyntaxNode[], context:TraverseContext) {
+    const nextVisitedSyntaxNodes = visitedSyntaxNodes.slice();
+    nextVisitedSyntaxNodes.push(this);
+    const cbRes = cb(nextVisitedSyntaxNodes, context);
+    const nextContext = cbRes?.nextTraverseContext ?? context;
+    if (!cbRes?.stop){
+      this.children.forEach(one=> one.traverse(cb, nextVisitedSyntaxNodes, nextContext));
+    }
   }
 
   private _cachedFirstNodeWithReturnValue: SyntaxNode | undefined;
@@ -1133,14 +1179,16 @@ export class AzLgcExpDocument{
     return this.validateResult.globalSymbolTable;
   }
 
-  traverseSyntaxNodes(cb: (syntaxNode: SyntaxNode, depth: number) => void) {
-    this.entries.forEach(one=>one.traverse(cb, 0));
+  traverseSyntaxNodes<TraverseContext>(cb: TraverseCallback<TraverseContext>, context:TraverseContext) {
+    this.entries.forEach(one=> one.traverse(cb, [], context));
   }
 
   consoleLogSyntaxNodes(){
-    this.traverseSyntaxNodes((syntaxNode, depth) => {
+    this.traverseSyntaxNodes<void>((syntaxNodes) => {
+      const depth = syntaxNodes.length;
+      const syntaxNode = syntaxNodes[syntaxNodes.length -1];
       console.log(`[AzLgcExpDocument::consoleLogSyntaxNodes] ${depth}|${new Array(depth+1).join('\t')} ${(syntaxNode as any).__proto__.constructor.name}`)
-    })
+    }, undefined)
   }
 
   getSyntaxNodeByOffset(offset:number):SyntaxNode | undefined{
@@ -1337,11 +1385,7 @@ function _parse_root_function_call(node: AzLogicAppNode, ctx: ValidationIntermed
         const lastChild = followingNodes.length? followingNodes[followingNodes.length - 1]: innerFunctionCallNode;
 
         if (
-          !ctx.vr.codeDocument.text.substr(
-            startPos,
-            firstChild.offset - startPos
-          )
-            .match(/^\s*$/)
+          !ctx.vr.codeDocument.text.substring(startPos, firstChild.offset).match(/^\s*$/)
         ){
           ctx.vr.addOneProblem({
             severity: DiagnosticSeverity.Error,
@@ -2214,7 +2258,7 @@ function _parse_at_template_sub_element(node: AzLogicAppNode, ctx: ValidationInt
     if(
       templateChildren.length === 0 &&
       expressionTemplate.length >3 &&
-      !ctx.vr.codeDocument.text.substr(expressionTemplate.offset + 2, expressionTemplate.length -3)
+      !ctx.vr.codeDocument.text.substring(expressionTemplate.offset + 2, expressionTemplate.offset + expressionTemplate.length -1)
         .match(/^\s*$/)
     ){
       ctx.vr.addOneProblem({
@@ -2762,6 +2806,56 @@ function _do_parse(node: AzLogicAppNode, ctx: ValidationIntermediateContext):Par
   }
 }
 
+interface PostValidationContext{
+  vr: ValidateResult,
+  parentExpressionTemplateNode?: ExpressionTemplateNode
+  parentRootFunctionCallNode?: RootFunctionCallNode
+}
+
+function _do_postValidation(visitedSyntaxNodes:SyntaxNode[], postValidationContext:PostValidationContext): TraverseCallbackResponse<PostValidationContext>{
+  if (visitedSyntaxNodes.length){
+    const currentNode = visitedSyntaxNodes[visitedSyntaxNodes.length -1];
+    if (currentNode instanceof ExpressionTemplateNode){
+      return {
+        nextTraverseContext: {
+          ...postValidationContext,
+          parentExpressionTemplateNode: currentNode
+        }
+      }
+    }else if (currentNode instanceof RootFunctionCallNode){
+      return {
+        nextTraverseContext: {
+          ...postValidationContext,
+          parentRootFunctionCallNode: currentNode
+        }
+      }
+    }else if (currentNode instanceof ParenthesisNode){
+      // incomplete parenthesis
+      if (currentNode.length < 2){
+        let astNode = currentNode.astNode;
+        let isParentFunctionCall = false;
+        let startingOffset = currentNode.offset;
+        const endingOffset = currentNode.offset + 1;
+        if (currentNode.parent instanceof FunctionCallNode){
+          astNode = currentNode.parent.astNode;
+          isParentFunctionCall = true;
+          startingOffset = currentNode.parent.offset;
+        }
+        if (isParentFunctionCall){
+          postValidationContext.vr.addOneProblem({
+            severity:DiagnosticSeverity.Error,
+            code: ErrorCode.INCOMPLETE_FUNCTION_CALL,
+            message: `Incomplete function invocation`,
+            startPos: postValidationContext.vr.codeDocument.positionAt(startingOffset),
+            endPos: postValidationContext.vr.codeDocument.positionAt(endingOffset),
+            node: astNode as any
+          }, {})
+        }
+      }
+    }
+  }
+}
+
 export function parseAzLgcExpDocument(
   codeDocument:CodeDocument,
   globalSymbolTable:SymbolTable
@@ -2772,6 +2866,7 @@ export function parseAzLgcExpDocument(
     // no need to check any UNRECOGNIZED_TOKENS exist beneath the root entry level
     const res = _parse_children(codeDocument.root as any, {vr, directWrapperType: WrapperType.ROOT});
     result = new AzLgcExpDocument(codeDocument, res.nodes, vr);
+    result.traverseSyntaxNodes(_do_postValidation, {vr})
   }
   return result;
 }

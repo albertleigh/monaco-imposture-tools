@@ -124,7 +124,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
     "num": 2,
     "bool": true,
     "null": null
-}')`
+}')`,
+"@{(}",
     ].forEach((value, index)=>{
         it(`Strict manually input valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -278,6 +279,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@addHours('2015-03-15T13:27:36Z', 12)",
         "@addDays('2015-03-15T13:27:36Z', -20)",
         "@contains( variables('splitStates'), variables('stateItem'))",
+        "@{addDays(utcNow(), 1)}",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
@@ -950,13 +952,19 @@ function generateValidationTests(openOnePage, closeOnePage) {
         content = await seizeCurExpTxt(page);
         problems = await seizeCurExpProb(page);
         expect(content).eq(nextText);
-        expect(problems.length).eq(1);
+        expect(problems.length).eq(2);
         // The function call must take the completion string
         expect(problems[0].code).eq(13);
         expect(problems[0].startPos.line).eq(0);
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].startPos.character).greaterThanOrEqual(0);
         expect(problems[0].endPos.character).lessThanOrEqual(0);
+
+        expect(problems[1].code).eq(20);
+        expect(problems[1].startPos.line).eq(0);
+        expect(problems[1].endPos.line).eq(0);
+        expect(problems[1].startPos.character).greaterThanOrEqual(1);
+        expect(problems[1].endPos.character).lessThanOrEqual(8);
       })
 
       it('expression shown after a template', async ()=>{
@@ -1300,6 +1308,63 @@ pipeline().globalParameters.oneGlobalFloat
         expect(problems[0].startPos.character).eq(8);
         expect(problems[0].endPos.line).eq(0);
         expect(problems[0].endPos.character).eq(20);
+      })
+    })
+
+
+    describe('INCOMPLETE_FUNCTION_CALL 0x14', ()=>{
+      it ('incomplete function invocation beneath a template', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =`@{addDays(utcNow(), 1}`;
+
+        await manuallySetModelText(page, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).ok;
+        expect(problems.length).eq(1);
+        expect(problems[0].code).eq(20);
+        expect(problems[0].startPos.line).eq(0);
+        expect(problems[0].startPos.character).greaterThanOrEqual(2);
+        expect(problems[0].endPos.line).eq(0);
+        expect(problems[0].endPos.character).lessThanOrEqual(10);
+      })
+
+      it ('incomplete function invocation beneath a root function call v1', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =`@addDays(utcNow(), 1`;
+
+        await manuallySetModelText(page, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).ok;
+        expect(problems.length).eq(2);
+        expect(problems[1].code).eq(20);
+        expect(problems[1].startPos.line).eq(0);
+        expect(problems[1].startPos.character).greaterThanOrEqual(1);
+        expect(problems[1].endPos.line).eq(0);
+        expect(problems[1].endPos.character).lessThanOrEqual(9);
+      })
+
+      it ('incomplete function invocation beneath a root function call v2', async ()=>{
+        let nextText, content, problems, allCompletionList;
+
+        nextText =`@string(addDays(utcNow(), 1)`;
+
+        await manuallySetModelText(page, nextText);
+
+        content = await seizeCurExpTxt(page);
+        problems = await seizeCurExpProb(page);
+        expect(content).ok;
+        expect(problems.length).eq(2);
+        expect(problems[1].code).eq(20);
+        expect(problems[1].startPos.line).eq(0);
+        expect(problems[1].startPos.character).greaterThanOrEqual(1);
+        expect(problems[1].endPos.line).eq(0);
+        expect(problems[1].endPos.character).lessThanOrEqual(8);
       })
     })
 
