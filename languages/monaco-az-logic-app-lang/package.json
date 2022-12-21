@@ -11,7 +11,7 @@
     "copy-files": "node ./scripts/copy-files.js",
     "compile": "npm run clean && npm run copy-files && npm run compile:tsc-prod",
     "compile:debug": "npm run clean && npm run copy-files && npm run compile:tsc",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "postpublish": "node ./scripts/post-publish.js",
     "lint": "eslint --ext=js,jsx,ts,tsx src",
     "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"

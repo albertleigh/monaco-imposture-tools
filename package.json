@@ -23,7 +23,7 @@
     "cmake-build": "npx ts-node ./scripts/cmake-build.ts",
     "compile": "npm run cmake-build && lerna run compile --stream",
     "compile:debug": "lerna run compile:debug",
-    "audit": "npm audit --production && lerna run audit --stream",
+    "audit": "npm audit --omit=dev && lerna run audit --stream",
     "test": "lerna run test",
     "coverage": "lerna run coverage --stream",
     "create-coverage:text": "nyc report --reporter=text",
