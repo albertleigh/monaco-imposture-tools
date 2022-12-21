@@ -63,7 +63,7 @@
     "clean": "rimraf dist",
     "start": "webpack serve --config config/webpack.dev.js",
     "build": "npm run clean && webpack --config config/webpack.prod.js",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "lint": "eslint --ext=js,jsx,ts,tsx src",
     "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"
   },

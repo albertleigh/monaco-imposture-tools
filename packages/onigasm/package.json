@@ -12,7 +12,7 @@
     "copy-to-lib": "node scripts/copy-to-lib.js",
     "compile:debug": "npm run clean && npm run tsc-build:debug && npm run copy-to-lib:debug",
     "compile": "npm run clean && npm run tsc-build && npm run copy-to-lib",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "benchmark": "node benchmark.js",
     "test": "mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "test:coverage": "nyc --reporter=text mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
