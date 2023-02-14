@@ -514,6 +514,8 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
           contextmenu: false,
           value: sampleCodes,
           automaticLayout: true,
+          wordWrap: 'wordWrapColumn',
+          wrappingIndent: 'indent'
         },
         MONACO_EDITOR_ID,
         rootSymbolTable

@@ -1,6 +1,6 @@
 {
   "name": "monaco-azure-logic-app-lang",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "",
   "main": "./lib/index.js",
   "typings": "./lib/typings/index.d.ts",
@@ -11,7 +11,7 @@
     "copy-files": "node ./scripts/copy-files.js",
     "compile": "npm run clean && npm run copy-files && npm run compile:tsc-prod",
     "compile:debug": "npm run clean && npm run copy-files && npm run compile:tsc",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "postpublish": "node ./scripts/post-publish.js",
     "lint": "eslint --ext=js,jsx,ts,tsx src",
     "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix"
@@ -25,11 +25,11 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "@monaco-imposture-tools/core": "^0.2.7",
-    "@monaco-imposture-tools/oniguruma-asm": "^0.2.7"
+    "@monaco-imposture-tools/core": "^0.2.8",
+    "@monaco-imposture-tools/oniguruma-asm": "^0.2.8"
   },
   "devDependencies": {
-    "@monaco-imposture-tools/grammars": "^0.2.7",
+    "@monaco-imposture-tools/grammars": "^0.2.8",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
     "@types/node": "^16.11.32",

@@ -1,6 +1,6 @@
 {
   "name": "@monaco-imposture-tools/core",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "",
   "main": "lib/main.js",
   "typings": "lib/main.d.ts",
@@ -10,7 +10,7 @@
     "compile:tsc-prod": "tsc --project tsconfig.prod.json",
     "compile": "npm run clean && npm run compile:tsc-prod",
     "compile:debug": "npm run clean && npm run compile:tsc",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "test": "mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "test:coverage": "nyc --reporter=text mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
@@ -29,10 +29,10 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "@monaco-imposture-tools/oniguruma-asm": "^0.2.7"
+    "@monaco-imposture-tools/oniguruma-asm": "^0.2.8"
   },
   "devDependencies": {
-    "@monaco-imposture-tools/grammars": "^0.2.7",
+    "@monaco-imposture-tools/grammars": "^0.2.8",
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
     "@types/node": "^16.11.32",

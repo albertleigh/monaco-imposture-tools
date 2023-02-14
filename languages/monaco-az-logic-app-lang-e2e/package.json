@@ -6,7 +6,7 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "monaco-azure-logic-app-lang": "^0.2.7",
+    "monaco-azure-logic-app-lang": "^0.2.8",
     "monaco-editor": "^0.33.0"
   },
   "devDependencies": {
@@ -59,7 +59,7 @@
     "start": "webpack serve --config config/webpack.dev.js",
     "compile": "npm run clean && webpack --config config/webpack.prod.js",
     "compile:debug": "npm run compile",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "lint": "eslint --ext=js,jsx,ts,tsx src",
     "lint:fix": "eslint --ext=js,jsx,ts,tsx src --fix",
     "coverage": "node scripts/e2e-test.js"
@@ -67,5 +67,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "version": "0.2.7"
+  "version": "0.2.8"
 }
