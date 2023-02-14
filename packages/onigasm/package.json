@@ -1,6 +1,6 @@
 {
   "name": "@monaco-imposture-tools/oniguruma-asm",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
