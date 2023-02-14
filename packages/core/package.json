@@ -10,7 +10,7 @@
     "compile:tsc-prod": "tsc --project tsconfig.prod.json",
     "compile": "npm run clean && npm run compile:tsc-prod",
     "compile:debug": "npm run clean && npm run compile:tsc",
-    "audit": "npm audit",
+    "audit": "npm audit --omit=dev",
     "test": "mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "test:coverage": "nyc --reporter=text mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
     "coverage": "nyc --no-clean --temp-dir=../../.nyc_output mocha -r ts-node/register -s -0 --file \"./test/setup.ts\" \"./test/**/*.spec.ts\"",
