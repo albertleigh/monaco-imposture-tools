@@ -29,7 +29,7 @@
     "@monaco-imposture-tools/oniguruma-asm": "^0.3.0"
   },
   "peerDependencies": {
-    "monaco-editor": "0.34.x"
+    "monaco-editor": ">= 0.34.1 < 0.35.0"
   },
   "devDependencies": {
     "@monaco-imposture-tools/grammars": "^0.3.0",
