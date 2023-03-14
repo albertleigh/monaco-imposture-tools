@@ -330,10 +330,19 @@ export class AzLogicAppExpressionLangMonacoEditor {
         },
       });
 
-      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME);
+      realMonaco.languages.register({id: AzLogicAppLangConstants.LANGUAGE_ID});
+
+      const languageId = realMonaco.languages.getEncodedLanguageId(AzLogicAppLangConstants.LANGUAGE_ID);
+
+      if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
+        AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[azLgcLang::grammar::register] init', {
+          languageId
+        })
+      }
+
+      const grammar = await AzLogicAppLangConstants._registry.loadGrammar(AzLogicAppLangConstants.SCOPE_NAME, languageId);
       AzLogicAppLangConstants._grammar = grammar;
 
-      realMonaco.languages.register({id: AzLogicAppLangConstants.LANGUAGE_ID});
       realMonaco.languages.setLanguageConfiguration(AzLogicAppLangConstants.LANGUAGE_ID, conf);
       realMonaco.languages.setMonarchTokensProvider(AzLogicAppLangConstants.LANGUAGE_ID, language);
 
@@ -532,7 +541,7 @@ export class AzLogicAppExpressionLangMonacoEditor {
       });
 
       AzLogicAppExpressionLangMonacoEditor.inSemanticDebugMode &&
-        console.log('[AzLogicAppExpressionLangMonacoEditor init]', this._hoverProvider, this._completionProvider);
+        console.log('[AzLogicAppExpressionLangMonacoEditor init]', languageId, realMonaco.languages.getLanguages(), this._hoverProvider, this._completionProvider);
       if (AzLogicAppExpressionLangMonacoEditor.globalTraceHandler){
         AzLogicAppExpressionLangMonacoEditor.globalTraceHandler('[AzLogicAppExpressionLangMonacoEditor::init] succeed')
       }

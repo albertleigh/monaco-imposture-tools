@@ -12,16 +12,16 @@ import {
 } from './common';
 import {clone} from './utils';
 import {
-  DEFAULT_SEPARATORS,
   ASTNode,
-  CaptureRuleASTNode,
   BeginEndRuleASTNode,
   BeginWhileRuleASTNode,
+  CaptureRuleASTNode,
+  DEFAULT_SEPARATORS,
   IncludeOnlyRuleASTNode,
-  MatchRuleASTNode,
   IRawGrammar,
   IRawRepository,
   IRawRule,
+  MatchRuleASTNode,
   Position,
   Range,
 } from './types';
@@ -338,24 +338,19 @@ class ScopeMetadataProvider {
    */
   private _scopeToLanguage(scope: string): number {
     if (!scope) {
-      return 0;
+      return this._initialLanguage;
     }
     if (!this._embeddedLanguagesRegex) {
       // no scopes registered
-      return 0;
+      return this._initialLanguage;
     }
     const m = scope.match(this._embeddedLanguagesRegex);
     if (!m) {
       // no scopes matched
-      return 0;
+      return this._initialLanguage;
     }
 
-    const language = this._embeddedLanguages[m[1]] ?? 0;
-    if (!language) {
-      return 0;
-    }
-
-    return language;
+    return this._embeddedLanguages[m[1]] ?? this._initialLanguage;
   }
 
   private static STANDARD_TOKEN_TYPE_REGEXP = /\b(comment|string|regex)\b/;
@@ -377,6 +372,12 @@ class ScopeMetadataProvider {
 }
 
 export class Grammar implements IGrammar, IRuleFactoryHelper {
+
+  /**
+   * Default monaco language id of this grammar
+   * @private
+   */
+  private readonly _languageId: number;
   /**
    * the rule id of the grammar root
    * @private
@@ -406,6 +407,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     this._includedGrammars = {};
     this._grammarRepository = grammarRepository;
     this._grammar = initGrammar(grammar, undefined);
+    this._languageId = initialLanguage;
 
     this._tokenTypeMatchers = [];
     if (tokenTypes) {
@@ -550,7 +552,7 @@ export class Grammar implements IGrammar, IRuleFactoryHelper {
     lineText = lineText + '\n';
     const onigLineText = new OnigUTF8String(lineText);
     const lineLength = onigLineText.length;
-    const lineTokens = new LineTokens(emitBinaryTokens, lineText, this._tokenTypeMatchers);
+    const lineTokens = new LineTokens(this._languageId, emitBinaryTokens, lineText, this._tokenTypeMatchers);
     const nextState = _tokenizeString(this, onigLineText, isFirstLine, 0, prevState, lineTokens);
 
     return {
@@ -2028,6 +2030,11 @@ interface TokenTypeMatcher {
 }
 
 class LineTokens {
+  /**
+   * Language id of the line
+   * @private
+   */
+  private readonly languageId: number;
   private readonly _emitBinaryTokens: boolean;
   /**
    * defined only if `IN_DEBUG_MODE`.
@@ -2046,7 +2053,8 @@ class LineTokens {
 
   private readonly _tokenTypeOverrides: TokenTypeMatcher[];
 
-  constructor(emitBinaryTokens: boolean, lineText: string, tokenTypeOverrides: TokenTypeMatcher[]) {
+  constructor(languageId: number, emitBinaryTokens: boolean, lineText: string, tokenTypeOverrides: TokenTypeMatcher[]) {
+    this.languageId = languageId;
     this._emitBinaryTokens = emitBinaryTokens;
     this._tokenTypeOverrides = tokenTypeOverrides;
     if (debug.IN_DEBUG_MODE) {
@@ -2075,7 +2083,7 @@ class LineTokens {
 
       for (const tokenType of this._tokenTypeOverrides) {
         if (tokenType.matcher(scopesList.generateScopes())) {
-          metadataRecord.metadata = StackElementMetadata.set(metadataRecord.metadata, 0, toTemporaryType(tokenType.type), FontStyle.NotSet, 0, 0);
+          metadataRecord.metadata = StackElementMetadata.set(metadataRecord.metadata, this.languageId, toTemporaryType(tokenType.type), FontStyle.NotSet, 0, 0);
         }
       }
 

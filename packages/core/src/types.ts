@@ -241,31 +241,33 @@ export interface ITokenizeLineResult {
  *     3322 2222 2222 1111 1111 1100 0000 0000
  *     1098 7654 3210 9876 5432 1098 7654 3210
  * - -------------------------------------------
- *     bbbb bbbb bfff ffff ffFF FFTT LLLL LLLL
+ *     bbbb bbbb ffff ffff fFFF FBTT LLLL LLLL
  * - -------------------------------------------
  *  - L = EncodedLanguageId (8 bits): Use `getEncodedLanguageId` to get the encoded ID of a language.
  *  - T = StandardTokenType (2 bits): Other = 0, Comment = 1, String = 2, RegEx = 3.
+ *  - B = Balanced brackets (1 bits): ??? unDocumented
  *  - F = FontStyle (4 bits): None = 0, Italic = 1, Bold = 2, Underline = 4, Strikethrough = 8.
  *  - f = foreground ColorId (9 bits)
- *  - b = background ColorId (9 bits)
+ *  - b = background ColorId (8 bits)
  *  - The color value for each colorId is defined in IStandaloneThemeData.customTokenColors:
  * e.g. colorId = 1 is stored in IStandaloneThemeData.customTokenColors[1]. Color id = 0 means no color,
  * id = 1 is for the default foreground color, id = 2 for the default background.
  */
 export const enum MetadataConsts {
-  LANGUAGEID_MASK = 0b00000000000000000000000011111111,
-  TOKEN_TYPE_MASK = 0b00000000000000000000001100000000,
-  FONT_STYLE_MASK = 0b00000000000000000011110000000000,
-  FOREGROUND_MASK = 0b00000000011111111100000000000000,
-  BACKGROUND_MASK = 0b11111111100000000000000000000000,
+  LANGUAGEID_MASK         = 0b00000000000000000000000011111111,
+  TOKEN_TYPE_MASK         = 0b00000000000000000000001100000000,
+  BALANCED_BRACKETS_MASK  = 0b00000000000000000000010000000000,
+  FONT_STYLE_MASK         = 0b00000000000000000111100000000000,
+  FOREGROUND_MASK         = 0b00000000111111111000000000000000,
+  BACKGROUND_MASK         = 0b11111111000000000000000000000000,
 
-  LANGUAGEID_OFFSET = 0,
-  TOKEN_TYPE_OFFSET = 8,
-  FONT_STYLE_OFFSET = 10,
-  FOREGROUND_OFFSET = 14,
-  BACKGROUND_OFFSET = 23,
+  LANGUAGEID_OFFSET         = 0,
+  TOKEN_TYPE_OFFSET         = 8,
+  BALANCED_BRACKETS_OFFSET  = 10,
+  FONT_STYLE_OFFSET         = 11,
+  FOREGROUND_OFFSET         = 15,
+  BACKGROUND_OFFSET         = 24,
 }
-
 export interface ITokenizeLineResult2 {
   /**
    * The tokens in binary format. Each token occupies two array indices. For token i:

@@ -120,6 +120,9 @@ export function parseTheme(source?: IRawTheme): ParsedThemeRule[] {
           case 'underline':
             fontStyle = fontStyle | FontStyle.Underline;
             break;
+          case 'strikethrough':
+            fontStyle = fontStyle | FontStyle.Strikethrough;
+            break;
         }
       }
     }

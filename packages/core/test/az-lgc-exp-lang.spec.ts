@@ -15,7 +15,7 @@ describe('azLgcExp lang test', ()=>{
         };
       },
     });
-    const azLgcGrammar = (await langReg.loadGrammar('source.azLgcAppExp'))!;
+    const azLgcGrammar = (await langReg.loadGrammar('source.azLgcAppExp', 0))!;
     const sampleStr1 = '@pipeline().DataFactory';
     const codeDocument = azLgcGrammar.parse(sampleStr1);
 
@@ -35,7 +35,7 @@ describe('azLgcExp lang test', ()=>{
         };
       },
     });
-    const azLgcGrammar = (await langReg.loadGrammar('source.azLgcAppExp'))!;
+    const azLgcGrammar = (await langReg.loadGrammar('source.azLgcAppExp', 0))!;
     const sampleStr1 = '@';
     const codeDocument = azLgcGrammar.parse(sampleStr1);
 
