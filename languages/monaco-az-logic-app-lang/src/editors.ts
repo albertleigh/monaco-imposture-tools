@@ -7,7 +7,7 @@ import {
   ValueEventEmitter
 } from '@monaco-imposture-tools/core';
 import {initOnigasm} from '@monaco-imposture-tools/oniguruma-asm';
-import {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from './editor.api';
+import type {CancellationToken, default as monaco, editor, IDisposable, languages, Position, Range} from 'monaco-editor';
 import {ValidateResult} from './validateHelper';
 import {debounce} from './debounce';
 import {TMToMonacoToken} from './tm-to-monaco-token';

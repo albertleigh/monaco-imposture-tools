@@ -1,4 +1,4 @@
-import {languages} from './editor.api';
+import type {languages} from 'monaco-editor';
 import {
   DescriptionType, ReferenceValueDescription,
 } from './values';

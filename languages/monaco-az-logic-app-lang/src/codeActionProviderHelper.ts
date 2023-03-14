@@ -1,4 +1,4 @@
-import {CancellationToken, editor, languages, Range} from './editor.api';
+import type {CancellationToken, editor, languages, Range} from 'monaco-editor';
 import {ErrorCode} from './validateHelper';
 
 function errCodeStr(code: ErrorCode) {

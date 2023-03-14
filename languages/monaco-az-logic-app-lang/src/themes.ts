@@ -1,6 +1,6 @@
 import {IRawTheme} from '@monaco-imposture-tools/core';
-import {editor} from "./editor.api";
-import BuiltinTheme = editor.BuiltinTheme;
+import type {editor} from "monaco-editor";
+type BuiltinTheme = editor.BuiltinTheme;
 
 /**
  * Convert a nullable themeName to a built-in theme name
