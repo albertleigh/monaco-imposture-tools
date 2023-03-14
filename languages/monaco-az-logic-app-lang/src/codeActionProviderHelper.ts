@@ -1,8 +1,8 @@
 import {CancellationToken, editor, languages, Range} from './editor.api';
 import {ErrorCode} from './validateHelper';
 
-function errCodeStr(code:ErrorCode){
-  return ''+code;
+function errCodeStr(code: ErrorCode) {
+  return '' + code;
 }
 
 
@@ -12,9 +12,9 @@ function collect_for_NEED_PRECEDING_SEPARATOR(
   context: languages.CodeActionContext,
   token: CancellationToken,
   actions: languages.CodeAction[],
-  maker:editor.IMarkerData
-){
-  if (maker.code === errCodeStr(ErrorCode.NEED_PRECEDING_SEPARATOR)){
+  maker: editor.IMarkerData
+) {
+  if (maker.code === errCodeStr(ErrorCode.NEED_PRECEDING_SEPARATOR)) {
     const prependedAtSymbol = model.getValueInRange({
       startLineNumber: maker.startLineNumber,
       startColumn: maker.startColumn - 1,
@@ -30,7 +30,7 @@ function collect_for_NEED_PRECEDING_SEPARATOR(
         edits: [
           {
             resource: model.uri,
-            edit: {
+            textEdit: {
               range: {
                 startLineNumber: maker.startLineNumber,
                 startColumn: theStartCol,
@@ -39,6 +39,7 @@ function collect_for_NEED_PRECEDING_SEPARATOR(
               },
               text: ', ',
             },
+            versionId: model.getVersionId()
           },
         ],
       },
@@ -53,16 +54,16 @@ function collect_for_IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL(
   context: languages.CodeActionContext,
   token: CancellationToken,
   actions: languages.CodeAction[],
-  maker:editor.IMarkerData
-){
-  if (maker.code === errCodeStr(ErrorCode.IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL)){
+  maker: editor.IMarkerData
+) {
+  if (maker.code === errCodeStr(ErrorCode.IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL)) {
     const optionalAccessor = model.getValueInRange({
       startLineNumber: maker.startLineNumber,
       startColumn: maker.startColumn,
       endLineNumber: maker.startLineNumber,
       endColumn: maker.startColumn + 1,
     });
-    if (optionalAccessor === '?'){
+    if (optionalAccessor === '?') {
       actions.push({
         title: `Remove redundant optional accessor`,
         diagnostics: [maker],
@@ -71,7 +72,7 @@ function collect_for_IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL(
           edits: [
             {
               resource: model.uri,
-              edit: {
+              textEdit: {
                 range: {
                   startLineNumber: maker.startLineNumber,
                   startColumn: maker.startColumn,
@@ -80,6 +81,7 @@ function collect_for_IDENTIFIER_ACCESSOR_NEED_NOT_BE_OPTIONAL(
                 },
                 text: '',
               },
+              versionId: model.getVersionId(),
             },
           ],
         },
@@ -95,11 +97,11 @@ function collect_for_MISMATCHED_CASES_FOUND(
   context: languages.CodeActionContext,
   token: CancellationToken,
   actions: languages.CodeAction[],
-  maker:editor.IMarkerData
-){
-  if (maker.code === errCodeStr(ErrorCode.MISMATCHED_CASES_FOUND)){
+  maker: editor.IMarkerData
+) {
+  if (maker.code === errCodeStr(ErrorCode.MISMATCHED_CASES_FOUND)) {
 
-    if (typeof maker.source === 'string' && maker.source){
+    if (typeof maker.source === 'string' && maker.source) {
       actions.push({
         title: `Rename into ${maker.source}`,
         diagnostics: [maker],
@@ -108,7 +110,7 @@ function collect_for_MISMATCHED_CASES_FOUND(
           edits: [
             {
               resource: model.uri,
-              edit: {
+              textEdit: {
                 range: {
                   startLineNumber: maker.startLineNumber,
                   startColumn: maker.startColumn,
@@ -117,6 +119,7 @@ function collect_for_MISMATCHED_CASES_FOUND(
                 },
                 text: maker.source,
               },
+              versionId: model.getVersionId(),
             },
           ],
         },
@@ -137,9 +140,9 @@ export function generateCodeActions(
   const actions: languages.CodeAction[] = [];
 
   context.markers.forEach(value => {
-    if (typeof value.code === 'string'){
+    if (typeof value.code === 'string') {
       const codeNumber = parseInt(value.code, 10);
-      if (!isNaN(codeNumber)){
+      if (!isNaN(codeNumber)) {
         switch (codeNumber) {
           case ErrorCode.NEED_PRECEDING_SEPARATOR:
             collect_for_NEED_PRECEDING_SEPARATOR(model, range, context, token, actions, value);
@@ -160,6 +163,7 @@ export function generateCodeActions(
 
   return {
     actions,
-    dispose: () => {},
+    dispose: () => {
+    },
   } as languages.CodeActionList;
 }

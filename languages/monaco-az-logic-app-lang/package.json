@@ -28,6 +28,9 @@
     "@monaco-imposture-tools/core": "^0.2.8",
     "@monaco-imposture-tools/oniguruma-asm": "^0.2.8"
   },
+  "peerDependencies": {
+    "monaco-editor": "0.34.x"
+  },
   "devDependencies": {
     "@monaco-imposture-tools/grammars": "^0.2.8",
     "@types/chai": "^4.3.1",
