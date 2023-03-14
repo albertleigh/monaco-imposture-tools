@@ -69,7 +69,7 @@ export class Registry {
     initialScopeName: string,
     initialLanguage: number,
     embeddedLanguages: IEmbeddedLanguagesMap
-  ): Promise<IGrammar|undefined> {
+  ): Promise<IGrammar | undefined> {
     return this.loadGrammarWithConfiguration(initialScopeName, initialLanguage, {embeddedLanguages});
   }
 
@@ -81,8 +81,8 @@ export class Registry {
     initialScopeName: string,
     initialLanguage: number,
     configuration: IGrammarConfiguration
-  ): Promise<IGrammar|undefined> {
-    await this._loadGrammar(initialScopeName);
+  ): Promise<IGrammar | undefined> {
+    await this._loadGrammar(initialScopeName, initialLanguage);
     return this.grammarForScopeName(
       initialScopeName,
       initialLanguage,
@@ -106,17 +106,18 @@ export class Registry {
   /**
    * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
    */
-  public loadGrammar(initialScopeName: string): Promise<IGrammar | undefined> {
-    return this._loadGrammar(initialScopeName);
+  public loadGrammar(initialScopeName: string, initialLanguageId: number): Promise<IGrammar | undefined> {
+    return this._loadGrammar(initialScopeName, initialLanguageId);
   }
 
   /**
    * do load grammar
    * @param initialScopeName    the grammar's scope name to load
+   * @param initialLanguageId   the grammar's entry languageId to load
    * @param dependentScope      the scope name of the grammar demanding
    * @private
    */
-  private async _loadGrammar(initialScopeName: string, dependentScope: string | null | undefined = null): Promise<IGrammar | undefined> {
+  private async _loadGrammar(initialScopeName: string, initialLanguageId: number, dependentScope: string | null | undefined = null): Promise<IGrammar | undefined> {
     // already installed
     if (this._syncRegistry.lookup(initialScopeName)) {
       return this.grammarForScopeName(initialScopeName);
@@ -155,7 +156,7 @@ export class Registry {
       await Promise.all(
         deps.map(async (oneDepScopeName) => {
           try {
-            return this._loadGrammar(oneDepScopeName, initialScopeName);
+            return this._loadGrammar(oneDepScopeName, initialLanguageId, initialScopeName);
           } catch (error) {
             throw new Error(
               `While trying to load tmGrammar with scopeId: '${initialScopeName}', it's dependency (scopeId: ${oneDepScopeName}) loading errored: ${error.message}`
@@ -163,7 +164,8 @@ export class Registry {
           }
         })
       );
-      resolve(this.grammarForScopeName(initialScopeName));
+
+      resolve(this.grammarForScopeName(initialScopeName, initialLanguageId));
     });
     this._installationQueue.set(initialScopeName, prom);
     prom.then(() => {

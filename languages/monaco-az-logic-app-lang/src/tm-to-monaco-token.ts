@@ -1,4 +1,4 @@
-import {editor} from './editor.api';
+import type {editor} from 'monaco-editor';
 
 export const TMToMonacoToken = (editor: editor.ICodeEditor, scopes: string[]) => {
   let scopeName = '';

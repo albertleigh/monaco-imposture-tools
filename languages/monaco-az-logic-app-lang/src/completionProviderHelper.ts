@@ -1,4 +1,4 @@
-import {CancellationToken, editor, languages, Position, Range} from './editor.api';
+import type {CancellationToken, editor, languages, Position, Range} from 'monaco-editor';
 import {AzLogicAppLangConstants, AzLogicAppNode,} from './base';
 import {
   AbstractReturnChainType,

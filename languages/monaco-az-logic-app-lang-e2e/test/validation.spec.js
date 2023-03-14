@@ -560,6 +560,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
 
         nextText = '@concat';
         await typeInMonacoEditor(page, EXPRESSION_EDITOR_ID, nextText);
+        await triggerCompletionOfCurrentCursor(page, EXPRESSION_EDITOR_ID, nextText);
         await page.keyboard.press('Enter');
 
         await delay(250);

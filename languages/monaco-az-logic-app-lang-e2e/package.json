@@ -6,8 +6,8 @@
     "npm": "~8.5.5"
   },
   "dependencies": {
-    "monaco-azure-logic-app-lang": "^0.2.8",
-    "monaco-editor": "^0.33.0"
+    "monaco-azure-logic-app-lang": "^0.3.0",
+    "monaco-editor": "0.34.1"
   },
   "devDependencies": {
     "@babel/core": "^7.17.10",
@@ -67,5 +67,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "version": "0.2.8"
+  "version": "0.3.0"
 }

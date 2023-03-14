@@ -15,7 +15,7 @@ describe('json lang test', () => {
         };
       },
     });
-    const jsonGrammar = (await langReg.loadGrammar('source.json'))!;
+    const jsonGrammar = (await langReg.loadGrammar('source.json', 0))!;
 
     const sampleStr1 = '{"value1": "one"}';
     // const sampleStr2 = '{"value1": "one", "value2":2, "value3":true}';
@@ -32,7 +32,7 @@ describe('json lang test', () => {
         };
       },
     });
-    const jsonGrammar = (await langReg.loadGrammar('source.json'))!;
+    const jsonGrammar = (await langReg.loadGrammar('source.json', 0))!;
 
     const sampleStr1 = `{
 \t"value1": "one",

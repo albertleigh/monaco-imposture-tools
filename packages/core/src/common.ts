@@ -9,6 +9,7 @@ export const enum FontStyle {
   Italic = 1,
   Bold = 2,
   Underline = 4,
+  Strikethrough = 8,
 }
 
 export interface IScopeNameSet {

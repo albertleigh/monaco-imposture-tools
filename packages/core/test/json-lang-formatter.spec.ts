@@ -187,7 +187,7 @@ describe('json formatter test', ()=>{
       },
       theme: theme1
     });
-    jsonGrammar = (await langReg.loadGrammar('source.json'))!;
+    jsonGrammar = (await langReg.loadGrammar('source.json', 0))!;
   })
 
   it('formatter test 01', async ()=>{
