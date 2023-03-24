@@ -22,15 +22,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{env.NODE_VERSION}}
+          registry-url: 'https://registry.npmjs.org'
       - name: List CI env variables
         run: |
           cat /etc/lsb-release
           echo $(cmake --version)
           echo node-js $(node -v)
-      - name: Populate local npmrc
-        if: startsWith( github.ref, 'refs/tags/')
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Setup workspace
         run: |
           npm ci
@@ -53,7 +50,7 @@ jobs:
         run: |
           npm run lerna:pack
         env:
-          NPM_TOKEN: ${{secrets.NPM_TOKEN}}
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
       - name: upload tarball to artifactory
         if: success() && !(startsWith( github.ref, 'refs/tags/'))
         uses: actions/upload-artifact@v3
@@ -68,10 +65,10 @@ jobs:
       - name: rc publishing
         if: success() && (startsWith( github.ref, 'refs/tags/'))
         run: |
-          echo ${NPM_TOKEN:0:7}
+          echo ${NODE_AUTH_TOKEN:0:7}
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
           echo $TAG_VERSION
           git checkout -b release/$TAG_VERSION
           npx lerna publish $TAG_VERSION --no-changelog --no-git-tag-version --no-push --yes --registry=.npmrc
         env:
-          NPM_TOKEN: ${{secrets.NPM_TOKEN}}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
