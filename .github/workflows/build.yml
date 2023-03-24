@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    tags:
+      - "v*"
   pull_request:
     branches: [ main ]
-  tags:
-    - "v*"
 
 env:
   NODE_VERSION: 16
@@ -28,13 +28,13 @@ jobs:
       - run: npm run setup
       - run: npm run compile
       - run: npm run audit
-#       todo uncomment before merging
-#      - run: npm run coverage
-#      - run: npm run create-coverage:lcov
-#      - name: report to coveralls
-#        uses: coverallsapp/github-action@master
-#        with:
-#          github-token: ${{ secrets.github_token }}
+  #       todo uncomment before merging
+  #      - run: npm run coverage
+  #      - run: npm run create-coverage:lcov
+  #      - name: report to coveralls
+  #        uses: coverallsapp/github-action@master
+  #        with:
+  #          github-token: ${{ secrets.github_token }}
   rc-dry-run:
     runs-on: ubuntu-latest
     needs: [build-and-test]
