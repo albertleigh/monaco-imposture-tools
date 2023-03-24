@@ -25,6 +25,7 @@
     "compile:debug": "lerna run compile:debug",
     "audit": "npm audit --omit=dev && lerna run audit --stream",
     "test": "lerna run test",
+    "lerna:pack": "lerna run pack",
     "coverage": "lerna run coverage --stream",
     "create-coverage:text": "nyc report --reporter=text",
     "create-coverage:lcov": "nyc report --reporter=lcov",

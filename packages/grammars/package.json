@@ -1,10 +1,11 @@
 {
   "name": "@monaco-imposture-tools/grammars",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Textmate grammars for monaco imposture tools.",
   "main": "index.js",
   "scripts": {
-    "postpublish": "node ./scripts/post-publish.js"
+    "postpublish": "node ./scripts/post-publish.js",
+    "pack": "npm pack"
   },
   "repository": {
     "type": "git",
