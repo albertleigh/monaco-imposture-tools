@@ -62,8 +62,10 @@ jobs:
           name: npm_tarball
           path: |
             !node_modules/**/*.tgz
-            languages/**/*.tgz
-            packages/**/*.tgz
+            languages/monaco-az-logic-app-lang/*.tgz
+            packages/grammars/*.tgz
+            packages/onigasm/*.tgz
+            packages/core/*.tgz
       - name: rc publishing
         if: success() && (startsWith( github.ref, 'refs/tags/'))
         run: |
