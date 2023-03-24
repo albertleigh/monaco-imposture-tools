@@ -69,6 +69,6 @@ jobs:
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
           echo $TAG_VERSION
           git checkout -b release/$TAG_VERSION
-          npx lerna publish $TAG_VERSION --no-changelog --no-git-tag-version --no-push --yes --registry=.npmrc
+          npx lerna publish $TAG_VERSION --no-changelog --no-git-tag-version --no-push --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
