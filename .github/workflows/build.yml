@@ -37,8 +37,9 @@ jobs:
   #          github-token: ${{ secrets.github_token }}
   rc-dry-run:
     runs-on: ubuntu-latest
+    environment: public_npm
     needs: [build-and-test]
-    if: success() && (startsWith( github.ref, 'refs/tags/'))
+    if: success() && !(startsWith( github.ref, 'refs/tags/'))
     steps:
       - name: setup node
         uses: actions/setup-node@v2
