@@ -428,23 +428,30 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-// @{@{add(1,2)}}
-// @{@add(1,2)}
+// Cannot fit string into the function parameter 'Get Default 1'.
+// @activity(activity('GetFileMetadata 1').output.itemType)
+// Cannot fit row data value into the function parameter 'Get Default 1'.
+// @activity(activity('Lookup 3').output.value)
 
-// @item().one['two'].
+// need to handle IdentifierType.StringArrayList properly
+// this one is working as expected
+// @concat(split('one\t\two\tthree', '\t'))
+// but not these
+
+// Cannot fit First-row-only lookup activity return type into the function parameter string list item.
+// @concat(activity('Lookup 1 first row only'))
+
+// Cannot fit array into the function parameter string list item.
+// @concat(createArray(activity('Lookup 3').output.value))
+
+// Cannot fit package::***output:any &{ firstRow }*** into the function parameter string list item.
+// @concat(activity('Lookup 1 first row only').output)
+
+// Cannot fit Activity return type into the function parameter string list item.
+// @concat(activity('Get Default 1'))
 
 const sampleCodes =
-`{
-    "@()": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "themeColor": "0076D7",
-    "summary": "Pipeline run result",
-    "@summary2": "@min",
-    "sections": [
-    ],
-    "potentialAction": [
-    ]
-}`;
+`@concat(createArray(activity('Lookup 3').output.value))`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

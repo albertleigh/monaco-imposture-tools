@@ -1628,8 +1628,8 @@ function _collect_identifiers_w_punctuation(
             const sourceIdTyp = ctx.vr.globalSymbolTable.inferIdentifierTypeFromChain(ctx.vr.codeDocument, oneIdChain.chain);
             if (
               !(
-                sourceIdTyp?.assignableTo(IdentifierType.String) ||
-                sourceIdTyp?.assignableTo(IdentifierType.Number)
+                sourceIdTyp?.assignableTo(IdentifierType.String, ctx.vr.globalSymbolTable) ||
+                sourceIdTyp?.assignableTo(IdentifierType.Number, ctx.vr.globalSymbolTable)
               )
             ){
               ctx.vr.addOneProblem({
@@ -2115,7 +2115,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                             )
                           )
                         ) ||
-                        !!sourceIdTyp?.assignableTo(targetIdType);
+                        !!sourceIdTyp?.assignableTo(targetIdType, ctx.vr.globalSymbolTable);
                       if (!match) {
                         mismatchSrcTyp = sourceIdTyp;
                         mismatchTargetTyp = targetIdType;
