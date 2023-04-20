@@ -456,7 +456,11 @@ export class IdentifierType {
     if (!target) return false;
     if (target === IdentifierType.UNRECOGNIZED) return false;
 
-    if (this === IdentifierType.Any || target === IdentifierType.Any) {
+    if (
+      this === IdentifierType.Any ||
+      target === IdentifierType.Any ||
+      (this.type === IdentifierTypeName.INTERNAL_PKG_REF && this.packageDescription?._$allowAdditionalAnyProperties)
+    ) {
       return true;
     }
     if (target === IdentifierType.Array && this.isArray) {
@@ -485,7 +489,7 @@ export class IdentifierType {
           this.type === IdentifierTypeName.ARRAY_OF_TYPE
         )
       )
-    ){
+    ) {
       return true;
     }
 

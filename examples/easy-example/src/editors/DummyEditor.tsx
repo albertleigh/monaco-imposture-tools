@@ -431,7 +431,7 @@ const useStyles = makeStyles((theme) => ({
 // Cannot fit string into the function parameter 'Get Default 1'.
 // @activity(activity('GetFileMetadata 1').output.itemType)
 // Cannot fit row data value into the function parameter 'Get Default 1'.
-// @activity(activity('Lookup 3').output.value)
+// @activity(activity('Lookup 3').output.value[0])
 
 // need to handle IdentifierType.StringArrayList properly
 // this one is working as expected
@@ -455,7 +455,7 @@ const useStyles = makeStyles((theme) => ({
 // @less(1, null)
 
 const sampleCodes =
-`@concat('str1')`;
+`@concat(activity('Lookup 1 first row only').output)`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

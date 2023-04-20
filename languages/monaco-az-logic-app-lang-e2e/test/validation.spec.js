@@ -292,6 +292,7 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@add(1, 2)",
         "@less(1, null)",
         "@if( true, 'trueVal', 'falseVal')",
+        "@concat(activity('Lookup 1 first row only').output)",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
