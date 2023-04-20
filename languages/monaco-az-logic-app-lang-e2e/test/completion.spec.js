@@ -226,6 +226,8 @@ function generateCompletionTests(openOnePage, closeOnePage) {
 
         await delay(250);
 
+        await triggerCompletionOfCurrentCursor(page);
+
         allCompletionList = await collectMonacoListRowsAriaLabels(page);
         expect(allCompletionList.length>=3).ok;
         expect(allCompletionList.every(value => value.indexOf('variables') > -1)).ok;

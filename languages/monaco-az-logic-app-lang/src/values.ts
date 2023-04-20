@@ -4,8 +4,10 @@ import {
   AzLogicAppNodeUtils,
   AbstractReturnChainType,
   FunctionCallReturnChainType,
-  IdentifierInBracketNotationReturnChainType, IdentifierReturnChainType,
-  ReturnChainType
+  IdentifierInBracketNotationReturnChainType,
+  IdentifierReturnChainType,
+  ReturnChainType,
+  PrimitiveReturnChainType
 } from "./azLgcNodesUtils";
 
 export enum DescriptionType {
@@ -133,7 +135,10 @@ export class IdentifierType {
   }
 
   static interpretFunctionChainList(idChain: ReturnChainType[], retTyp: IdentifierType, funRetChainTyp: FunctionCallReturnChainType) {
-    let interpretedChainList: Array<{ path: string, retChainTyp: FunctionCallReturnChainType | IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType }> =
+    let interpretedChainList: Array<{
+      path: string,
+      retChainTyp: FunctionCallReturnChainType | IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType
+    }> =
       retTyp.returnTypeChainList?.map(one => ({path: one, retChainTyp: funRetChainTyp})) || [];
     interpretedChainList = interpretedChainList.concat(
       (idChain.slice(1) as (IdentifierInBracketNotationReturnChainType | IdentifierReturnChainType)[]).map(
@@ -163,7 +168,7 @@ export class IdentifierType {
   static FUNCTION = (functionParameterTypes: IdentifierType[], functionReturnType: IdentifierType) =>
     new IdentifierType(IdentifierTypeName.FUNCTION, {functionParameterTypes, functionReturnType});
   static OBJECT = (objValTypChainList: string[]) => new IdentifierType(IdentifierTypeName.OBJECT, {objValTypChainList});
-  static CONSTANT = (constantValue: string | number | null) => new IdentifierType(IdentifierTypeName.CONSTANT, {constantValue});
+  static CONSTANT = (constantValue: string | number | boolean) => new IdentifierType(IdentifierTypeName.CONSTANT, {constantValue});
   static FUNCTION_RETURN_TYPE = (chainList: string[], returnTypeLabel = 'Return type') =>
     new IdentifierType(IdentifierTypeName.FUNCTION_RETURN_TYPE, {
       returnTypeChainList: [
@@ -187,7 +192,7 @@ export class IdentifierType {
     new IdentifierType(IdentifierTypeName.INTERNAL_OL_FUN_REF, {overloadedFunctionValueDescription});
 
   // CONSTANT
-  public readonly constantValue?: string | number | null;
+  public readonly constantValue?: string | number | boolean;
   // FUNCTION_RETURN_TYPE
   public readonly returnTypeChainList?: string[];
   public readonly returnTypeLabel?: string;
@@ -211,7 +216,7 @@ export class IdentifierType {
     public readonly type: IdentifierTypeName,
     option: Partial<{
       // CONSTANT
-      constantValue: string | number | null;
+      constantValue: string | number | boolean;
       // FUNCTION_RETURN_TYPE
       returnTypeChainList: string[];
       returnTypeLabel: string;
@@ -237,9 +242,10 @@ export class IdentifierType {
       }
     } else if (type === IdentifierTypeName.CONSTANT) {
       if (
-        !(typeof option.constantValue === 'number' ||
-          typeof option.constantValue === 'string' ||
-          option.constantValue === null)
+        !(
+          typeof option.constantValue === 'boolean' ||
+          typeof option.constantValue === 'number' ||
+          typeof option.constantValue === 'string')
       ) {
         new Error(`Incorrect constant identifier: constantValue missing`);
       }
@@ -468,14 +474,34 @@ export class IdentifierType {
     // for arrayList, azLgcExp support cast array into arraylist
     if (
       target === IdentifierType.StringArrayList &&
-      (this === IdentifierType.String || this === IdentifierType.StringArrayList || this.isArray)
-    ) {
+      (
+        this === IdentifierType.String ||
+        (this.type === IdentifierTypeName.CONSTANT && typeof this.constantValue === 'string') ||
+        this === IdentifierType.StringArrayList ||
+        (
+          this.type === IdentifierTypeName.Any ||
+          this.type === IdentifierTypeName.Array ||
+          this.type === IdentifierTypeName.StringArray ||
+          this.type === IdentifierTypeName.ARRAY_OF_TYPE
+        )
+      )
+    ){
       return true;
     }
 
     if (
       target === IdentifierType.NumberArrayList &&
-      (this === IdentifierType.Number || this === IdentifierType.StringArrayList || this.isArray)
+      (
+        this === IdentifierType.Number ||
+        (this.type === IdentifierTypeName.CONSTANT && typeof this.constantValue === 'number') ||
+        this === IdentifierType.NumberArrayList ||
+        (
+          this.type === IdentifierTypeName.Any ||
+          this.type === IdentifierTypeName.Array ||
+          this.type === IdentifierTypeName.NumberArray ||
+          this.type === IdentifierTypeName.ARRAY_OF_TYPE
+        )
+      )
     ) {
       return true;
     }
@@ -538,7 +564,19 @@ export class IdentifierType {
     }
 
     // azLgcExp allows string regarding as a constant
-    if (this.type === IdentifierTypeName.String && target.type === IdentifierTypeName.CONSTANT) {
+    if (
+      (this.type === IdentifierTypeName.String && target.type === IdentifierTypeName.CONSTANT && typeof target.constantValue === 'string') ||
+      (this.type === IdentifierTypeName.Number && target.type === IdentifierTypeName.CONSTANT && typeof target.constantValue === 'number') ||
+      (this.type === IdentifierTypeName.Boolean && target.type === IdentifierTypeName.CONSTANT && typeof target.constantValue === 'boolean')
+    ) {
+      return true;
+    }
+
+    if (
+      (target.type === IdentifierTypeName.String && this.type === IdentifierTypeName.CONSTANT && typeof this.constantValue === 'string') ||
+      (target.type === IdentifierTypeName.Number && this.type === IdentifierTypeName.CONSTANT && typeof this.constantValue === 'number') ||
+      (target.type === IdentifierTypeName.Boolean && this.type === IdentifierTypeName.CONSTANT && typeof this.constantValue === 'boolean')
+    ) {
       return true;
     }
 
@@ -2130,6 +2168,39 @@ export class SymbolTable {
       }
     }
     if (idChain.length === 1) {
+      // return constant type instead
+      if (idChain[0] instanceof PrimitiveReturnChainType) {
+        switch (idChain[0].type) {
+          case 'number': {
+            let theDecimalValue: number | undefined = undefined;
+            try {
+              theDecimalValue = +idChain[0].constantValueString;
+            } catch (e) {
+              // noop
+            }
+            if (typeof theDecimalValue === 'number') {
+              return IdentifierType.CONSTANT(theDecimalValue);
+            }
+            break;
+          }
+          case 'string': {
+            const theStringValue: string | undefined = idChain[0].constantValueString;
+            if (typeof theStringValue === 'string' && theStringValue[0] === "'" && theStringValue[theStringValue.length - 1] === "'") {
+              return IdentifierType.CONSTANT(theStringValue.slice(1, theStringValue.length - 1));
+            }
+            break;
+          }
+          case 'boolean': {
+            const theBooleanValueString: string | undefined = idChain[0].constantValueString;
+            if (theBooleanValueString === 'true') {
+              return IdentifierType.CONSTANT(true);
+            } else if (theBooleanValueString === 'false') {
+              return IdentifierType.CONSTANT(false);
+            }
+            break
+          }
+        }
+      }
       switch (idChain[0].type) {
         case 'number':
           return IdentifierType.Number;

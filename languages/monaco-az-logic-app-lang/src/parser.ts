@@ -486,7 +486,7 @@ export class LiteralBooleanNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLg
         ''+ value,
         'Boolean value'
       ],
-      IdentifierType.Boolean,
+      IdentifierType.CONSTANT(value),
       false,
       value
     );
@@ -508,7 +508,7 @@ export class LiteralStringNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgc
         value,
         'String value'
       ],
-      IdentifierType.String,
+      IdentifierType.CONSTANT(value),
       false,
       value
     )
@@ -538,7 +538,7 @@ export class LiteralNumberNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgc
         '' + value,
         'Number value'
       ],
-      IdentifierType.Number,
+      IdentifierType.CONSTANT(value),
       false,
       value
     );

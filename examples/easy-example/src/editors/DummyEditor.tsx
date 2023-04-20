@@ -450,8 +450,12 @@ const useStyles = makeStyles((theme) => ({
 // Cannot fit Activity return type into the function parameter string list item.
 // @concat(activity('Get Default 1'))
 
+/// support constant idChainType
+// @add(1, 2)
+// @less(1, null)
+
 const sampleCodes =
-`@concat(createArray(activity('Lookup 3').output.value))`;
+`@activity(activity('Lookup 3').output.value)`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
