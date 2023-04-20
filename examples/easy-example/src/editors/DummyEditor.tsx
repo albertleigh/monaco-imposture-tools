@@ -455,7 +455,7 @@ const useStyles = makeStyles((theme) => ({
 // @less(1, null)
 
 const sampleCodes =
-`@activity(activity('Lookup 3').output.value)`;
+`@concat('str1')`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 

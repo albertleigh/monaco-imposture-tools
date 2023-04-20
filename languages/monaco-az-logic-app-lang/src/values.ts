@@ -563,7 +563,7 @@ export class IdentifierType {
       return this.constantValue === target.constantValue;
     }
 
-    // azLgcExp allows string regarding as a constant
+    // azLgcExp allows string/number/boolean to be regarded as a constant and vice verse
     if (
       (this.type === IdentifierTypeName.String && target.type === IdentifierTypeName.CONSTANT && typeof target.constantValue === 'string') ||
       (this.type === IdentifierTypeName.Number && target.type === IdentifierTypeName.CONSTANT && typeof target.constantValue === 'number') ||

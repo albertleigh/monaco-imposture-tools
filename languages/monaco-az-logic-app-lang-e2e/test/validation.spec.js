@@ -286,7 +286,12 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@concat(split('one\t\ttwo\tthree', '\t'))",
         "@concat(activity('Lookup 1 first row only'))",
         "@concat(createArray(activity('Lookup 3').output.value))",
+        "@concat('str1')",
+        "@concat('str1', 'str2')",
         "@concat(activity('Get Default 1'))",
+        "@add(1, 2)",
+        "@less(1, null)",
+        "@if( true, 'trueVal', 'falseVal')",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
