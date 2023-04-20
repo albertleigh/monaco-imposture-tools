@@ -486,7 +486,7 @@ export class LiteralBooleanNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLg
         ''+ value,
         'Boolean value'
       ],
-      IdentifierType.Boolean,
+      IdentifierType.CONSTANT(value),
       false,
       value
     );
@@ -508,7 +508,7 @@ export class LiteralStringNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgc
         value,
         'String value'
       ],
-      IdentifierType.String,
+      IdentifierType.CONSTANT(value),
       false,
       value
     )
@@ -538,7 +538,7 @@ export class LiteralNumberNode<SynCtx extends AzLgcLangSyntaxNodeContext = AzLgc
         '' + value,
         'Number value'
       ],
-      IdentifierType.Number,
+      IdentifierType.CONSTANT(value),
       false,
       value
     );
@@ -1628,8 +1628,8 @@ function _collect_identifiers_w_punctuation(
             const sourceIdTyp = ctx.vr.globalSymbolTable.inferIdentifierTypeFromChain(ctx.vr.codeDocument, oneIdChain.chain);
             if (
               !(
-                sourceIdTyp?.assignableTo(IdentifierType.String) ||
-                sourceIdTyp?.assignableTo(IdentifierType.Number)
+                sourceIdTyp?.assignableTo(IdentifierType.String, ctx.vr.globalSymbolTable) ||
+                sourceIdTyp?.assignableTo(IdentifierType.Number, ctx.vr.globalSymbolTable)
               )
             ){
               ctx.vr.addOneProblem({
@@ -2115,7 +2115,7 @@ function _parse_function_call_complete(node: AzLogicAppNode, ctx: ValidationInte
                             )
                           )
                         ) ||
-                        !!sourceIdTyp?.assignableTo(targetIdType);
+                        !!sourceIdTyp?.assignableTo(targetIdType, ctx.vr.globalSymbolTable);
                       if (!match) {
                         mismatchSrcTyp = sourceIdTyp;
                         mismatchTargetTyp = targetIdType;

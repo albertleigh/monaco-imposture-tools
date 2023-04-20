@@ -86,7 +86,8 @@ export abstract class AbstractReturnChainType {
         return new PrimitiveReturnChainType(
           node.$impostureLang?.dataType,
           node.$impostureLang?.dataType,
-          node
+          node,
+          codeDocument.getNodeContent(node)
         );
       case 'identifiers':
       case 'identifiers:wPunctuation':
@@ -347,7 +348,8 @@ export class PrimitiveReturnChainType extends AbstractReturnChainType{
   type: 'number' | 'string' | 'boolean' | 'null';
   constructor(
     type: 'number' | 'string' | 'boolean' | 'null',
-    label: string, node: ASTNode
+    label: string, node: ASTNode,
+    public readonly constantValueString: string
   ) {
     super(type, label, node);
   }

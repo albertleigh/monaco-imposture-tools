@@ -280,6 +280,19 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@addDays('2015-03-15T13:27:36Z', -20)",
         "@contains( variables('splitStates'), variables('stateItem'))",
         "@{addDays(utcNow(), 1)}",
+        "@activity(activity('GetFileMetadata 1').output.itemType)",
+        "@activity(activity('Lookup 3').output.value[0])",
+        "@activity(activity('Lookup 1 first row only').output.firstRow)",
+        "@concat(split('one\t\ttwo\tthree', '\t'))",
+        "@concat(activity('Lookup 1 first row only'))",
+        "@concat(createArray(activity('Lookup 3').output.value))",
+        "@concat('str1')",
+        "@concat('str1', 'str2')",
+        "@concat(activity('Get Default 1'))",
+        "@add(1, 2)",
+        "@less(1, null)",
+        "@if( true, 'trueVal', 'falseVal')",
+        "@concat(activity('Lookup 1 first row only').output)",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;
