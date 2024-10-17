@@ -4,8 +4,7 @@
   "private": true,
   "main": "index.js",
   "engines": {
-    "node": ">=16.15.0 <17",
-    "npm": "~8.5.5"
+    "node": "^18 || ^19 || ^20"
   },
   "dependencies": {
     "@material-ui/core": "^4.12.4",
