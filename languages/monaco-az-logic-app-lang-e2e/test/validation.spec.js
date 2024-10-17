@@ -293,6 +293,8 @@ function generateValidationTests(openOnePage, closeOnePage) {
         "@less(1, null)",
         "@if( true, 'trueVal', 'falseVal')",
         "@concat(activity('Lookup 1 first row only').output)",
+        "@pipeline().globalParameters.oneTypedObj?['anotherGlobalArr']",
+        "@pipeline().globalParameters.oneTypedObj?[item().checkpointName]",
       ].forEach((value, index)=>{
         it(`Strict Valid expression ${index}`, async ()=>{
           let nextText, content, problems;

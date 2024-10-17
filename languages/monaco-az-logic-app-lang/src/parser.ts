@@ -2367,7 +2367,7 @@ function _parse_literal_array(node: AzLogicAppNode, ctx: ValidationIntermediateC
           startPos,
           firstChild.offset - startPos
         )
-          .match(/^\s*$/)
+          .match(/^(\s*)|(\\?)$/)
       ){
         ctx.vr.addOneProblem({
           severity: DiagnosticSeverity.Error,
