@@ -525,6 +525,36 @@
         },
         {
           "$impostureLang": {
+            "type": "array-literal:wPunctuation",
+            "dataType": "array-literal"
+          },
+          "name": "meta.array.literal.azLgcAppExp",
+          "begin": "\\s*(\\?)(\\[)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.accessor.optional.azLgcAppExp"
+            },
+            "2": {
+              "name": "meta.brace.square.azLgcAppExp"
+            }
+          },
+          "end": "\\]",
+          "endCaptures": {
+            "0": {
+              "name": "meta.brace.square.azLgcAppExp"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#atExpression"
+            },
+            {
+              "include": "#punctuation-comma"
+            }
+          ]
+        },
+        {
+          "$impostureLang": {
             "type": "identifiers-p3",
             "dataType": "identifiers"
           },

@@ -455,7 +455,7 @@ const useStyles = makeStyles((theme) => ({
 // @less(1, null)
 
 const sampleCodes =
-`@concat(activity('Lookup 1 first row only').output)`;
+`@pipeline().globalParameters.oneTypedObj?[item().checkpointName]`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
