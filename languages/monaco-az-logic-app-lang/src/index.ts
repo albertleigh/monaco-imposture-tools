@@ -6,6 +6,7 @@ export {
   ErrorHandler,
 } from './base';
 export {
+  DescriptionType,
   ValueDescription,
   FunctionValueDescription,
   OverloadedFunctionValueDescription,

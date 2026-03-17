@@ -35,7 +35,7 @@
     "prettify": "prettier --config .prettierrc --write"
   },
   "engines": {
-    "node": "^18 || ^19 || ^20"
+    "node": "^18 || ^19 || ^20 || ^21 || ^22"
   },
   "lint-pretty-staged": {
     "!(languages|examples|packages)/**/*.{ts,tsx,js,jsx}": [

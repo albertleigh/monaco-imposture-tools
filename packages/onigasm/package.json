@@ -27,7 +27,7 @@
     "url": "git@github.com:albertleigh/monaco-imposture-tools.git"
   },
   "engines": {
-    "node": "^18 || ^19 || ^20"
+    "node": "^18 || ^19 || ^20 || ^21 || ^22"
   },
   "dependencies": {
     "lru-cache": "^7.9.0"
