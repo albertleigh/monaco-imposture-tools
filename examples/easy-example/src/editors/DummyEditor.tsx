@@ -20,7 +20,7 @@ import {
   createFunValDesc,
   createSymbolTable,
   createFunRetDesc,
-  createOverloadedFunValDesc
+  createOverloadedFunValDesc,
 } from 'monaco-azure-logic-app-lang';
 
 AzLogicAppExpressionLang.monaco = monaco;
@@ -36,18 +36,13 @@ function generateNextSymbolTable() {
   const nextSeed = ST_GENERATOR_SEED++;
   return createSymbolTable(
     {
-      [`dynamic${nextSeed}`]:createFunValDesc(
-        [
-          `**dynamic${nextSeed}()**`,
-          `Dynamic function ${nextSeed}`
-        ],
+      [`dynamic${nextSeed}`]: createFunValDesc(
+        [`**dynamic${nextSeed}()**`, `Dynamic function ${nextSeed}`],
         [IdentifierType.CONSTANT(nextSeed)],
         IdentifierType.Number
       ),
-      activity: createOverloadedFunValDesc([
-          '***activity(activity name)***',
-          'Retrieve an activity and its output.',
-        ],
+      activity: createOverloadedFunValDesc(
+        ['***activity(activity name)***', 'Retrieve an activity and its output.'],
         [
           [IdentifierType.CONSTANT('Get Default 1')],
           [IdentifierType.CONSTANT('Get Default 2')],
@@ -68,59 +63,78 @@ function generateNextSymbolTable() {
           IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
           IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
 
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'firstRowOnly'], 'First-row-only lookup activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'firstRowOnly'], 'First-row-only lookup activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'defaultReturnValue'], 'Lookup activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'lookupActivity', 'defaultReturnValue'], 'Lookup activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'lookupActivity', 'firstRowOnly'],
+            'First-row-only lookup activity return type'
+          ),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'lookupActivity', 'firstRowOnly'],
+            'First-row-only lookup activity return type'
+          ),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'lookupActivity', 'defaultReturnValue'],
+            'Lookup activity return type'
+          ),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'lookupActivity', 'defaultReturnValue'],
+            'Lookup activity return type'
+          ),
 
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'fileReturnValue'], 'File\'s getMetaData activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'fileReturnValue'], 'File\'s getMetaData activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'folderReturnValue'], 'Folder\'s getMetaData activity return type'),
-          IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'getMetaDataActivity', 'folderReturnValue'], 'Folder\'s getMetaData activity return type'),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'getMetaDataActivity', 'fileReturnValue'],
+            "File's getMetaData activity return type"
+          ),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'getMetaDataActivity', 'fileReturnValue'],
+            "File's getMetaData activity return type"
+          ),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'getMetaDataActivity', 'folderReturnValue'],
+            "Folder's getMetaData activity return type"
+          ),
+          IdentifierType.FUNCTION_RETURN_TYPE(
+            ['activityPackage', 'getMetaDataActivity', 'folderReturnValue'],
+            "Folder's getMetaData activity return type"
+          ),
 
           IdentifierType.FUNCTION_RETURN_TYPE(['activityPackage', 'defaultActivity'], 'Activity return type'),
         ]
       ),
-      variables: createOverloadedFunValDesc([
-          'Variable one',
-          'Variable two',
-          'Variable three',
-          'stateItem',
-          'splitStates',
-        ],
+      variables: createOverloadedFunValDesc(
+        ['Variable one', 'Variable two', 'Variable three', 'stateItem', 'splitStates'],
         [
           [IdentifierType.CONSTANT('firstVar')],
           [IdentifierType.CONSTANT('secondVar')],
           [IdentifierType.CONSTANT('thirdVar')],
           [IdentifierType.CONSTANT('stateItem')],
-          [IdentifierType.CONSTANT('splitStates')]
+          [IdentifierType.CONSTANT('splitStates')],
         ],
-        [IdentifierType.String, IdentifierType.String, IdentifierType.String, IdentifierType.String, IdentifierType.Array]
+        [
+          IdentifierType.String,
+          IdentifierType.String,
+          IdentifierType.String,
+          IdentifierType.String,
+          IdentifierType.Array,
+        ]
       ),
       pipeline: createFunValDesc(
         ['**pipeline()**', 'Return pipeline object'],
         [],
         IdentifierType.FUNCTION_RETURN_TYPE(['pipeline'])
       ),
-      item: createFunValDesc(
-        ['**item()**', 'An item object returned'],
-        [],
-        IdentifierType.Any
-      )
+      item: createFunValDesc(['**item()**', 'An item object returned'], [], IdentifierType.Any),
     },
     createFunRetDesc(
-      createPkgValDesc([],{
+      createPkgValDesc([], {
         pipeline: createPkgValDesc(['**Return package pipeline**', 'Package pipeline'], {
-          optionalPackage: createPkgValDesc(['Optional package', 'one demo purpose optional package'],
+          optionalPackage: createPkgValDesc(
+            ['Optional package', 'one demo purpose optional package'],
             {
               oneOptionalString: createRefValDesc(['oneOptionalString'], IdentifierType.String),
             },
-            {optional:true}),
-          Workspace: createRefValDesc(
-            ['Name of the workspace run is running within'],
-            IdentifierType.String,
-            true
+            {optional: true}
           ),
+          Workspace: createRefValDesc(['Name of the workspace run is running within'], IdentifierType.String, true),
           DataFactory: createRefValDesc(
             ['Name of the data factory the pipeline run is running within'],
             IdentifierType.String
@@ -154,269 +168,274 @@ function generateNextSymbolTable() {
             IdentifierType.String,
             true
           ),
-          globalParameters: createPkgValDesc(
-            [
-              'Global parameter package'
-            ],
-            {
-              firstGlobalStrPara: createRefValDesc(['firstGlobalStrPara'], IdentifierType.String),
-              oneGlobalNumber: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
-              oneGlobalFloat: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
-              oneGlobalBoolean: createRefValDesc(['oneGlobalNumber'], IdentifierType.Boolean),
-              oneGlobalArr: createRefValDesc(['oneGlobalNumber'], IdentifierType.Array, true, []),
-              oneGlobalObj: createRefValDesc(['oneGlobalObj'], IdentifierType.AnyObject, true, {}),
-              oneTypedObj: createPkgValDesc(['oneTypedObj'], {
-                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
-                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
-                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
-                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
-                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
-                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
-              }),
-            }
-          ),
-          libraryVariables: createPkgValDesc(
-            [
-              'Library variables package'
-            ],
-            {
-              Variables_1_conn_1: createPkgValDesc(['ConnectionType'], {
-                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
-                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
-                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
-                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
-                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
-                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
-              }),
-              Variables_1_conn_2: createPkgValDesc(['ConnectionType'], {
-                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
-                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
-                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
-                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
-                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
-                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
-              }),
-              oneGlobalNumber: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
-              oneGlobalFloat: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
-              oneGlobalBoolean: createRefValDesc(['oneGlobalNumber'], IdentifierType.Boolean),
-              oneGlobalArr: createRefValDesc(['oneGlobalNumber'], IdentifierType.Array, true, []),
-              oneGlobalObj: createRefValDesc(['oneGlobalObj'], IdentifierType.AnyObject, true, {}),
-              oneTypedObj: createPkgValDesc(['oneTypedObj'], {
-                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
-                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
-                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
-                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
-                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
-                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
-              }),
-            }
-          )
+          globalParameters: createPkgValDesc(['Global parameter package'], {
+            firstGlobalStrPara: createRefValDesc(['firstGlobalStrPara'], IdentifierType.String),
+            oneGlobalNumber: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+            oneGlobalFloat: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+            oneGlobalBoolean: createRefValDesc(['oneGlobalNumber'], IdentifierType.Boolean),
+            oneGlobalArr: createRefValDesc(['oneGlobalNumber'], IdentifierType.Array, true, []),
+            oneGlobalObj: createRefValDesc(['oneGlobalObj'], IdentifierType.AnyObject, true, {}),
+            oneTypedObj: createPkgValDesc(['oneTypedObj'], {
+              anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+              anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+              anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+              anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+              anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+              anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+            }),
+          }),
+          libraryVariables: createPkgValDesc(['Library variables package'], {
+            Variables_1_conn_1: createPkgValDesc(['ConnectionType'], {
+              anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+              anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+              anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+              anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+              anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+              anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+            }),
+            Variables_1_conn_2: createPkgValDesc(['ConnectionType'], {
+              anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+              anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+              anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+              anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+              anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+              anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+            }),
+            oneGlobalNumber: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+            oneGlobalFloat: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+            oneGlobalBoolean: createRefValDesc(['oneGlobalNumber'], IdentifierType.Boolean),
+            oneGlobalArr: createRefValDesc(['oneGlobalNumber'], IdentifierType.Array, true, []),
+            oneGlobalObj: createRefValDesc(['oneGlobalObj'], IdentifierType.AnyObject, true, {}),
+            oneTypedObj: createPkgValDesc(['oneTypedObj'], {
+              anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+              anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+              anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+              anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+              anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+              anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+            }),
+          }),
         }),
         activityPackage: createPkgValDesc([], {
-          defaultActivity:createPkgValDesc(['**Return package activity**', 'Package activity'], {
-            output: createRefValDesc(
-              [
-                '***output:any***',
-                'Activity output'
-              ],
-              IdentifierType.Any
-            )
-          }, {allowAdditionalAnyProperties: true}),
-          lookupActivity:createPkgValDesc(['Package Lookup activity'], {
-            rowItem: createRefValDesc([
-              '***rowItem:any***',
-              'data of the first row'
-            ], IdentifierType.Any),
-            defaultReturnValue:createPkgValDesc(['**Return value of a lookup activity**', 'Lookup activity'], {
-              output: createPkgValDesc(
-                [
-                  '***output:any & { count, value }***',
-                  'Lookup activity output'
-                ],
-                {
-                  count: createRefValDesc([
-                    '***count:number***',
-                    'count of the row'
-                  ], IdentifierType.Number),
-                  value: createRefValDesc([
-                    '***value:any[]***',
-                    'array of row data'
-                  ], IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'lookupActivity', 'rowItem'], 'row data value'))
-                },  {allowAdditionalAnyProperties: true}
-              )
-            }, {allowAdditionalAnyProperties: true}),
-            firstRowOnly:createPkgValDesc(['**Return value of a lookup activity[firstRowOnly]**', 'Lookup activity for the first only'], {
-              output: createPkgValDesc(
-                [
-                  '***output:any &{ firstRow }***',
-                  'First-row-only lookup activity output'
-                ],
-                {
-                  firstRow: createRefValDesc([
-                    '***firstRow:any***',
-                    'data of the first row'
-                  ], IdentifierType.Any)
-                },  {allowAdditionalAnyProperties: true}
-              )
-            }, {allowAdditionalAnyProperties: true}),
+          defaultActivity: createPkgValDesc(
+            ['**Return package activity**', 'Package activity'],
+            {
+              output: createRefValDesc(['***output:any***', 'Activity output'], IdentifierType.Any),
+            },
+            {allowAdditionalAnyProperties: true}
+          ),
+          lookupActivity: createPkgValDesc(['Package Lookup activity'], {
+            rowItem: createRefValDesc(['***rowItem:any***', 'data of the first row'], IdentifierType.Any),
+            defaultReturnValue: createPkgValDesc(
+              ['**Return value of a lookup activity**', 'Lookup activity'],
+              {
+                output: createPkgValDesc(
+                  ['***output:any & { count, value }***', 'Lookup activity output'],
+                  {
+                    count: createRefValDesc(['***count:number***', 'count of the row'], IdentifierType.Number),
+                    value: createRefValDesc(
+                      ['***value:any[]***', 'array of row data'],
+                      IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'lookupActivity', 'rowItem'], 'row data value')
+                    ),
+                  },
+                  {allowAdditionalAnyProperties: true}
+                ),
+              },
+              {allowAdditionalAnyProperties: true}
+            ),
+            firstRowOnly: createPkgValDesc(
+              ['**Return value of a lookup activity[firstRowOnly]**', 'Lookup activity for the first only'],
+              {
+                output: createPkgValDesc(
+                  ['***output:any &{ firstRow }***', 'First-row-only lookup activity output'],
+                  {
+                    firstRow: createRefValDesc(['***firstRow:any***', 'data of the first row'], IdentifierType.Any),
+                  },
+                  {allowAdditionalAnyProperties: true}
+                ),
+              },
+              {allowAdditionalAnyProperties: true}
+            ),
           }),
-          getMetaDataActivity:createPkgValDesc(['Package GetMetadata activity'], {
-            itemType: createPkgValDesc(['Medata item type'], {
-              name: createRefValDesc(['name of the item'], IdentifierType.String),
-              type: createRefValDesc(['type of the item data'], IdentifierType.String),
-            },{allowAdditionalAnyProperties: true}),
-            defaultReturnValue:createPkgValDesc(['**Return value of a getMetadata activity**', 'GetMetadata activity'], {
-              output: createPkgValDesc(
-                [
-                  '***output:any***',
-                  'GetMetadata activity output'
-                ],
-                {
-                  exists: createRefValDesc(
-                    [
-                      '***exists:boolean***',
-                      "Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won't fail even if the file, folder, or table doesn't exist. Instead, exists: false is returned in the output."
-                    ],
-                    IdentifierType.Boolean
-                  ),
-                  itemName: createRefValDesc([
-                    '***itemName:string***',
-                    'Name of the file or folder.'
-                  ], IdentifierType.String),
-                  itemType: createRefValDesc([
-                    '***itemType:string***',
-                    "Type of the file or folder. Returned value is File or Folder."
-                  ], IdentifierType.String),
-                  size: createRefValDesc([
-                    '***size:number***',
-                    "Size of the file, in bytes. Applicable only to files."
-                  ], IdentifierType.Number),
-                  columnCount: createRefValDesc([
-                    '***columnCount:number***',
-                    "Number of columns in the file or relational table."
-                  ], IdentifierType.Number),
-                  lastModified: createRefValDesc([
-                    '***lastModified:string***',
-                    "Last modified datetime of the file or folder."
-                  ], IdentifierType.String),
-                  created: createRefValDesc([
-                    '***created:string***',
-                    'Created datetime of the file or folder.'
-                  ], IdentifierType.String),
-                  contentMD5: createRefValDesc([
-                    '***contentMD5:string***',
-                    'MD5 of the file. Applicable only to files.'
-                  ], IdentifierType.String),
-                  structure: createRefValDesc(
-                    [
-                      '***structure:{name, type}[]***',
-                      'Data structure of the file or relational database table. Returned value is a list of column names and column types.'
-                    ],
-                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'structure return type')
-                  ),
-                  childItems: createRefValDesc(
-                    [
-                      '***childItems:{name, type}[]***',
-                      "List of subfolders and files in the given folder. Applicable only to folders. Returned value is a list of the name and type of each child item."
-                    ],
-                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'childItems return type')
-                  )
-                },  {allowAdditionalAnyProperties: true}
-              )
-            }, {allowAdditionalAnyProperties: true}),
-            fileReturnValue: createPkgValDesc(['**Return value of a getMetadata activity**', 'File\'s getMetadata activity'], {
-              output: createPkgValDesc(
-                [
-                  'output:any',
-                  'GetMetadata activity output'
-                ],
-                {
-                  exists: createRefValDesc(
-                    [
-                      'exists:boolean',
-                      'Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won\'t fail even if the file, folder, or table doesn\'t exist. Instead, exists: false is returned in the output.'
-                    ],
-                    IdentifierType.Boolean
-                  ),
-                  itemName: createRefValDesc([
-                    'itemName:string',
-                    'Name of the file or folder.'
-                  ], IdentifierType.String),
-                  itemType: createRefValDesc([
-                    'itemType:string',
-                    'Type of the file or folder. Returned value is File or Folder.'
-                  ], IdentifierType.String),
-                  size: createRefValDesc([
-                    'size:number',
-                    'Size of the file, in bytes. Applicable only to files.'
-                  ], IdentifierType.Number),
-                  lastModified: createRefValDesc([
-                    'lastModified:string',
-                    'Last modified datetime of the file or folder.'
-                  ], IdentifierType.String),
-                  created: createRefValDesc([
-                    'created:string',
-                    'Created datetime of the file or folder.'
-                  ], IdentifierType.String),
-                  contentMD5: createRefValDesc([
-                    'contentMD5:string',
-                    'MD5 of the file. Applicable only to files.'
-                  ], IdentifierType.String),
-                  structure: createRefValDesc(
-                    [
-                      'structure:{name, type}[]',
-                      'Data structure of the file or relational database table. Returned value is a list of column names and column types.'
-                    ],
-                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'structure return type')
-                  ),
-                  columnCount: createRefValDesc([
-                    'columnCount:number',
-                    'Number of columns in the file or relational table.'
-                  ], IdentifierType.Number)
-                },  {allowAdditionalAnyProperties: true}
-              )
-            }, {allowAdditionalAnyProperties: true}),
-            folderReturnValue: createPkgValDesc(['**Return value of a getMetadata activity**', 'Folder\'s getMetadata activity'], {
-              output: createPkgValDesc(
-                [
-                  'output:any',
-                  'GetMetadata activity output'
-                ],
-                {
-                  exists: createRefValDesc(
-                    [
-                      'exists:boolean',
-                      'Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won\'t fail even if the file, folder, or table doesn\'t exist. Instead, exists: false is returned in the output.'
-                    ],
-                    IdentifierType.Boolean
-                  ),
-                  itemName: createRefValDesc([
-                    'itemName:string',
-                    'Name of the file or folder.'
-                  ], IdentifierType.String),
-                  itemType: createRefValDesc([
-                    'itemType:string',
-                    'Type of the file or folder. Returned value is File or Folder.'
-                  ], IdentifierType.String),
-                  lastModified: createRefValDesc([
-                    'lastModified:string',
-                    'Last modified datetime of the file or folder.'
-                  ], IdentifierType.String),
-                  created: createRefValDesc([
-                    'created:string',
-                    'Created datetime of the file or folder.'
-                  ], IdentifierType.String),
-                  childItems: createRefValDesc(
-                    [
-                      'childItems:{name, type}[]',
-                      'List of subfolders and files in the given folder. Applicable only to folders. Returned value is a list of the name and type of each child item.'
-                    ],
-                    IdentifierType.ARRAY_OF_TYPE(['activityPackage', 'getMetaDataActivity', 'itemType'], 'childItems return type')
-                  )
-                },  {allowAdditionalAnyProperties: true}
-              )
-            }, {allowAdditionalAnyProperties: true})
-          })
+          getMetaDataActivity: createPkgValDesc(['Package GetMetadata activity'], {
+            itemType: createPkgValDesc(
+              ['Medata item type'],
+              {
+                name: createRefValDesc(['name of the item'], IdentifierType.String),
+                type: createRefValDesc(['type of the item data'], IdentifierType.String),
+              },
+              {allowAdditionalAnyProperties: true}
+            ),
+            defaultReturnValue: createPkgValDesc(
+              ['**Return value of a getMetadata activity**', 'GetMetadata activity'],
+              {
+                output: createPkgValDesc(
+                  ['***output:any***', 'GetMetadata activity output'],
+                  {
+                    exists: createRefValDesc(
+                      [
+                        '***exists:boolean***',
+                        "Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won't fail even if the file, folder, or table doesn't exist. Instead, exists: false is returned in the output.",
+                      ],
+                      IdentifierType.Boolean
+                    ),
+                    itemName: createRefValDesc(
+                      ['***itemName:string***', 'Name of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    itemType: createRefValDesc(
+                      ['***itemType:string***', 'Type of the file or folder. Returned value is File or Folder.'],
+                      IdentifierType.String
+                    ),
+                    size: createRefValDesc(
+                      ['***size:number***', 'Size of the file, in bytes. Applicable only to files.'],
+                      IdentifierType.Number
+                    ),
+                    columnCount: createRefValDesc(
+                      ['***columnCount:number***', 'Number of columns in the file or relational table.'],
+                      IdentifierType.Number
+                    ),
+                    lastModified: createRefValDesc(
+                      ['***lastModified:string***', 'Last modified datetime of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    created: createRefValDesc(
+                      ['***created:string***', 'Created datetime of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    contentMD5: createRefValDesc(
+                      ['***contentMD5:string***', 'MD5 of the file. Applicable only to files.'],
+                      IdentifierType.String
+                    ),
+                    structure: createRefValDesc(
+                      [
+                        '***structure:{name, type}[]***',
+                        'Data structure of the file or relational database table. Returned value is a list of column names and column types.',
+                      ],
+                      IdentifierType.ARRAY_OF_TYPE(
+                        ['activityPackage', 'getMetaDataActivity', 'itemType'],
+                        'structure return type'
+                      )
+                    ),
+                    childItems: createRefValDesc(
+                      [
+                        '***childItems:{name, type}[]***',
+                        'List of subfolders and files in the given folder. Applicable only to folders. Returned value is a list of the name and type of each child item.',
+                      ],
+                      IdentifierType.ARRAY_OF_TYPE(
+                        ['activityPackage', 'getMetaDataActivity', 'itemType'],
+                        'childItems return type'
+                      )
+                    ),
+                  },
+                  {allowAdditionalAnyProperties: true}
+                ),
+              },
+              {allowAdditionalAnyProperties: true}
+            ),
+            fileReturnValue: createPkgValDesc(
+              ['**Return value of a getMetadata activity**', "File's getMetadata activity"],
+              {
+                output: createPkgValDesc(
+                  ['output:any', 'GetMetadata activity output'],
+                  {
+                    exists: createRefValDesc(
+                      [
+                        'exists:boolean',
+                        "Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won't fail even if the file, folder, or table doesn't exist. Instead, exists: false is returned in the output.",
+                      ],
+                      IdentifierType.Boolean
+                    ),
+                    itemName: createRefValDesc(
+                      ['itemName:string', 'Name of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    itemType: createRefValDesc(
+                      ['itemType:string', 'Type of the file or folder. Returned value is File or Folder.'],
+                      IdentifierType.String
+                    ),
+                    size: createRefValDesc(
+                      ['size:number', 'Size of the file, in bytes. Applicable only to files.'],
+                      IdentifierType.Number
+                    ),
+                    lastModified: createRefValDesc(
+                      ['lastModified:string', 'Last modified datetime of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    created: createRefValDesc(
+                      ['created:string', 'Created datetime of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    contentMD5: createRefValDesc(
+                      ['contentMD5:string', 'MD5 of the file. Applicable only to files.'],
+                      IdentifierType.String
+                    ),
+                    structure: createRefValDesc(
+                      [
+                        'structure:{name, type}[]',
+                        'Data structure of the file or relational database table. Returned value is a list of column names and column types.',
+                      ],
+                      IdentifierType.ARRAY_OF_TYPE(
+                        ['activityPackage', 'getMetaDataActivity', 'itemType'],
+                        'structure return type'
+                      )
+                    ),
+                    columnCount: createRefValDesc(
+                      ['columnCount:number', 'Number of columns in the file or relational table.'],
+                      IdentifierType.Number
+                    ),
+                  },
+                  {allowAdditionalAnyProperties: true}
+                ),
+              },
+              {allowAdditionalAnyProperties: true}
+            ),
+            folderReturnValue: createPkgValDesc(
+              ['**Return value of a getMetadata activity**', "Folder's getMetadata activity"],
+              {
+                output: createPkgValDesc(
+                  ['output:any', 'GetMetadata activity output'],
+                  {
+                    exists: createRefValDesc(
+                      [
+                        'exists:boolean',
+                        "Whether a file, folder, or table exists. If exists is specified in the Get Metadata field list, the activity won't fail even if the file, folder, or table doesn't exist. Instead, exists: false is returned in the output.",
+                      ],
+                      IdentifierType.Boolean
+                    ),
+                    itemName: createRefValDesc(
+                      ['itemName:string', 'Name of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    itemType: createRefValDesc(
+                      ['itemType:string', 'Type of the file or folder. Returned value is File or Folder.'],
+                      IdentifierType.String
+                    ),
+                    lastModified: createRefValDesc(
+                      ['lastModified:string', 'Last modified datetime of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    created: createRefValDesc(
+                      ['created:string', 'Created datetime of the file or folder.'],
+                      IdentifierType.String
+                    ),
+                    childItems: createRefValDesc(
+                      [
+                        'childItems:{name, type}[]',
+                        'List of subfolders and files in the given folder. Applicable only to folders. Returned value is a list of the name and type of each child item.',
+                      ],
+                      IdentifierType.ARRAY_OF_TYPE(
+                        ['activityPackage', 'getMetaDataActivity', 'itemType'],
+                        'childItems return type'
+                      )
+                    ),
+                  },
+                  {allowAdditionalAnyProperties: true}
+                ),
+              },
+              {allowAdditionalAnyProperties: true}
+            ),
+          }),
         }),
       })
     )
@@ -504,8 +523,7 @@ const useStyles = makeStyles((theme) => ({
 // @add(1, 2)
 // @less(1, null)
 
-const sampleCodes =
-`@pipeline().globalParameters.oneTypedObj?[item().checkpointName]`;
+const sampleCodes = `@pipeline().globalParameters.oneTypedObj?[item().checkpointName]`;
 
 const MONACO_EDITOR_ID = 'first-dummy-monaco-editor';
 
@@ -526,7 +544,13 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
 
   const [astTreeRoot, setAstTreeRoot] = useState({});
   const [problems, setProblems] = useState<Problem[]>([]);
-  const [returnValueInfo, setReturnValueInfo] = useState<{descType?: string, returnType?: string, desc?: string[], valueType?: string, subKeys?: string[]}>({});
+  const [returnValueInfo, setReturnValueInfo] = useState<{
+    descType?: string;
+    returnType?: string;
+    desc?: string[];
+    valueType?: string;
+    subKeys?: string[];
+  }>({});
 
   const doHighlightRang = useCallback(
     (select: OnSelectProps) => {
@@ -545,11 +569,11 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
     [astTreeRoot]
   );
 
-  const regenerateSymbolTable = useCallback(()=>{
-    if (monacoEditor.current.editor){
+  const regenerateSymbolTable = useCallback(() => {
+    if (monacoEditor.current.editor) {
       monacoEditor.current.editor.rootSymbolTable = generateNextSymbolTable();
     }
-  },[])
+  }, []);
 
   useEffect(() => {
     function subscribeCodeDoc(azLgcExpDocument?: AzLgcExpDocument) {
@@ -568,7 +592,7 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
           [DescriptionType.PackageReference]: 'PackageReference',
         };
         setReturnValueInfo({
-          descType: rvd ? (descTypeMap[rvd._$type] ?? String(rvd._$type)) : undefined,
+          descType: rvd ? descTypeMap[rvd._$type] ?? String(rvd._$type) : undefined,
           returnType: rt?.label,
           desc: rvd?._$desc,
           valueType: rvd?._$valueType?.label,
@@ -595,7 +619,7 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
           value: sampleCodes,
           automaticLayout: true,
           wordWrap: 'wordWrapColumn',
-          wrappingIndent: 'indent'
+          wrappingIndent: 'indent',
         },
         MONACO_EDITOR_ID,
         rootSymbolTable
@@ -618,12 +642,28 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
         <ReactJson theme="monokai" collapsed={3} onSelect={doHighlightRang} src={astTreeRoot} />
       </div>
       <div className={clazz.returnValueCtn}>
-        <div><strong style={{color: '#569cd6'}}>Return Value Description</strong></div>
-        <div>Desc Type: <span style={{color: '#ce9178'}}>{returnValueInfo.descType ?? 'N/A'}</span></div>
-        <div>Return Type: <span style={{color: '#b5cea8'}}>{returnValueInfo.returnType ?? 'N/A'}</span></div>
-        {returnValueInfo.valueType && <div>Value Type: <span style={{color: '#dcdcaa'}}>{returnValueInfo.valueType}</span></div>}
-        {returnValueInfo.subKeys && <div>Sub Keys: <span style={{color: '#9cdcfe'}}>{returnValueInfo.subKeys.join(', ')}</span></div>}
-        <div>Desc: <span style={{color: '#d4d4d4'}}>{returnValueInfo.desc?.join(' | ') ?? 'N/A'}</span></div>
+        <div>
+          <strong style={{color: '#569cd6'}}>Return Value Description</strong>
+        </div>
+        <div>
+          Desc Type: <span style={{color: '#ce9178'}}>{returnValueInfo.descType ?? 'N/A'}</span>
+        </div>
+        <div>
+          Return Type: <span style={{color: '#b5cea8'}}>{returnValueInfo.returnType ?? 'N/A'}</span>
+        </div>
+        {returnValueInfo.valueType && (
+          <div>
+            Value Type: <span style={{color: '#dcdcaa'}}>{returnValueInfo.valueType}</span>
+          </div>
+        )}
+        {returnValueInfo.subKeys && (
+          <div>
+            Sub Keys: <span style={{color: '#9cdcfe'}}>{returnValueInfo.subKeys.join(', ')}</span>
+          </div>
+        )}
+        <div>
+          Desc: <span style={{color: '#d4d4d4'}}>{returnValueInfo.desc?.join(' | ') ?? 'N/A'}</span>
+        </div>
       </div>
       <div className={clazz.problemCtn}>
         <pre>
@@ -643,7 +683,9 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
         <MonacoEditorDiv ref={monacoEditorDiv} />
       </div>
       <div className={clazz.btnCtn}>
-        <Button color='primary' variant='contained' size='small' onClick={regenerateSymbolTable}>Chg ST</Button>
+        <Button color="primary" variant="contained" size="small" onClick={regenerateSymbolTable}>
+          Chg ST
+        </Button>
       </div>
     </div>
   );
