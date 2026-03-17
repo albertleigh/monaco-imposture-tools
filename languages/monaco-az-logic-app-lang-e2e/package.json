@@ -2,7 +2,7 @@
   "name": "monaco-az-logic-app-lang-e2e",
   "private": true,
   "engines": {
-    "node": "^18 || ^19 || ^20"
+    "node": "^18 || ^19 || ^20 || ^21 || ^22"
   },
   "dependencies": {
     "monaco-azure-logic-app-lang": "^0.5.1",
