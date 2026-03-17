@@ -174,6 +174,42 @@ function generateNextSymbolTable() {
                 anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
               }),
             }
+          ),
+          libraryVariables: createPkgValDesc(
+            [
+              'Library variables package'
+            ],
+            {
+              Variables_1_conn_1: createPkgValDesc(['ConnectionType'], {
+                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+              }),
+              Variables_1_conn_2: createPkgValDesc(['ConnectionType'], {
+                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+              }),
+              oneGlobalNumber: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+              oneGlobalFloat: createRefValDesc(['oneGlobalNumber'], IdentifierType.Number),
+              oneGlobalBoolean: createRefValDesc(['oneGlobalNumber'], IdentifierType.Boolean),
+              oneGlobalArr: createRefValDesc(['oneGlobalNumber'], IdentifierType.Array, true, []),
+              oneGlobalObj: createRefValDesc(['oneGlobalObj'], IdentifierType.AnyObject, true, {}),
+              oneTypedObj: createPkgValDesc(['oneTypedObj'], {
+                anotherStrPara: createRefValDesc(['anotherStrPara'], IdentifierType.String),
+                anotherGlobalNumber: createRefValDesc(['anotherGlobalNumber'], IdentifierType.Number),
+                anotherGlobalFloat: createRefValDesc(['anotherGlobalFloat'], IdentifierType.Number),
+                anotherGlobalBoolean: createRefValDesc(['anotherGlobalBoolean'], IdentifierType.Boolean),
+                anotherGlobalArr: createRefValDesc(['anotherGlobalArr'], IdentifierType.Array, true, []),
+                anotherGlobalObj: createRefValDesc(['anotherGlobalObj'], IdentifierType.AnyObject, true, {}),
+              }),
+            }
           )
         }),
         activityPackage: createPkgValDesc([], {
