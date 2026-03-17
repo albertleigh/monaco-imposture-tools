@@ -1191,6 +1191,56 @@ export class AzLgcExpDocument{
     }, undefined)
   }
 
+  private _cachedReturnValueDescriptions: ValueDescription[] | undefined;
+
+  /**
+   * Collect all the returned value descriptions from the top-level entries of this expression document.
+   * Each entry that has a return value contributes its `returnValue` to the result.
+   */
+  get returnValueDescriptions(): ValueDescription[] {
+    if (!this._cachedReturnValueDescriptions) {
+      this._cachedReturnValueDescriptions = [];
+      for (const entry of this.entries) {
+        if (entry.hasReturnValue && entry.returnValue) {
+          this._cachedReturnValueDescriptions.push(entry.returnValue);
+        }
+      }
+    }
+    return this._cachedReturnValueDescriptions;
+  }
+
+  /**
+   * Return the first returned value description from the expression entries, or undefined if none.
+   */
+  get returnValueDescription(): ValueDescription | undefined {
+    return this.returnValueDescriptions[0];
+  }
+
+  /**
+   * Return the inferred return IdentifierType of the expression, or undefined if none.
+   */
+  get returnType(): IdentifierType | undefined {
+    const vd = this.returnValueDescription;
+    if (vd) {
+      switch (vd._$type) {
+        case DescriptionType.ReferenceValue:
+          return (vd as ReferenceValueDescription)._$valueType;
+        case DescriptionType.PackageReference:
+          return (vd as PackageDescription)._$identifierType;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Check whether the expression's return value description is assignable to the given target type.
+   */
+  isReturnTypeAssignableTo(targetType: IdentifierType): boolean {
+    const rt = this.returnType;
+    if (!rt) return false;
+    return rt.assignableTo(targetType, this.globalSymbolTable);
+  }
+
   getSyntaxNodeByOffset(offset:number):SyntaxNode | undefined{
     let result:SyntaxNode| undefined = undefined;
 

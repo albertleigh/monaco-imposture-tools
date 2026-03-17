@@ -9,6 +9,7 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import {findDeepestRangeBy} from '../utils/objects';
 import {
   default as AzLogicAppExpressionLang,
+  DescriptionType,
   IdentifierType,
   AzLgcExpDocument,
   AzLogicAppExpressionLangMonacoEditor,
@@ -397,7 +398,7 @@ const useStyles = makeStyles((theme) => ({
   outermostCtn: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
-    gridTemplateRows: 'repeat(2, 1fr)',
+    gridTemplateRows: '1fr auto 1fr',
     height: '100%',
   },
   syntaxCtn: {
@@ -405,14 +406,27 @@ const useStyles = makeStyles((theme) => ({
     gridColumnStart: 1,
     gridColumnEnd: 2,
     gridRowStart: 1,
-    gridRowEnd: 3,
+    gridRowEnd: 4,
   },
   problemCtn: {
     overflow: 'auto',
     gridColumnStart: 2,
     gridColumnEnd: 3,
+    gridRowStart: 3,
+    gridRowEnd: 4,
+  },
+  returnValueCtn: {
+    overflow: 'auto',
+    gridColumnStart: 2,
+    gridColumnEnd: 3,
     gridRowStart: 2,
     gridRowEnd: 3,
+    borderBottom: '1px solid #555',
+    padding: theme.spacing(1),
+    fontFamily: 'monospace',
+    fontSize: 13,
+    color: '#ccc',
+    backgroundColor: '#1e1e1e',
   },
   editorCtn: {
     // paddingTop: theme.spacing(1),
@@ -476,6 +490,7 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
 
   const [astTreeRoot, setAstTreeRoot] = useState({});
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [returnValueInfo, setReturnValueInfo] = useState<{descType?: string, returnType?: string, desc?: string[], valueType?: string, subKeys?: string[]}>({});
 
   const doHighlightRang = useCallback(
     (select: OnSelectProps) => {
@@ -507,6 +522,24 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
         if (curAstTreeStr) {
           setAstTreeRoot(JSON.parse(curAstTreeStr));
         }
+        const doc = azLgcExpDocument as any;
+        const rvd = doc.returnValueDescription;
+        const rt = doc.returnType;
+        const descTypeMap: Record<number, string> = {
+          [DescriptionType.FunctionValue]: 'FunctionValue',
+          [DescriptionType.OverloadedFunctionValue]: 'OverloadedFunctionValue',
+          [DescriptionType.ReferenceValue]: 'ReferenceValue',
+          [DescriptionType.PackageReference]: 'PackageReference',
+        };
+        setReturnValueInfo({
+          descType: rvd ? (descTypeMap[rvd._$type] ?? String(rvd._$type)) : undefined,
+          returnType: rt?.label,
+          desc: rvd?._$desc,
+          valueType: rvd?._$valueType?.label,
+          subKeys: rvd?._$subDescriptor ? Object.keys(rvd._$subDescriptor) : undefined,
+        });
+      } else {
+        setReturnValueInfo({});
       }
     }
 
@@ -547,6 +580,14 @@ export const DummyEditor: React.FC = React.memo(function DummyEditor() {
     <div className={clazz.outermostCtn}>
       <div className={clazz.syntaxCtn}>
         <ReactJson theme="monokai" collapsed={3} onSelect={doHighlightRang} src={astTreeRoot} />
+      </div>
+      <div className={clazz.returnValueCtn}>
+        <div><strong style={{color: '#569cd6'}}>Return Value Description</strong></div>
+        <div>Desc Type: <span style={{color: '#ce9178'}}>{returnValueInfo.descType ?? 'N/A'}</span></div>
+        <div>Return Type: <span style={{color: '#b5cea8'}}>{returnValueInfo.returnType ?? 'N/A'}</span></div>
+        {returnValueInfo.valueType && <div>Value Type: <span style={{color: '#dcdcaa'}}>{returnValueInfo.valueType}</span></div>}
+        {returnValueInfo.subKeys && <div>Sub Keys: <span style={{color: '#9cdcfe'}}>{returnValueInfo.subKeys.join(', ')}</span></div>}
+        <div>Desc: <span style={{color: '#d4d4d4'}}>{returnValueInfo.desc?.join(' | ') ?? 'N/A'}</span></div>
       </div>
       <div className={clazz.problemCtn}>
         <pre>
